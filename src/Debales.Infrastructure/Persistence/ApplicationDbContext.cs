@@ -2,6 +2,11 @@ using Debales.Domain.Core.Audit;
 using Debales.Domain.Core.Modules;
 using Debales.Domain.Core.Roles;
 using Debales.Domain.Core.Users;
+using Debales.Domain.CRM.Activities;
+using Debales.Domain.CRM.Contacts;
+using Debales.Domain.CRM.Customers;
+using Debales.Domain.CRM.Notes;
+using Debales.Domain.CRM.Opportunities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Debales.Infrastructure.Persistence;
@@ -10,6 +15,7 @@ public sealed class ApplicationDbContext : DbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
+    // Core
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Permission> Permissions => Set<Permission>();
@@ -17,6 +23,13 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<SystemModule> SystemModules => Set<SystemModule>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+
+    // CRM
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Contact> Contacts => Set<Contact>();
+    public DbSet<Activity> Activities => Set<Activity>();
+    public DbSet<Note> Notes => Set<Note>();
+    public DbSet<Opportunity> Opportunities => Set<Opportunity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

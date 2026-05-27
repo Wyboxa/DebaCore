@@ -1,7 +1,13 @@
 using Debales.Application.Common;
 using Debales.Application.Core.Users;
+using Debales.Application.CRM.Activities;
+using Debales.Application.CRM.Contacts;
+using Debales.Application.CRM.Customers;
+using Debales.Application.CRM.Notes;
+using Debales.Application.CRM.Opportunities;
 using Debales.Infrastructure.Persistence;
 using Debales.Infrastructure.Persistence.Repositories;
+using Debales.Infrastructure.Persistence.Repositories.CRM;
 using Debales.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -19,8 +25,17 @@ public static class DependencyInjection
                 sql => sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // Core
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+
+        // CRM
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IContactRepository, ContactRepository>();
+        services.AddScoped<IActivityRepository, ActivityRepository>();
+        services.AddScoped<INoteRepository, NoteRepository>();
+        services.AddScoped<IOpportunityRepository, OpportunityRepository>();
 
         return services;
     }

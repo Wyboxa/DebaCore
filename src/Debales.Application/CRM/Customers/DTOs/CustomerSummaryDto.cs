@@ -1,0 +1,10 @@
+namespace Debales.Application.CRM.Customers.DTOs;
+
+public sealed record CustomerSummaryDto(
+    Guid Id,
+    string Name,
+    string? Sector,
+    string? TaxId,
+    string? Phone,
+    bool IsActive,
+    DateTime CreatedAt);
