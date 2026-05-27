@@ -1,0 +1,597 @@
+@page "/crm/customers/{Id:guid}"
+@rendermode InteractiveServer
+@inject GetCustomerByIdHandler GetById
+@inject UpdateCustomerHandler UpdateHandler
+@inject AddContactHandler AddContactHandler
+@inject GetContactsByCustomerHandler GetContacts
+@inject LogActivityHandler LogActivity
+@inject GetActivitiesByCustomerHandler GetActivities
+@inject Debales.Application.CRM.Notes.Commands.AddNote.AddNoteHandler AddNoteHandler
+@inject Debales.Application.CRM.Notes.Queries.GetNotesByCustomer.GetNotesByCustomerHandler GetNotes
+@inject GetOpportunitiesByCustomerHandler GetOpportunities
+@inject CreateOpportunityHandler CreateOppHandler
+@inject NavigationManager Nav
+
+<PageTitle>@(_customer?.Name ?? "Cliente") — Debales CRM</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_customer is null)
+{
+    <div class="alert alert-warning">Cliente no encontrado. <a href="/crm/customers">Volver</a></div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/crm/customers">Clientes</a></li>
+            <li class="breadcrumb-item active">@_customer.Name</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="h3 mb-0">@_customer.Name</h1>
+            <small class="text-muted">
+                @if (_customer.Sector is not null) { <span>@_customer.Sector · </span> }
+                @if (_customer.TaxId is not null) { <span>@_customer.TaxId · </span> }
+                @if (_customer.IsActive) { <span class="badge bg-success">Activo</span> } else { <span class="badge bg-secondary">Inactivo</span> }
+            </small>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="OpenEdit">Editar</button>
+    </div>
+
+    <ul class="nav nav-tabs mb-3">
+        @foreach (var tab in new[] { "info", "contactos", "actividades", "notas", "oportunidades" })
+        {
+            <li class="nav-item">
+                <button class="nav-link @(_tab == tab ? "active" : "")" @onclick="() => SetTab(tab)">
+                    @TabLabel(tab)
+                </button>
+            </li>
+        }
+    </ul>
+
+    @if (_tab == "info")
+    {
+        <div class="card">
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Nombre</dt>
+                    <dd class="col-sm-9">@_customer.Name</dd>
+                    <dt class="col-sm-3">Sector</dt>
+                    <dd class="col-sm-9">@(_customer.Sector ?? "—")</dd>
+                    <dt class="col-sm-3">CIF / NIF</dt>
+                    <dd class="col-sm-9">@(_customer.TaxId ?? "—")</dd>
+                    <dt class="col-sm-3">Teléfono</dt>
+                    <dd class="col-sm-9">@(_customer.Phone ?? "—")</dd>
+                    <dt class="col-sm-3">Web</dt>
+                    <dd class="col-sm-9">@(_customer.Website is not null ? _customer.Website : "—")</dd>
+                    @if (_customer.Address is not null)
+                    {
+                        <dt class="col-sm-3">Dirección</dt>
+                        <dd class="col-sm-9">@_customer.Address.Street, @_customer.Address.City @_customer.Address.PostalCode, @_customer.Address.Country</dd>
+                    }
+                    <dt class="col-sm-3">Alta</dt>
+                    <dd class="col-sm-9">@_customer.CreatedAt.ToString("dd/MM/yyyy")</dd>
+                </dl>
+            </div>
+        </div>
+    }
+
+    @if (_tab == "contactos")
+    {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Contactos (@_contacts.Count)</h5>
+            <button class="btn btn-sm btn-primary" @onclick="OpenAddContact">+ Añadir contacto</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr><th>Nombre</th><th>Cargo</th><th>Email</th><th>Teléfono</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in _contacts)
+                    {
+                        <tr>
+                            <td>@c.FullName</td>
+                            <td>@(c.JobTitle ?? "—")</td>
+                            <td>@(c.Email ?? "—")</td>
+                            <td>@(c.Phone ?? "—")</td>
+                            <td>@(c.IsActive ? "Activo" : "Inactivo")</td>
+                        </tr>
+                    }
+                    @if (!_contacts.Any()) { <tr><td colspan="5" class="text-center text-muted py-3">Sin contactos.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+
+        @if (_showAddContact)
+        {
+            <div class="card mt-3">
+                <div class="card-header">Nuevo contacto</div>
+                <div class="card-body">
+                    <EditForm Model="_contactForm" OnValidSubmit="SaveContact">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="_contactForm.FirstName" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Apellidos *</label>
+                                <InputText class="form-control" @bind-Value="_contactForm.LastName" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cargo</label>
+                                <InputText class="form-control" @bind-Value="_contactForm.JobTitle" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <InputText class="form-control" @bind-Value="_contactForm.Email" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono</label>
+                                <InputText class="form-control" @bind-Value="_contactForm.Phone" />
+                            </div>
+                        </div>
+                        @if (_contactError is not null) { <div class="alert alert-danger mt-2">@_contactError</div> }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="() => _showAddContact = false">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        }
+    }
+
+    @if (_tab == "actividades")
+    {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Actividades (@_activities.Count)</h5>
+            <button class="btn btn-sm btn-primary" @onclick="OpenLogActivity">+ Registrar actividad</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr><th>Tipo</th><th>Asunto</th><th>Fecha</th><th>Asignado a</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in _activities.OrderByDescending(x => x.ScheduledAt))
+                    {
+                        <tr>
+                            <td><span class="badge bg-secondary">@a.Type</span></td>
+                            <td>@a.Subject</td>
+                            <td>@a.ScheduledAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@(a.AssignedTo ?? "—")</td>
+                            <td>@(a.IsCompleted ? "✓ Completada" : "Pendiente")</td>
+                        </tr>
+                    }
+                    @if (!_activities.Any()) { <tr><td colspan="5" class="text-center text-muted py-3">Sin actividades.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+
+        @if (_showLogActivity)
+        {
+            <div class="card mt-3">
+                <div class="card-header">Nueva actividad</div>
+                <div class="card-body">
+                    <EditForm Model="_actForm" OnValidSubmit="SaveActivity">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo *</label>
+                                <InputSelect class="form-select" @bind-Value="_actForm.Type">
+                                    @foreach (ActivityType t in Enum.GetValues<ActivityType>())
+                                    {
+                                        <option value="@t">@t</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Asunto *</label>
+                                <InputText class="form-control" @bind-Value="_actForm.Subject" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha programada *</label>
+                                <InputDate class="form-control" @bind-Value="_actForm.ScheduledAt" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Asignado a</label>
+                                <InputText class="form-control" @bind-Value="_actForm.AssignedTo" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Notas</label>
+                                <InputTextArea class="form-control" rows="2" @bind-Value="_actForm.Notes" />
+                            </div>
+                        </div>
+                        @if (_actError is not null) { <div class="alert alert-danger mt-2">@_actError</div> }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="() => _showLogActivity = false">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        }
+    }
+
+    @if (_tab == "notas")
+    {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Notas (@_notes.Count)</h5>
+            <button class="btn btn-sm btn-primary" @onclick="OpenAddNote">+ Añadir nota</button>
+        </div>
+
+        @foreach (var n in _notes)
+        {
+            <div class="card mb-2">
+                <div class="card-body py-2">
+                    <p class="mb-1">@n.Content</p>
+                    <small class="text-muted">@n.CreatedAt.ToString("dd/MM/yyyy HH:mm") · @(n.CreatedBy ?? "—")</small>
+                </div>
+            </div>
+        }
+        @if (!_notes.Any()) { <p class="text-muted">Sin notas.</p> }
+
+        @if (_showAddNote)
+        {
+            <div class="card mt-3">
+                <div class="card-header">Nueva nota</div>
+                <div class="card-body">
+                    <EditForm Model="_noteForm" OnValidSubmit="SaveNote">
+                        <div class="mb-2">
+                            <InputTextArea class="form-control" rows="3" placeholder="Escribe aquí…" @bind-Value="_noteForm.Content" />
+                        </div>
+                        @if (_noteError is not null) { <div class="alert alert-danger">@_noteError</div> }
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-secondary" @onclick="() => _showAddNote = false">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        }
+    }
+
+    @if (_tab == "oportunidades")
+    {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Oportunidades (@_opportunities.Count)</h5>
+            <button class="btn btn-sm btn-primary" @onclick="OpenAddOpp">+ Nueva oportunidad</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr><th>Título</th><th>Estado</th><th>Valor estimado</th><th>Cierre esperado</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in _opportunities)
+                    {
+                        <tr>
+                            <td>@o.Title</td>
+                            <td><span class="badge @BadgeClass(o.Status)">@o.Status</span></td>
+                            <td>@(o.EstimatedValue.HasValue ? o.EstimatedValue.Value.ToString("N2") + " €" : "—")</td>
+                            <td>@(o.ExpectedCloseDate.HasValue ? o.ExpectedCloseDate.Value.ToString("dd/MM/yyyy") : "—")</td>
+                        </tr>
+                    }
+                    @if (!_opportunities.Any()) { <tr><td colspan="4" class="text-center text-muted py-3">Sin oportunidades.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+
+        @if (_showAddOpp)
+        {
+            <div class="card mt-3">
+                <div class="card-header">Nueva oportunidad</div>
+                <div class="card-body">
+                    <EditForm Model="_oppForm" OnValidSubmit="SaveOpp">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Título *</label>
+                                <InputText class="form-control" @bind-Value="_oppForm.Title" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Valor estimado (€)</label>
+                                <InputNumber class="form-control" @bind-Value="_oppForm.EstimatedValue" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha de cierre esperada</label>
+                                <InputDate class="form-control" @bind-Value="_oppForm.ExpectedCloseDate" />
+                            </div>
+                        </div>
+                        @if (_oppError is not null) { <div class="alert alert-danger mt-2">@_oppError</div> }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="() => _showAddOpp = false">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        }
+    }
+}
+
+@if (_showEdit && _customer is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar cliente</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showEdit = false"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_editForm" OnValidSubmit="SaveEdit">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre *</label>
+                            <InputText class="form-control" @bind-Value="_editForm.Name" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sector</label>
+                            <InputText class="form-control" @bind-Value="_editForm.Sector" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">CIF / NIF</label>
+                            <InputText class="form-control" @bind-Value="_editForm.TaxId" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Teléfono</label>
+                            <InputText class="form-control" @bind-Value="_editForm.Phone" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Web</label>
+                            <InputText class="form-control" @bind-Value="_editForm.Website" />
+                        </div>
+                        @if (_editError is not null) { <div class="alert alert-danger">@_editError</div> }
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-secondary" @onclick="() => _showEdit = false">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private Debales.Application.CRM.Customers.DTOs.CustomerDetailDto? _customer;
+    private IReadOnlyList<Debales.Application.CRM.Contacts.DTOs.ContactDto> _contacts = [];
+    private IReadOnlyList<Debales.Application.CRM.Activities.DTOs.ActivityDto> _activities = [];
+    private IReadOnlyList<Debales.Application.CRM.Notes.DTOs.NoteDto> _notes = [];
+    private IReadOnlyList<Debales.Application.CRM.Opportunities.DTOs.OpportunityDto> _opportunities = [];
+
+    private bool _loading = true;
+    private string _tab = "info";
+    private bool _saving;
+
+    // Edit customer
+    private bool _showEdit;
+    private string? _editError;
+    private EditFormModel _editForm = new();
+
+    // Add contact
+    private bool _showAddContact;
+    private string? _contactError;
+    private ContactFormModel _contactForm = new();
+
+    // Log activity
+    private bool _showLogActivity;
+    private string? _actError;
+    private ActivityFormModel _actForm = new();
+
+    // Add note
+    private bool _showAddNote;
+    private string? _noteError;
+    private NoteFormModel _noteForm = new();
+
+    // Add opportunity
+    private bool _showAddOpp;
+    private string? _oppError;
+    private OppFormModel _oppForm = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            LoadCustomerAsync(),
+            LoadContactsAsync(),
+            LoadActivitiesAsync(),
+            LoadNotesAsync(),
+            LoadOpportunitiesAsync());
+        _loading = false;
+    }
+
+    private async Task LoadCustomerAsync() =>
+        _customer = await GetById.Handle(new GetCustomerByIdQuery(Id));
+
+    private async Task LoadContactsAsync() =>
+        _contacts = await GetContacts.Handle(new GetContactsByCustomerQuery(Id));
+
+    private async Task LoadActivitiesAsync() =>
+        _activities = await GetActivities.Handle(new GetActivitiesByCustomerQuery(Id));
+
+    private async Task LoadNotesAsync() =>
+        _notes = await GetNotes.Handle(new Debales.Application.CRM.Notes.Queries.GetNotesByCustomer.GetNotesByCustomerQuery(Id));
+
+    private async Task LoadOpportunitiesAsync() =>
+        _opportunities = await GetOpportunities.Handle(new GetOpportunitiesByCustomerQuery(Id));
+
+    private void SetTab(string tab) => _tab = tab;
+
+    private static string TabLabel(string tab) => tab switch
+    {
+        "info" => "Información",
+        "contactos" => "Contactos",
+        "actividades" => "Actividades",
+        "notas" => "Notas",
+        "oportunidades" => "Oportunidades",
+        _ => tab
+    };
+
+    private static string BadgeClass(string status) => status switch
+    {
+        "Won" => "bg-success",
+        "Lost" => "bg-danger",
+        "InProgress" => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+
+    // ── Edit customer ────────────────────────────────────────────────────────────
+
+    private void OpenEdit()
+    {
+        _editError = null;
+        _editForm = new()
+        {
+            Name = _customer!.Name,
+            Sector = _customer.Sector,
+            TaxId = _customer.TaxId,
+            Phone = _customer.Phone,
+            Website = _customer.Website
+        };
+        _showEdit = true;
+    }
+
+    private async Task SaveEdit()
+    {
+        _saving = true;
+        _editError = null;
+        try
+        {
+            _customer = await UpdateHandler.Handle(new UpdateCustomerCommand(
+                Id, _editForm.Name!, _editForm.Sector, _editForm.TaxId, _editForm.Phone, _editForm.Website, "web"));
+            _showEdit = false;
+        }
+        catch (ArgumentException ex) { _editError = ex.Message; }
+        catch (KeyNotFoundException) { _editError = "Cliente no encontrado."; }
+        finally { _saving = false; }
+    }
+
+    // ── Add contact ──────────────────────────────────────────────────────────────
+
+    private void OpenAddContact() { _contactError = null; _contactForm = new(); _showAddContact = true; }
+
+    private async Task SaveContact()
+    {
+        _saving = true;
+        _contactError = null;
+        try
+        {
+            await AddContactHandler.Handle(new AddContactCommand(
+                Id, _contactForm.FirstName!, _contactForm.LastName!, _contactForm.JobTitle,
+                _contactForm.Email, _contactForm.Phone, "web"));
+            _showAddContact = false;
+            await LoadContactsAsync();
+        }
+        catch (ArgumentException ex) { _contactError = ex.Message; }
+        catch (KeyNotFoundException) { _contactError = "Cliente no encontrado."; }
+        finally { _saving = false; }
+    }
+
+    // ── Log activity ─────────────────────────────────────────────────────────────
+
+    private void OpenLogActivity() { _actError = null; _actForm = new(); _showLogActivity = true; }
+
+    private async Task SaveActivity()
+    {
+        _saving = true;
+        _actError = null;
+        try
+        {
+            await LogActivity.Handle(new LogActivityCommand(
+                Id, _actForm.Type, _actForm.Subject!, _actForm.ScheduledAt, "web",
+                Notes: _actForm.Notes, AssignedTo: _actForm.AssignedTo));
+            _showLogActivity = false;
+            await LoadActivitiesAsync();
+        }
+        catch (ArgumentException ex) { _actError = ex.Message; }
+        catch (KeyNotFoundException) { _actError = "Cliente no encontrado."; }
+        finally { _saving = false; }
+    }
+
+    // ── Add note ─────────────────────────────────────────────────────────────────
+
+    private void OpenAddNote() { _noteError = null; _noteForm = new(); _showAddNote = true; }
+
+    private async Task SaveNote()
+    {
+        _saving = true;
+        _noteError = null;
+        try
+        {
+            await AddNoteHandler.Handle(new Debales.Application.CRM.Notes.Commands.AddNote.AddNoteCommand(
+                Id, _noteForm.Content!, "web"));
+            _showAddNote = false;
+            await LoadNotesAsync();
+        }
+        catch (ArgumentException ex) { _noteError = ex.Message; }
+        catch (KeyNotFoundException) { _noteError = "Cliente no encontrado."; }
+        finally { _saving = false; }
+    }
+
+    // ── Add opportunity ──────────────────────────────────────────────────────────
+
+    private void OpenAddOpp() { _oppError = null; _oppForm = new(); _showAddOpp = true; }
+
+    private async Task SaveOpp()
+    {
+        _saving = true;
+        _oppError = null;
+        try
+        {
+            await CreateOppHandler.Handle(new CreateOpportunityCommand(
+                Id, _oppForm.Title!, "web", _oppForm.EstimatedValue, _oppForm.ExpectedCloseDate));
+            _showAddOpp = false;
+            await LoadOpportunitiesAsync();
+        }
+        catch (ArgumentException ex) { _oppError = ex.Message; }
+        catch (KeyNotFoundException) { _oppError = "Cliente no encontrado."; }
+        finally { _saving = false; }
+    }
+
+    // ── Form models ──────────────────────────────────────────────────────────────
+
+    private sealed class EditFormModel
+    {
+        public string? Name { get; set; }
+        public string? Sector { get; set; }
+        public string? TaxId { get; set; }
+        public string? Phone { get; set; }
+        public string? Website { get; set; }
+    }
+
+    private sealed class ContactFormModel
+    {
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? JobTitle { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+    }
+
+    private sealed class ActivityFormModel
+    {
+        public ActivityType Type { get; set; } = ActivityType.Call;
+        public string? Subject { get; set; }
+        public DateTime ScheduledAt { get; set; } = DateTime.Today;
+        public string? Notes { get; set; }
+        public string? AssignedTo { get; set; }
+    }
+
+    private sealed class NoteFormModel
+    {
+        public string? Content { get; set; }
+    }
+
+    private sealed class OppFormModel
+    {
+        public string? Title { get; set; }
+        public decimal? EstimatedValue { get; set; }
+        public DateTime? ExpectedCloseDate { get; set; }
+    }
+}

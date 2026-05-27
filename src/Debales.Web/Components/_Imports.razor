@@ -1,4 +1,4 @@
-﻿@using System.Net.Http
+@using System.Net.Http
 @using System.Net.Http.Json
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
@@ -8,3 +8,20 @@
 @using Microsoft.JSInterop
 @using Debales.Web
 @using Debales.Web.Components
+@using Debales.Application.CRM.Customers
+@using Debales.Application.CRM.Customers.Commands.CreateCustomer
+@using Debales.Application.CRM.Customers.Commands.UpdateCustomer
+@using Debales.Application.CRM.Customers.Queries.GetCustomerById
+@using Debales.Application.CRM.Customers.Queries.GetCustomers
+@using Debales.Application.CRM.Contacts.Commands.AddContact
+@using Debales.Application.CRM.Contacts.Queries.GetContactsByCustomer
+@using Debales.Application.CRM.Activities.Commands.LogActivity
+@using Debales.Application.CRM.Activities.Queries.GetActivitiesByCustomer
+@using Debales.Application.CRM.Notes.Commands.AddNote
+@using Debales.Application.CRM.Notes.Queries.GetNotesByCustomer
+@using Debales.Application.CRM.Opportunities.Commands.CreateOpportunity
+@using Debales.Application.CRM.Opportunities.Commands.UpdateOpportunityStatus
+@using Debales.Application.CRM.Opportunities.Queries.GetOpportunitiesByCustomer
+@using Debales.Application.Common
+@using Debales.Domain.CRM.Activities
+@using Debales.Domain.CRM.Opportunities

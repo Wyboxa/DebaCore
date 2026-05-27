@@ -1,0 +1,186 @@
+@page "/crm/customers"
+@rendermode InteractiveServer
+@inject GetCustomersHandler GetCustomers
+@inject NavigationManager Nav
+
+<PageTitle>Clientes — Debales CRM</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Clientes</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nuevo cliente</button>
+</div>
+
+<div class="mb-3">
+    <div class="input-group" style="max-width:400px">
+        <input class="form-control" placeholder="Buscar por nombre, sector o CIF…"
+               @bind="_search" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+        <button class="btn btn-outline-secondary" @onclick="Search">Buscar</button>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_result is not null)
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Sector</th>
+                    <th>CIF / NIF</th>
+                    <th>Teléfono</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in _result.Items)
+                {
+                    <tr style="cursor:pointer" @onclick="() => GoToDetail(c.Id)">
+                        <td><strong>@c.Name</strong></td>
+                        <td>@(c.Sector ?? "—")</td>
+                        <td>@(c.TaxId ?? "—")</td>
+                        <td>@(c.Phone ?? "—")</td>
+                        <td>
+                            @if (c.IsActive)
+                            {
+                                <span class="badge bg-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactivo</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary" @onclick:stopPropagation="true" @onclick="() => GoToDetail(c.Id)">Ver</button>
+                        </td>
+                    </tr>
+                }
+                @if (!_result.Items.Any())
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">No se encontraron clientes.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (_result.TotalPages > 1)
+    {
+        <nav>
+            <ul class="pagination">
+                <li class="page-item @(_result.HasPreviousPage ? "" : "disabled")">
+                    <button class="page-link" @onclick="PrevPage">Anterior</button>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Página @_result.Page de @_result.TotalPages (@_result.TotalCount total)</span>
+                </li>
+                <li class="page-item @(_result.HasNextPage ? "" : "disabled")">
+                    <button class="page-link" @onclick="NextPage">Siguiente</button>
+                </li>
+            </ul>
+        </nav>
+    }
+}
+
+@if (_showCreate)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo cliente</h5>
+                    <button type="button" class="btn-close" @onclick="CloseCreate"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_form" OnValidSubmit="CreateCustomer">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label class="form-label">Nombre *</label>
+                            <InputText class="form-control" @bind-Value="_form.Name" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sector</label>
+                            <InputText class="form-control" @bind-Value="_form.Sector" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">CIF / NIF</label>
+                            <InputText class="form-control" @bind-Value="_form.TaxId" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Teléfono</label>
+                            <InputText class="form-control" @bind-Value="_form.Phone" />
+                        </div>
+                        @if (_createError is not null)
+                        {
+                            <div class="alert alert-danger">@_createError</div>
+                        }
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseCreate">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">
+                                @(_saving ? "Guardando…" : "Crear cliente")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private CreateCustomerHandler CreateHandler { get; set; } = default!;
+
+    private PagedResult<Debales.Application.CRM.Customers.DTOs.CustomerSummaryDto>? _result;
+    private string? _search;
+    private int _page = 1;
+    private bool _loading;
+    private bool _showCreate;
+    private bool _saving;
+    private string? _createError;
+    private CustomerForm _form = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+        _result = await GetCustomers.Handle(new GetCustomersQuery(_search, _page, 20));
+        _loading = false;
+    }
+
+    private async Task Search() { _page = 1; await LoadAsync(); }
+    private async Task OnSearchKeyUp(KeyboardEventArgs e) { if (e.Key == "Enter") await Search(); }
+    private async Task PrevPage() { _page--; await LoadAsync(); }
+    private async Task NextPage() { _page++; await LoadAsync(); }
+    private void GoToDetail(Guid id) => Nav.NavigateTo($"/crm/customers/{id}");
+
+    private void OpenCreate() { _form = new(); _createError = null; _showCreate = true; }
+    private void CloseCreate() => _showCreate = false;
+
+    private async Task CreateCustomer()
+    {
+        _saving = true;
+        _createError = null;
+        try
+        {
+            var customer = await CreateHandler.Handle(new CreateCustomerCommand(_form.Name!, _form.Sector, _form.TaxId, _form.Phone, "web"));
+            _showCreate = false;
+            Nav.NavigateTo($"/crm/customers/{customer.Id}");
+        }
+        catch (InvalidOperationException ex) { _createError = ex.Message; }
+        catch (ArgumentException ex) { _createError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private sealed class CustomerForm
+    {
+        public string? Name { get; set; }
+        public string? Sector { get; set; }
+        public string? TaxId { get; set; }
+        public string? Phone { get; set; }
+    }
+}

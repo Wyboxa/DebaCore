@@ -9,6 +9,7 @@ using Debales.Application.CRM.Customers.Commands.UpdateCustomer;
 using Debales.Application.CRM.Customers.Queries.GetCustomerById;
 using Debales.Application.CRM.Customers.Queries.GetCustomers;
 using Debales.Application.CRM.Notes.Commands.AddNote;
+using Debales.Application.CRM.Notes.Queries.GetNotesByCustomer;
 using Debales.Application.CRM.Opportunities.Commands.CreateOpportunity;
 using Debales.Application.CRM.Opportunities.Commands.UpdateOpportunityStatus;
 using Debales.Application.CRM.Opportunities.Queries.GetOpportunitiesByCustomer;
@@ -40,6 +41,7 @@ public static class DependencyInjection
 
         // CRM — Notes
         services.AddScoped<AddNoteHandler>();
+        services.AddScoped<GetNotesByCustomerHandler>();
 
         // CRM — Opportunities
         services.AddScoped<CreateOpportunityHandler>();
