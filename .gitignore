@@ -1,0 +1,54 @@
+## .NET / C#
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+.vs/
+
+## ASP.NET Core
+appsettings.*.json
+!appsettings.Development.json
+secrets.json
+
+## Entity Framework
+*.mdf
+*.ldf
+
+## Rider / JetBrains
+.idea/
+*.sln.iml
+
+## VS Code
+.vscode/
+!.vscode/extensions.json
+
+## dotnet publish
+publish/
+
+## NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+## User secrets
+/src/**/Properties/launchSettings.json
+
+## Environment / secrets
+.env
+.env.*
+*.env
+
+## OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## Logs
+logs/
+*.log
