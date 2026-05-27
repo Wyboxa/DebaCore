@@ -104,7 +104,6 @@ Evitar:
 - Inventar contexto.
 - Decir “está hecho” sin haberlo comprobado.
 - Crear capas, patrones o abstracciones sin justificar.
-
 Preferir:
 
 - Pasos accionables.
@@ -223,23 +222,34 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 ---
 
-# 6. Estado inicial del proyecto
+# 6. Estado actual del proyecto
 
-El proyecto está en fase de definición y cimentación.
+> **Actualización 2026-05-27:** Las Fases 0, 1, 2 y 3 del roadmap técnico están completas.
+> Existen: solución .NET 8, BD LocalDB migrada, módulo Core, módulo CRM con API REST y UI Blazor.
+> Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
-No asumir que ya existen:
+El proyecto avanzó de cimentación a primer producto funcional.
 
-- Solución .NET.
-- Base de datos.
-- Módulos.
-- Agentes.
+Lo que ya existe (no asumir como propuesta):
+
+- Solución .NET 8 (`Debales.slnx`) con 10 proyectos.
+- Base de datos SQL Server LocalDB con 12 tablas migradas.
+- Módulo Core: usuarios, roles, permisos, auditoría.
+- Módulo CRM: clientes, contactos, actividades, notas, oportunidades.
+- API REST (`Debales.Api`) con 11 endpoints CRM.
+- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes.
+- 31 tests automatizados pasando.
+
+Lo que aún no existe y debe tratarse como propuesta:
+
+- Módulo Ventas / Compras.
+- Módulo Contabilidad.
+- Módulo Catálogo.
+- Módulo Almacén.
+- IA supervisada funcional.
 - Licenciamiento.
-- Despliegue.
-- UI.
-- API.
-- Infraestructura.
-
-Hasta que se creen, todo debe tratarse como diseño/propuesta.
+- Despliegue real.
+- Multi-tenant.
 
 ---
 
@@ -331,22 +341,39 @@ El diseño debe permitir evolución, no bloquearse a un único modelo.
 
 ## 8.1 Capas iniciales
 
-Estructura recomendada:
+> **Nota 2026-05-27:** El proyecto real usa el prefijo `Debales.*` (nombre definitivo decidido por Carlos).
+
+Estructura real del proyecto:
 
 ```txt
 src/
-├── ModularAIERP.Api/
-├── ModularAIERP.Web/
-├── ModularAIERP.Application/
-├── ModularAIERP.Domain/
-├── ModularAIERP.Infrastructure/
-├── ModularAIERP.AI/
-└── ModularAIERP.Modules/
+├── Debales.Api/           ← API REST (implementada)
+├── Debales.Web/           ← Blazor Server UI (implementada)
+├── Debales.Application/   ← Casos de uso, handlers, DTOs (implementada)
+├── Debales.Domain/        ← Entidades, value objects, reglas (implementada)
+├── Debales.Infrastructure/ ← EF Core, repositorios, persistencia (implementada)
+└── Debales.AI/            ← Orquestación IA (estructura vacía, fase futura)
+
+tests/
+├── Debales.Domain.Tests/
+├── Debales.Application.Tests/
+└── Debales.Integration.Tests/
+```
+
+Estructura conceptual objetivo (módulos futuros):
+
+```txt
+src/
+└── Debales.Modules/
     ├── Core/
     ├── CRM/
-    ├── ERP/
+    ├── Sales/
+    ├── Purchasing/
+    ├── Catalog/
+    ├── Inventory/
+    ├── Accounting/
     ├── Documents/
-    └── Billing/
+    └── AI/
 ```
 
 ## 8.2 Responsabilidades
@@ -1025,10 +1052,10 @@ Debe incluir:
 
 No implementar al principio:
 
-- Contabilidad completa.
+- Contabilidad completa (sí se prevé contabilidad mínima como base — ver §43 y §46).
 - Producción avanzada.
-- Stock complejo.
-- Facturación legal completa.
+- Stock complejo (sí se prevé stock básico en fases ERP).
+- Facturación legal completa (sí se prevén fundamentos de facturación — ver §46).
 - Multi-país.
 - Marketplace de módulos.
 - Automatización total de código en producción.
@@ -1040,7 +1067,19 @@ No implementar al principio:
 - Firma digital avanzada.
 - Integraciones masivas.
 
-Estos puntos pueden existir en visión futura, pero no en MVP.
+No implementar como núcleo en ninguna fase:
+
+- Escandallos industriales específicos.
+- Mamparas o cálculo de mamparas.
+- Órdenes de fabricación.
+- Partes de fabricación o consumo.
+- Procesos industriales específicos de clientes concretos.
+- Plantillas específicas de clientes.
+- Características de instalaciones concretas.
+
+Estos elementos verticales pueden existir más adelante como módulos opcionales sobre el núcleo, pero no contaminan la base del producto.
+
+Estos puntos pueden existir en visión futura, pero no en el núcleo del MVP.
 
 ---
 
@@ -1731,21 +1770,12 @@ Siguiente paso:
 
 ---
 
-# 35. Nombres provisionales del producto
+# 35. Nombre del producto
 
-No fijar nombre definitivo sin decisión humana.
+> **Decisión 2026-05-27:** El nombre del producto es **Debales**.
+> Decidido por Carlos. Todos los proyectos, namespaces y artefactos usan el prefijo `Debales.*`.
 
-Opciones iniciales:
-
-- ModularAI ERP.
-- CorePilot ERP.
-- NeuralCore CRM.
-- AtlasCore AI.
-- EmpresaOS AI.
-- NexusERP AI.
-- Debales Core AI.
-
-Si se usa un nombre en código, dejar claro que es provisional.
+El nombre no es provisional. Usar "Debales" en código, documentación y comunicación del proyecto.
 
 ---
 
@@ -1943,3 +1973,491 @@ Si una decisión no está clara, Claude debe preferir:
 No priorizar velocidad por encima de fiabilidad.
 
 El proyecto debe crecer como producto real, no como demo caótica.
+
+---
+
+# 42. Fundamentos del CRM/ERP modular
+
+Esta sección documenta el catálogo de entidades objetivo del producto completo.
+No implica que deban implementarse todas de inmediato. Es la referencia arquitectónica de dirección.
+
+## 42.1 Core
+
+```txt
+Tenant / Company
+User
+Role
+Permission
+Module
+Setting
+NumberSeries          ← series documentales (FAC, PED, ALB…)
+AuditLog
+DocumentAttachment
+SystemParameter
+```
+
+## 42.2 CRM
+
+```txt
+Customer
+CustomerContact
+CustomerAddress
+CustomerActivity
+CustomerNote
+CustomerOpportunity
+```
+
+## 42.3 Proveedores
+
+```txt
+Supplier
+SupplierContact
+SupplierAddress
+```
+
+## 42.4 Catálogo
+
+```txt
+Item                  ← artículo
+Service               ← servicio
+ItemFamily
+UnitOfMeasure
+TaxType               ← tipo de IVA
+PriceList             ← tarifa
+ItemPrice
+SupplierItemCode      ← código del proveedor para el artículo
+CustomerItemCode      ← código del cliente para el artículo
+```
+
+## 42.5 Ventas
+
+```txt
+SalesQuote            ← presupuesto de venta
+SalesQuoteLine
+SalesOrder            ← pedido cliente
+SalesOrderLine
+SalesDeliveryNote     ← albarán de venta
+SalesDeliveryNoteLine
+SalesInvoice          ← factura de venta
+SalesInvoiceLine
+SalesCreditNote       ← factura rectificativa de venta
+Receivable            ← vencimiento de cobro
+CustomerPayment       ← cobro
+```
+
+## 42.6 Compras
+
+```txt
+PurchaseOrder         ← pedido proveedor
+PurchaseOrderLine
+PurchaseDeliveryNote  ← albarán de compra
+PurchaseDeliveryNoteLine
+PurchaseInvoice       ← factura de compra
+PurchaseInvoiceLine
+PurchaseCreditNote    ← factura rectificativa de compra
+Payable               ← vencimiento de pago
+SupplierPayment       ← pago
+```
+
+## 42.7 Almacén
+
+```txt
+Warehouse
+WarehouseLocation
+StockMovement
+StockBalance
+StockAdjustment
+InventoryCount
+```
+
+## 42.8 Facturación
+
+```txt
+InvoiceSeries         ← serie de facturación
+PaymentTerm           ← condición de pago
+PaymentMethod         ← forma de pago
+```
+
+## 42.9 Contabilidad
+
+```txt
+ChartOfAccounts       ← plan contable
+Account               ← cuenta contable
+AccountingJournal     ← diario contable
+FiscalYear            ← ejercicio contable
+FiscalPeriod          ← periodo contable
+AccountingEntry       ← asiento contable
+AccountingEntryLine   ← línea de asiento
+BankAccount
+CashAccount
+Remittance            ← remesa
+```
+
+## 42.10 Documentos
+
+```txt
+Document
+DocumentAttachment
+DocumentTemplate
+DocumentVersion
+DocumentType
+```
+
+## 42.11 Auditoría
+
+```txt
+AuditLog
+EntityChange
+```
+
+## 42.12 IA supervisada
+
+```txt
+AIContext
+AIKnowledgeBase
+AIRule
+AIActionProposal
+AIActionApproval
+AIExecutionLog
+```
+
+---
+
+# 43. Fundamentos contables
+
+La contabilidad nace de eventos operativos confirmados. No de pantallas ni de acciones directas del usuario.
+
+## 43.1 Principio de separación
+
+```txt
+Documento operativo != Documento contable
+```
+
+Ejemplos de documentos **operativos**:
+
+```txt
+SalesOrder, SalesDeliveryNote, SalesInvoice
+PurchaseOrder, PurchaseDeliveryNote, PurchaseInvoice
+StockMovement
+```
+
+Ejemplos de documentos **contables**:
+
+```txt
+AccountingEntry, AccountingEntryLine
+Receivable, CustomerPayment
+Payable, SupplierPayment
+Remittance
+```
+
+La factura puede generar asientos y vencimientos, pero no es ella misma el asiento.
+
+## 43.2 Flujo de ventas
+
+```txt
+Customer
+ └── SalesQuote            (no genera contabilidad)
+      └── SalesOrder        (no genera contabilidad)
+           └── SalesDeliveryNote  (no genera contabilidad normalmente)
+                └── SalesInvoice
+                     ├── AccountingEntry   ← asiento de factura
+                     └── Receivable        ← vencimiento de cobro
+                          └── CustomerPayment
+                               └── AccountingEntry  ← asiento de cobro
+```
+
+## 43.3 Flujo de compras
+
+```txt
+Supplier
+ └── PurchaseOrder         (no genera contabilidad)
+      └── PurchaseDeliveryNote  (puede afectar stock)
+           └── PurchaseInvoice
+                ├── AccountingEntry   ← asiento de factura
+                └── Payable           ← vencimiento de pago
+                     └── SupplierPayment
+                          └── AccountingEntry  ← asiento de pago
+```
+
+## 43.4 Eventos contables base
+
+Los asientos se generan desde eventos de negocio confirmados:
+
+```txt
+SalesInvoicePosted
+SalesInvoiceCancelled
+PurchaseInvoicePosted
+PurchaseInvoiceCancelled
+CustomerPaymentConfirmed
+SupplierPaymentConfirmed
+SalesCreditNotePosted
+PurchaseCreditNotePosted
+StockAdjustmentConfirmed
+PaymentDifferenceDeclared
+CustomerDefaultRegistered
+RemittanceGenerated
+RemittanceConfirmed
+FiscalYearClosed
+FiscalYearOpened
+```
+
+## 43.5 Regla básica del asiento
+
+```txt
+TotalDebe == TotalHaber
+```
+
+Ningún asiento validado puede quedar descuadrado. Este invariante debe estar garantizado en el dominio.
+
+## 43.6 Estados del asiento
+
+```txt
+Draft     ← borrador, modificable
+Posted    ← validado, no modificable
+Cancelled ← anulado, con trazabilidad
+Locked    ← bloqueado por cierre de periodo
+```
+
+## 43.7 Estados del vencimiento
+
+```txt
+Pending   ← pendiente de cobro/pago
+Partial   ← cobrado/pagado parcialmente
+Settled   ← cobrado/pagado completamente
+Defaulted ← impagado
+Cancelled ← cancelado
+```
+
+## 43.8 Reglas de contabilidad (no negociables)
+
+- No contabilizar en ejercicio cerrado.
+- No contabilizar en periodo cerrado.
+- No crear asientos con Debe ≠ Haber.
+- No crear líneas con Debe y Haber simultáneamente.
+- No imputar en cuentas no imputables.
+- No modificar asientos en estado `Posted` o `Locked`.
+- Toda anulación genera trazabilidad de la razón.
+- Toda factura contabilizada mantiene referencia a su asiento.
+- Todo cobro/pago se relaciona con uno o varios vencimientos.
+- No borrar documentos contables validados: anular o rectificar.
+
+---
+
+# 44. Modelo conceptual de referencia
+
+Referencia de alto nivel del modelo de datos objetivo. No implica implementación inmediata.
+
+```txt
+Core
+├── Tenant / Company
+├── User, Role, Permission
+├── Module, Setting
+├── NumberSeries, AuditLog
+
+CRM
+├── Customer ──> CustomerContact, CustomerAddress
+│               CustomerActivity, CustomerNote, CustomerOpportunity
+
+Suppliers
+├── Supplier ──> SupplierContact, SupplierAddress
+
+Catalog
+├── Item, Service, ItemFamily
+├── UnitOfMeasure, TaxType
+├── PriceList ──> ItemPrice
+└── SupplierItemCode, CustomerItemCode
+
+Sales
+├── SalesQuote ──> SalesQuoteLine
+├── SalesOrder ──> SalesOrderLine
+├── SalesDeliveryNote ──> SalesDeliveryNoteLine
+├── SalesInvoice ──> SalesInvoiceLine
+├── SalesCreditNote
+├── Receivable
+└── CustomerPayment
+
+Purchasing
+├── PurchaseOrder ──> PurchaseOrderLine
+├── PurchaseDeliveryNote ──> PurchaseDeliveryNoteLine
+├── PurchaseInvoice ──> PurchaseInvoiceLine
+├── PurchaseCreditNote
+├── Payable
+└── SupplierPayment
+
+Inventory
+├── Warehouse ──> WarehouseLocation
+├── StockMovement
+├── StockBalance
+└── StockAdjustment, InventoryCount
+
+Accounting
+├── ChartOfAccounts ──> Account
+├── AccountingJournal
+├── FiscalYear ──> FiscalPeriod
+├── AccountingEntry ──> AccountingEntryLine
+├── BankAccount, CashAccount
+└── Remittance
+
+Documents
+├── Document ──> DocumentAttachment, DocumentVersion
+└── DocumentTemplate, DocumentType
+
+AI
+├── AIContext, AIKnowledgeBase, AIRule
+├── AIActionProposal ──> AIActionApproval
+└── AIExecutionLog
+```
+
+---
+
+# 45. Exclusiones — Módulos verticales
+
+Esta sección es explícita para proteger el núcleo del producto.
+
+## 45.1 Qué NO forma parte del núcleo
+
+Los siguientes elementos no deben implementarse en el núcleo del producto, independientemente del cliente que los necesite:
+
+- Cálculo de mamparas o estructuras similares.
+- Escandallos industriales específicos.
+- Órdenes de fabricación complejas.
+- Partes de trabajo específicos de sector.
+- Partes de consumo de materiales industriales.
+- Plantillas de documentos de clientes concretos.
+- Procesos industriales verticales.
+- Configuradores de producto complejos.
+- Integraciones específicas de clientes existentes.
+
+## 45.2 Cómo implementar necesidades verticales
+
+Si un cliente necesita funcionalidad vertical:
+
+1. Se documenta como módulo opcional sobre el núcleo.
+2. Tiene su propio namespace, versionado y manifiesto.
+3. No modifica las entidades core.
+4. Puede extender entidades core via composición o referencias.
+5. Se activa/desactiva sin afectar el núcleo.
+
+Ejemplo correcto:
+
+```txt
+Debales.Modules.Manufacturing.Windows  ← módulo vertical de mamparas
+  └── depende de: Core, Catalog, Sales
+  └── no modifica: SalesOrder, Item, Customer
+  └── extiende: vía WindowsOrder, WindowsCalculation
+```
+
+---
+
+# 46. Roadmap ERP ampliado
+
+> Este roadmap continúa desde donde está el proyecto a 2026-05-28 (Fases 0-3 técnicas completadas).
+> El roadmap original (§30) describe la progresión técnica base. Este roadmap describe la expansión funcional ERP.
+
+## Fase ERP-1 — Proveedores y catálogo base
+
+Objetivo:
+
+- Módulo Supplier (proveedor, contacto, dirección).
+- Módulo Catalog (artículo, servicio, familia, unidad de medida, tipo IVA).
+- Tarifas y precios base.
+- Series documentales.
+
+Dependencias: Core, CRM completados.
+
+## Fase ERP-2 — Ventas y compras básicas
+
+Objetivo:
+
+- Pedido cliente.
+- Pedido proveedor.
+- Albarán de venta.
+- Albarán de compra.
+- Sin contabilidad todavía.
+
+Dependencias: Fase ERP-1.
+
+## Fase ERP-3 — Facturación
+
+Objetivo:
+
+- Factura de venta.
+- Factura de compra.
+- Rectificativas.
+- Vencimientos (Receivable, Payable).
+- Cobros y pagos básicos (sin contabilizar todavía).
+
+Dependencias: Fase ERP-2.
+
+## Fase ERP-4 — Almacén básico
+
+Objetivo:
+
+- Almacenes y ubicaciones.
+- Movimientos de stock desde albaranes.
+- Stock balance.
+- Ajustes de inventario.
+
+Dependencias: Fase ERP-2.
+
+## Fase ERP-5 — Contabilidad mínima
+
+Objetivo:
+
+- Plan contable.
+- Cuentas contables.
+- Ejercicios y periodos.
+- Diarios.
+- Asientos manuales.
+- Asientos automáticos desde facturas y cobros/pagos.
+- Cierre de periodo y ejercicio.
+
+Dependencias: Fase ERP-3. Requiere ADR-0004 y ADR-0005 aprobados.
+
+## Fase ERP-6 — IA supervisada sobre ERP
+
+Objetivo:
+
+- IA con contexto de ventas, compras y contabilidad.
+- Propuestas de asientos.
+- Detección de anomalías.
+- Resúmenes de cliente/proveedor.
+- Aprobación humana antes de contabilizar.
+
+Dependencias: Fase ERP-5, Fase IA técnica (§30 Fase 5).
+
+---
+
+# 47. Decisiones pendientes
+
+Esta sección registra conflictos detectados y decisiones aún no tomadas.
+
+## 47.1 Conflictos resueltos en esta revisión
+
+| Conflicto | Resolución |
+|---|---|
+| §6 decía que nada existe | Actualizado con estado real (Fases 0-3 completadas) |
+| §8.1 usaba `ModularAIERP.*` | Actualizado para reflejar nombre real `Debales.*` |
+| §18 ponía contabilidad como fuera de alcance | Clarificado: "completa" sigue fuera, "mínima" está en Fase ERP-5 |
+| §35 nombre provisional | Actualizado: "Debales" es el nombre definitivo |
+| ADR numeración colisión | Nuevos ADRs numerados desde 0004 para no solapar existentes |
+
+## 47.2 Pendiente de decidir
+
+| Tema | Opciones | Impacto |
+|---|---|---|
+| Multi-tenant desde inicio | Sí ahora / No hasta Fase ERP | Afecta todas las tablas con `TenantId` |
+| Motor contable propio vs librería | Implementación propia / Adaptar librería .NET contable | Esfuerzo y flexibilidad |
+| Plan contable por defecto | PGC España / Internacional / Configurable | Primer cliente objetivo |
+| Formas de pago y remesas bancarias | SEPA / Genérico configurable | Facturación en Fase ERP-3 |
+| Generación automática de asientos | Plantillas de asiento / Hardcoded por tipo de documento | Flexibilidad futura |
+| Cuentas contables de clientes y proveedores | Cuenta única / Cuenta individual por tercero | PGC español exige individual |
+
+## 47.3 Reglas para resolver pendientes
+
+Antes de implementar cualquier elemento de la lista:
+
+1. Documentar la decisión como ADR en `/docs/decisions`.
+2. Comunicarla a Carlos para aprobación.
+3. Actualizar este CLAUDE.md con el resultado.
+4. Mover de "Pendiente de decidir" a "Conflictos resueltos".
