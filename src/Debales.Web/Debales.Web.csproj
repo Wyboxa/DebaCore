@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Debales.Application\Debales.Application.csproj" />
+    <ProjectReference Include="..\Debales.Infrastructure\Debales.Infrastructure.csproj" />
+    <ProjectReference Include="..\Debales.AI\Debales.AI.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
