@@ -1,0 +1,28 @@
+@page "/analitica"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Analítica — Debales</PageTitle>
+
+<ModulePlaceholder
+    Title="Analítica"
+    Subtitle="Informes, métricas de negocio, cuadros de mando y análisis por período"
+    Phase="Fase 8"
+    IconSvg="<svg width='36' height='36' fill='currentColor' viewBox='0 0 16 16'><path d='M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z'/></svg>"
+    Features="@_features" />
+
+@code {
+    private readonly string[] _features =
+    [
+        "Dashboard ejecutivo",
+        "Evolución de ventas",
+        "Pipeline de oportunidades",
+        "Análisis por cliente y sector",
+        "Rentabilidad por producto",
+        "Comparativas por período",
+        "Previsiones de ventas",
+        "KPIs personalizables",
+        "Exportación a Excel/PDF",
+        "Informes automáticos por email"
+    ];
+}

@@ -16,8 +16,10 @@ public sealed class GetCustomerByIdHandler
 
         return new CustomerDetailDto(
             customer.Id, customer.Name, customer.Sector, customer.TaxId,
-            customer.Phone, customer.Website, customer.IsActive,
-            customer.Address is null ? null : new AddressDto(customer.Address.Street, customer.Address.City, customer.Address.PostalCode, customer.Address.Country),
+            customer.Phone, customer.Email, customer.Website, customer.IsActive,
+            customer.Address is null ? null : new AddressDto(
+                customer.Address.Street, customer.Address.City,
+                customer.Address.PostalCode, customer.Address.Country),
             customer.CreatedAt, customer.CreatedBy, customer.UpdatedAt);
     }
 }

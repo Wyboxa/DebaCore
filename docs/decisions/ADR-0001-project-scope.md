@@ -23,8 +23,24 @@ CRM se prioriza sobre ERP porque tiene menor complejidad, es más demostrable y 
 ## Consecuencias
 
 - El proyecto tiene fases claras y no salta entre ellas sin motivo.
-- No se implementan funcionalidades fuera de alcance inicial: contabilidad completa, stock complejo, facturación legal, multi-país, marketplace, microservicios, Kubernetes, BI avanzado.
 - Cada fase entrega algo concreto y revisable.
+- Microservicios, Kubernetes, BI avanzado, multi-país, marketplace: fuera de alcance del núcleo.
+
+## Extensión de alcance — 2026-05-28
+
+Tras completar Fases 0–3, el alcance se extendió con un roadmap ERP en fases progresivas:
+
+- **ERP-1:** Proveedores y catálogo base
+- **ERP-2:** Ventas y compras operativas (sin contabilizar)
+- **ERP-3:** Facturación, vencimientos, cobros/pagos
+- **ERP-4:** Almacén y stock
+- **ERP-5:** Contabilidad mínima (asientos automáticos, cierre de ejercicio)
+- **ERP-6:** IA sobre ERP
+
+Esta extensión no contradice la decisión original de MVP por fases; la amplía de forma ordenada.
+La contabilidad incluida en ERP-5 es **mínima y supervisada**, no un módulo contable completo.
+
+Ver: [ADR-0004](ADR-0004-operational-vs-accounting-documents.md), [ADR-0005](ADR-0005-accounting-events.md), `roadmap.md` (raíz).
 
 ## Alternativas consideradas
 

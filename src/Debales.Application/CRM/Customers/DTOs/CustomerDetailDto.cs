@@ -6,6 +6,7 @@ public sealed record CustomerDetailDto(
     string? Sector,
     string? TaxId,
     string? Phone,
+    string? Email,
     string? Website,
     bool IsActive,
     AddressDto? Address,

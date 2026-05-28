@@ -2,7 +2,7 @@
 
 ## Estado
 
-Planificado — Fase 3
+Pendiente de implementar — Sin fase ERP asignada (backlog post ERP-2)
 
 ## Dependencias
 

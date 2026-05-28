@@ -1,7 +1,9 @@
 @page "/crm/customers"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @inject GetCustomersHandler GetCustomers
 @inject NavigationManager Nav
+@inject ToastService Toast
 
 <PageTitle>Clientes — Debales CRM</PageTitle>
 
@@ -113,6 +115,10 @@ else if (_result is not null)
                             <label class="form-label">Teléfono</label>
                             <InputText class="form-control" @bind-Value="_form.Phone" />
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <InputText class="form-control" @bind-Value="_form.Email" type="email" />
+                        </div>
                         @if (_createError is not null)
                         {
                             <div class="alert alert-danger">@_createError</div>
@@ -167,8 +173,9 @@ else if (_result is not null)
         _createError = null;
         try
         {
-            var customer = await CreateHandler.Handle(new CreateCustomerCommand(_form.Name!, _form.Sector, _form.TaxId, _form.Phone, "web"));
+            var customer = await CreateHandler.Handle(new CreateCustomerCommand(_form.Name!, _form.Sector, _form.TaxId, _form.Phone, _form.Email, "web"));
             _showCreate = false;
+            Toast.Show("Cliente creado correctamente");
             Nav.NavigateTo($"/crm/customers/{customer.Id}");
         }
         catch (InvalidOperationException ex) { _createError = ex.Message; }
@@ -182,5 +189,6 @@ else if (_result is not null)
         public string? Sector { get; set; }
         public string? TaxId { get; set; }
         public string? Phone { get; set; }
+        public string? Email { get; set; }
     }
 }

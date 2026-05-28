@@ -17,6 +17,7 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(c => c.TaxId).HasMaxLength(20);
         builder.HasIndex(c => c.TaxId).IsUnique().HasFilter("[TaxId] IS NOT NULL");
         builder.Property(c => c.Phone).HasMaxLength(30);
+        builder.Property(c => c.Email).HasMaxLength(150);
         builder.Property(c => c.Website).HasMaxLength(255);
         builder.Property(c => c.IsActive).IsRequired();
         builder.Property(c => c.CreatedAt).IsRequired();

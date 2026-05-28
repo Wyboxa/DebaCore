@@ -2,7 +2,7 @@
 
 ## Estado
 
-Planificado — Fase 2
+**Implementado — Fase 2 completada**
 
 ## Dependencias
 
@@ -12,48 +12,46 @@ Ninguna. Es el módulo base obligatorio.
 
 Proporcionar la estructura empresarial mínima sobre la que se apoyan todos los demás módulos.
 
-## Funcionalidades previstas
+## Implementado
 
-### Usuarios
+### Dominio (`Debales.Domain/Core/`)
 
-- Alta, edición y desactivación de usuarios.
-- Autenticación (local, con posibilidad de SSO en futuro).
-- Contraseña segura y recuperación.
+- `User` con value object `Email`
+- `Role`, `Permission`, `RolePermission`, `UserRole`
+- `SystemModule`
+- `AuditEntry` con factory method `Record()`
+- Clase base `AuditableEntity` y `Entity`
 
-### Roles y permisos
+### Application (`Debales.Application/Core/`)
 
-- Roles configurables por instalación.
-- Permisos granulares por módulo y acción (ej: `crm.customers.read`).
-- Asignación de roles a usuarios.
+- `CreateUserCommand` / `CreateUserHandler`
+- `GetUserByIdQuery` / `GetUserByIdHandler`
+- Interfaces: `IUserRepository`, `IRepository<T>`, `IUnitOfWork`, `IPasswordHasher`
 
-### Módulos
+### Infrastructure (`Debales.Infrastructure/`)
 
-- Registro de módulos disponibles e instalados.
-- Activación/desactivación por cliente.
-- Versión de cada módulo.
+- `UserRepository`, `PasswordHasher`, `UnitOfWork`
+- `ApplicationDbContext` con todas las configuraciones EF Core
 
-### Menú dinámico
+### API
 
-- Menú generado según módulos activos y permisos del usuario.
+- `UsersController` con endpoints básicos
+- `HealthController`
 
-### Auditoría básica
+### Módulo registrado
 
-- Registro de acciones críticas: altas, modificaciones, eliminaciones, cambios de configuración.
+- `CoreModule` implementa `IModule` con versión `1.0.0` y 9 permisos declarados
 
-### Configuración
-
-- Parámetros de la instalación (nombre empresa, zona horaria, idioma).
-
-## Tablas principales (propuesta)
+## Tablas existentes en BD
 
 ```
-SystemUsers
-SystemRoles
-SystemPermissions
-SystemRolePermissions
+Users
+Roles
+Permissions
+RolePermissions
+UserRoles
 SystemModules
-SystemAuditLog
-SystemSettings
+AuditEntries
 ```
 
 ## Permisos del módulo
@@ -69,3 +67,12 @@ core.settings.read
 core.settings.write
 core.audit.read
 ```
+
+## Pendiente (P0 — bloquea uso real)
+
+- Sin autenticación implementada. Todos los endpoints son públicos.
+- `CreatedBy` hardcodeado como `"api"` — sin usuario real de sesión.
+- Sin seed inicial: BD arranca vacía, sin usuario admin ni roles base.
+- Sistema modular desconectado en runtime: `SystemModules` existe pero no hay lógica de activación.
+
+Ver detalle en `estado_actual.md §3` y `roadmap.md — Prioridad 0`.

@@ -1,0 +1,97 @@
+@page "/ia"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Asistente IA — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h4 fw-bold mb-0">Asistente IA</h1>
+        <small class="text-muted">Inteligencia artificial supervisada integrada en tu plataforma</small>
+    </div>
+    <span class="badge-ia" style="font-size:0.8rem;padding:0.35em 0.8em">NUEVO</span>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="icon-wrap icon-teal">
+                        <svg width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828z"/>
+                        </svg>
+                    </div>
+                    <span class="fw-semibold">IA ya disponible en CRM</span>
+                </div>
+                <p class="small text-muted mb-0">El asistente IA ya está integrado en la ficha de cada cliente. Accede a él desde la pestaña <strong>Asistente IA</strong> dentro de cualquier cliente.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="icon-wrap icon-amber">
+                        <svg width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1z"/>
+                        </svg>
+                    </div>
+                    <span class="fw-semibold">Briefing diario</span>
+                </div>
+                <p class="small text-muted mb-0">Cada día el asistente genera un análisis del pipeline, actividades pendientes y oportunidades prioritarias desde el <a href="/">panel de control</a>.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="icon-wrap icon-violet">
+                        <svg width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1"/>
+                        </svg>
+                    </div>
+                    <span class="fw-semibold">Resumen de cliente</span>
+                </div>
+                <p class="small text-muted mb-0">El asistente puede generar un resumen ejecutivo de cualquier cliente: actividad, oportunidades, notas y contexto del negocio.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3">
+        <span class="fw-semibold">Capacidades futuras del Asistente IA</span>
+    </div>
+    <div class="card-body">
+        <div class="row g-0">
+            @foreach (var cap in _capabilities)
+            {
+                <div class="col-md-6 d-flex align-items-start gap-2 py-2 pe-4">
+                    <div class="feature-dot mt-1"></div>
+                    <div>
+                        <div class="small fw-semibold">@cap.Title</div>
+                        <div class="small text-muted">@cap.Description</div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly (string Title, string Description)[] _capabilities =
+    [
+        ("Chat general de negocio", "Consulta datos de clientes, ventas y actividad sin abrir cada ficha"),
+        ("Propuestas de mejora", "La IA detecta patrones y sugiere acciones en el pipeline"),
+        ("Generación de tareas", "Convierte conversaciones en tareas accionables con un clic"),
+        ("Análisis de oportunidades", "Priorización automática de oportunidades por probabilidad de cierre"),
+        ("Código asistido supervisado", "Genera propuestas de cambios técnicos para revisión humana"),
+        ("Documentación automática", "Genera documentación de procesos a partir de la actividad registrada"),
+        ("Detección de anomalías", "Alerta sobre desviaciones en ventas, cobros o stock"),
+        ("Informes en lenguaje natural", "Pide informes en texto plano, la IA los genera al instante")
+    ];
+}

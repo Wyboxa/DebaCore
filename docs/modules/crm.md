@@ -2,7 +2,7 @@
 
 ## Estado
 
-Planificado — Fase 3
+**Implementado — Fase 3 completada**
 
 ## Dependencias
 
@@ -12,48 +12,61 @@ Planificado — Fase 3
 
 Primer módulo funcional real. Gestión de relaciones con clientes.
 
-## Funcionalidades previstas
+## Implementado
 
-### Clientes
+### Dominio (`Debales.Domain/CRM/`)
 
-- Ficha de cliente (nombre, sector, dirección, CIF, estado).
-- Búsqueda y filtrado.
-- Historial de actividad.
+- `Customer` con value object `Address`
+- `Contact`
+- `Activity` + enum `ActivityType` (Call, Email, Meeting, Task, Other)
+- `Note`
+- `Opportunity` + enum `OpportunityStatus` (New, InProgress, Won, Lost)
 
-### Contactos
+### Application (`Debales.Application/CRM/`)
 
-- Contactos asociados a un cliente.
-- Datos de contacto (nombre, cargo, email, teléfono).
+- Customers: `CreateCustomerCommand`, `UpdateCustomerCommand`, `GetCustomersQuery` (paginada), `GetCustomerByIdQuery`
+- Contacts: `AddContactCommand`, `GetContactsByCustomerQuery`
+- Activities: `LogActivityCommand`, `GetActivitiesByCustomerQuery`
+- Notes: `AddNoteCommand`, `GetNotesByCustomerQuery`
+- Opportunities: `CreateOpportunityCommand`, `UpdateOpportunityStatusCommand`, `GetOpportunitiesByCustomerQuery`
+- DTOs: `CustomerSummaryDto`, `CustomerDetailDto`, `ContactDto`, `ActivityDto`, `NoteDto`, `OpportunityDto`
+- `PagedResult<T>` para paginación
 
-### Actividades
+### Infrastructure (`Debales.Infrastructure/Persistence/`)
 
-- Registro de llamadas, reuniones, emails y tareas.
-- Asociación a cliente y contacto.
-- Estado (pendiente, realizada).
+- Repositorios: `CustomerRepository`, `ContactRepository`, `ActivityRepository`, `NoteRepository`, `OpportunityRepository`
+- Configuraciones EF Core para todas las entidades CRM
 
-### Notas
+### API REST — 11 endpoints operativos
 
-- Notas internas sobre clientes.
-- Autor y fecha.
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/customers` | Lista paginada con búsqueda |
+| GET | `/api/customers/{id}` | Ficha de cliente |
+| POST | `/api/customers` | Crear cliente |
+| PUT | `/api/customers/{id}` | Actualizar cliente |
+| GET | `/api/customers/{id}/contacts` | Contactos del cliente |
+| POST | `/api/customers/{id}/contacts` | Añadir contacto |
+| GET | `/api/customers/{id}/activities` | Actividades |
+| POST | `/api/customers/{id}/activities` | Registrar actividad |
+| POST | `/api/customers/{id}/notes` | Añadir nota |
+| GET | `/api/customers/{id}/opportunities` | Oportunidades |
+| POST | `/api/customers/{id}/opportunities` | Crear oportunidad |
+| PATCH | `/api/customers/{id}/opportunities/{oppId}/status` | Cambiar estado |
 
-### Oportunidades (simplificado)
+### UI Blazor Server — 2 páginas operativas
 
-- Oportunidad de venta asociada a cliente.
-- Estado básico (nueva, en curso, ganada, perdida).
-- Valor estimado.
+- `/crm/customers` — Lista con búsqueda, paginación y modal de creación
+- `/crm/customers/{id}` — Ficha con 5 pestañas: Información, Contactos, Actividades, Notas, Oportunidades
 
-### Búsqueda
-
-- Búsqueda global por cliente, contacto, actividad.
-
-## Tablas principales (propuesta)
+## Tablas en BD
 
 ```
-CrmCustomers
-CrmContacts
-CrmActivities
-CrmNotes
-CrmOpportunities
+Customers
+Contacts
+Activities
+Notes
+Opportunities
 ```
 
 ## Permisos del módulo
@@ -70,3 +83,11 @@ crm.notes.write
 crm.opportunities.read
 crm.opportunities.write
 ```
+
+## Bugs conocidos (pendientes P0)
+
+- Sin autenticación: todos los endpoints son accesibles sin credenciales.
+- `GET /api/customers/{id}/notes` no existe (solo POST).
+- `UpdateOpportunityStatus` no valida que la oportunidad pertenece al cliente de la ruta.
+
+Ver detalle en `estado_actual.md §3` y `roadmap.md — Prioridad 0`.

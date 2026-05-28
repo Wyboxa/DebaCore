@@ -37,17 +37,32 @@ Se necesita definir el stack antes de crear la solución .NET para fijar namespa
 
 ### Nombres de proyectos
 
+Proyectos existentes (2026-05-28):
+
 ```
-Debales.Api
-Debales.Web
-Debales.Application
-Debales.Domain
-Debales.Infrastructure
-Debales.AI
-Debales.Modules.Core
-Debales.Modules.CRM
+Debales.Api              ← API REST
+Debales.Web              ← Blazor Server UI
+Debales.Application      ← Casos de uso, handlers, DTOs
+Debales.Domain           ← Entidades, reglas de dominio
+Debales.Infrastructure   ← EF Core, repositorios, seguridad
+Debales.AI               ← Abstracción IA (IAIProvider + MockAIProvider)
+Debales.Modules.Core     ← Manifiesto del módulo Core
+```
+
+Proyectos de módulo planificados (se añadirán cuando se implementen):
+
+```
+Debales.Modules.Suppliers
+Debales.Modules.Catalog
+Debales.Modules.Sales
+Debales.Modules.Purchasing
+Debales.Modules.Inventory
+Debales.Modules.Accounting
 Debales.Modules.Documents
 ```
+
+> La lógica de CRM vive en las capas principales (Domain/Application/Infrastructure), no como proyecto de módulo separado.
+> Solo los módulos que requieren manifiesto de registro en el sistema tendrán proyecto `Debales.Modules.*`.
 
 ## Consecuencias
 

@@ -1,3 +1,4 @@
+using Debales.Domain.Catalog;
 using Debales.Domain.Core.Audit;
 using Debales.Domain.Core.Modules;
 using Debales.Domain.Core.Roles;
@@ -7,6 +8,7 @@ using Debales.Domain.CRM.Contacts;
 using Debales.Domain.CRM.Customers;
 using Debales.Domain.CRM.Notes;
 using Debales.Domain.CRM.Opportunities;
+using Debales.Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Debales.Infrastructure.Persistence;
@@ -30,6 +32,15 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<Activity> Activities => Set<Activity>();
     public DbSet<Note> Notes => Set<Note>();
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
+
+    // Suppliers
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+
+    // Catalog
+    public DbSet<Item> Items => Set<Item>();
+    public DbSet<ItemFamily> ItemFamilies => Set<ItemFamily>();
+    public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
+    public DbSet<TaxType> TaxTypes => Set<TaxType>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

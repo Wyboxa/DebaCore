@@ -5,7 +5,7 @@ using Debales.Domain.CRM.Opportunities;
 
 namespace Debales.Application.CRM.Opportunities.Commands.UpdateOpportunityStatus;
 
-public sealed record UpdateOpportunityStatusCommand(Guid OpportunityId, OpportunityStatus NewStatus, string UpdatedBy);
+public sealed record UpdateOpportunityStatusCommand(Guid CustomerId, Guid OpportunityId, OpportunityStatus NewStatus, string UpdatedBy);
 
 public sealed class UpdateOpportunityStatusHandler
 {
@@ -20,8 +20,10 @@ public sealed class UpdateOpportunityStatusHandler
 
     public async Task<OpportunityDto> Handle(UpdateOpportunityStatusCommand command, CancellationToken cancellationToken = default)
     {
-        var opportunity = await _opportunities.GetByIdAsync(command.OpportunityId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Oportunidad '{command.OpportunityId}' no encontrada.");
+        var opportunity = await _opportunities.GetByIdAsync(command.OpportunityId, cancellationToken);
+
+        if (opportunity is null || opportunity.CustomerId != command.CustomerId)
+            throw new KeyNotFoundException($"Oportunidad '{command.OpportunityId}' no encontrada.");
 
         opportunity.UpdateStatus(command.NewStatus, command.UpdatedBy);
 

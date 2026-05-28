@@ -1,3 +1,4 @@
+using Debales.Application.CRM.Activities.Commands.CompleteActivity;
 using Debales.Application.CRM.Activities.Commands.LogActivity;
 using Debales.Application.CRM.Activities.Queries.GetActivitiesByCustomer;
 using Debales.Application.CRM.Contacts.Commands.AddContact;
@@ -7,17 +8,20 @@ using Debales.Application.CRM.Customers.Commands.UpdateCustomer;
 using Debales.Application.CRM.Customers.Queries.GetCustomerById;
 using Debales.Application.CRM.Customers.Queries.GetCustomers;
 using Debales.Application.CRM.Notes.Commands.AddNote;
+using Debales.Application.CRM.Notes.Queries.GetNotesByCustomer;
 using Debales.Application.CRM.Opportunities.Commands.CreateOpportunity;
 using Debales.Application.CRM.Opportunities.Commands.UpdateOpportunityStatus;
 using Debales.Application.CRM.Opportunities.Queries.GetOpportunitiesByCustomer;
 using Debales.Domain.CRM.Activities;
 using Debales.Domain.CRM.Opportunities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Debales.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class CustomersController : ControllerBase
 {
     private readonly CreateCustomerHandler _create;
@@ -27,8 +31,10 @@ public sealed class CustomersController : ControllerBase
     private readonly AddContactHandler _addContact;
     private readonly GetContactsByCustomerHandler _getContacts;
     private readonly LogActivityHandler _logActivity;
+    private readonly CompleteActivityHandler _completeActivity;
     private readonly GetActivitiesByCustomerHandler _getActivities;
     private readonly AddNoteHandler _addNote;
+    private readonly GetNotesByCustomerHandler _getNotes;
     private readonly CreateOpportunityHandler _createOpportunity;
     private readonly UpdateOpportunityStatusHandler _updateOpportunityStatus;
     private readonly GetOpportunitiesByCustomerHandler _getOpportunities;
@@ -37,15 +43,15 @@ public sealed class CustomersController : ControllerBase
         CreateCustomerHandler create, UpdateCustomerHandler update,
         GetCustomerByIdHandler getById, GetCustomersHandler getAll,
         AddContactHandler addContact, GetContactsByCustomerHandler getContacts,
-        LogActivityHandler logActivity, GetActivitiesByCustomerHandler getActivities,
-        AddNoteHandler addNote,
+        LogActivityHandler logActivity, CompleteActivityHandler completeActivity, GetActivitiesByCustomerHandler getActivities,
+        AddNoteHandler addNote, GetNotesByCustomerHandler getNotes,
         CreateOpportunityHandler createOpportunity, UpdateOpportunityStatusHandler updateOpportunityStatus,
         GetOpportunitiesByCustomerHandler getOpportunities)
     {
         _create = create; _update = update; _getById = getById; _getAll = getAll;
         _addContact = addContact; _getContacts = getContacts;
-        _logActivity = logActivity; _getActivities = getActivities;
-        _addNote = addNote;
+        _logActivity = logActivity; _completeActivity = completeActivity; _getActivities = getActivities;
+        _addNote = addNote; _getNotes = getNotes;
         _createOpportunity = createOpportunity; _updateOpportunityStatus = updateOpportunityStatus;
         _getOpportunities = getOpportunities;
     }
@@ -68,7 +74,7 @@ public sealed class CustomersController : ControllerBase
     {
         try
         {
-            var customer = await _create.Handle(new CreateCustomerCommand(req.Name, req.Sector, req.TaxId, req.Phone, "api"), ct);
+            var customer = await _create.Handle(new CreateCustomerCommand(req.Name, req.Sector, req.TaxId, req.Phone, req.Email, "api"), ct);
             return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
         }
         catch (InvalidOperationException ex) { return Conflict(new { error = ex.Message }); }
@@ -80,7 +86,9 @@ public sealed class CustomersController : ControllerBase
     {
         try
         {
-            var customer = await _update.Handle(new UpdateCustomerCommand(id, req.Name, req.Sector, req.TaxId, req.Phone, req.Website, "api"), ct);
+            var customer = await _update.Handle(new UpdateCustomerCommand(
+                id, req.Name, req.Sector, req.TaxId, req.Phone, req.Email, req.Website,
+                req.AddressStreet, req.AddressCity, req.AddressPostalCode, req.AddressCountry, "api"), ct);
             return Ok(customer);
         }
         catch (KeyNotFoundException) { return NotFound(); }
@@ -111,6 +119,18 @@ public sealed class CustomersController : ControllerBase
     public async Task<IActionResult> GetActivities(Guid id, CancellationToken ct)
         => Ok(await _getActivities.Handle(new GetActivitiesByCustomerQuery(id), ct));
 
+    [HttpPatch("{id:guid}/activities/{activityId:guid}/complete")]
+    public async Task<IActionResult> CompleteActivity(Guid id, Guid activityId, [FromBody] CompleteActivityRequest req, CancellationToken ct)
+    {
+        try
+        {
+            var activity = await _completeActivity.Handle(new CompleteActivityCommand(id, activityId, req.Notes, "api"), ct);
+            return Ok(activity);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (InvalidOperationException ex) { return Conflict(new { error = ex.Message }); }
+    }
+
     [HttpPost("{id:guid}/activities")]
     public async Task<IActionResult> LogActivity(Guid id, [FromBody] LogActivityRequest req, CancellationToken ct)
     {
@@ -125,6 +145,10 @@ public sealed class CustomersController : ControllerBase
     }
 
     // ── Notes ─────────────────────────────────────────────────────────────────
+
+    [HttpGet("{id:guid}/notes")]
+    public async Task<IActionResult> GetNotes(Guid id, CancellationToken ct)
+        => Ok(await _getNotes.Handle(new GetNotesByCustomerQuery(id), ct));
 
     [HttpPost("{id:guid}/notes")]
     public async Task<IActionResult> AddNote(Guid id, [FromBody] AddNoteRequest req, CancellationToken ct)
@@ -162,7 +186,7 @@ public sealed class CustomersController : ControllerBase
     {
         try
         {
-            var opp = await _updateOpportunityStatus.Handle(new UpdateOpportunityStatusCommand(opportunityId, req.Status, "api"), ct);
+            var opp = await _updateOpportunityStatus.Handle(new UpdateOpportunityStatusCommand(customerId, opportunityId, req.Status, "api"), ct);
             return Ok(opp);
         }
         catch (KeyNotFoundException) { return NotFound(); }
@@ -171,8 +195,11 @@ public sealed class CustomersController : ControllerBase
 
 // ── Request DTOs ──────────────────────────────────────────────────────────────
 
-public sealed record CreateCustomerRequest(string Name, string? Sector, string? TaxId, string? Phone);
-public sealed record UpdateCustomerRequest(string Name, string? Sector, string? TaxId, string? Phone, string? Website);
+public sealed record CompleteActivityRequest(string? Notes);
+public sealed record CreateCustomerRequest(string Name, string? Sector, string? TaxId, string? Phone, string? Email);
+public sealed record UpdateCustomerRequest(
+    string Name, string? Sector, string? TaxId, string? Phone, string? Email, string? Website,
+    string? AddressStreet, string? AddressCity, string? AddressPostalCode, string? AddressCountry);
 public sealed record AddContactRequest(string FirstName, string LastName, string? JobTitle, string? Email, string? Phone);
 public sealed record LogActivityRequest(ActivityType Type, string Subject, DateTime ScheduledAt, Guid? ContactId, string? Notes, string? AssignedTo);
 public sealed record AddNoteRequest(string Content);

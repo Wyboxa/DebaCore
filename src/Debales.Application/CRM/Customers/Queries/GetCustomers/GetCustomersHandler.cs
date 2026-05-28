@@ -14,7 +14,7 @@ public sealed class GetCustomersHandler
         var result = await _customers.SearchAsync(query.Search, query.Page, query.PageSize, cancellationToken);
 
         var dtos = result.Items
-            .Select(c => new CustomerSummaryDto(c.Id, c.Name, c.Sector, c.TaxId, c.Phone, c.IsActive, c.CreatedAt))
+            .Select(c => new CustomerSummaryDto(c.Id, c.Name, c.Sector, c.TaxId, c.Phone, c.Email, c.IsActive, c.CreatedAt))
             .ToList();
 
         return new PagedResult<CustomerSummaryDto>(dtos, result.TotalCount, result.Page, result.PageSize);

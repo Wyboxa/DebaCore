@@ -1,12 +1,14 @@
 using Debales.Application.Core.Users.Commands.CreateUser;
 using Debales.Application.Core.Users.DTOs;
 using Debales.Application.Core.Users.Queries.GetUserById;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Debales.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class UsersController : ControllerBase
 {
     private readonly CreateUserHandler _createUser;

@@ -1,0 +1,286 @@
+@page "/proveedores/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetSupplierByIdHandler GetById
+@inject UpdateSupplierHandler UpdateHandler
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>@(_supplier?.Name ?? "Proveedor") — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_supplier is null)
+{
+    <div class="alert alert-warning">Proveedor no encontrado. <a href="/proveedores">Volver</a></div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/proveedores">Proveedores</a></li>
+            <li class="breadcrumb-item active">@_supplier.Name</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="h3 mb-1">@_supplier.Name</h1>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @if (_supplier.TaxId is not null)
+                {
+                    <span class="text-muted small">@_supplier.TaxId</span>
+                }
+                @if (_supplier.IsActive)
+                {
+                    <span class="badge bg-success">Activo</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Inactivo</span>
+                }
+            </div>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="OpenEdit">Editar</button>
+    </div>
+
+    <ul class="nav nav-tabs mb-3">
+        @foreach (var tab in new[] { "info", "notas" })
+        {
+            <li class="nav-item">
+                <button class="nav-link @(_tab == tab ? "active" : "")" @onclick="() => _tab = tab">
+                    @TabLabel(tab)
+                </button>
+            </li>
+        }
+    </ul>
+
+    @if (_tab == "info")
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <dl class="mb-0">
+                            <dt class="small text-muted fw-semibold mb-1">Nombre</dt>
+                            <dd class="mb-3">@_supplier.Name</dd>
+
+                            <dt class="small text-muted fw-semibold mb-1">CIF / NIF</dt>
+                            <dd class="mb-3">@(_supplier.TaxId ?? "—")</dd>
+
+                            <dt class="small text-muted fw-semibold mb-1">Persona de contacto</dt>
+                            <dd class="mb-3">@(_supplier.ContactName ?? "—")</dd>
+
+                            <dt class="small text-muted fw-semibold mb-1">Teléfono</dt>
+                            <dd class="mb-3">@(_supplier.Phone ?? "—")</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="mb-0">
+                            <dt class="small text-muted fw-semibold mb-1">Email</dt>
+                            <dd class="mb-3">
+                                @if (_supplier.Email is not null)
+                                {
+                                    <a href="mailto:@_supplier.Email">@_supplier.Email</a>
+                                }
+                                else { <span>—</span> }
+                            </dd>
+
+                            <dt class="small text-muted fw-semibold mb-1">Web</dt>
+                            <dd class="mb-3">
+                                @if (_supplier.Website is not null)
+                                {
+                                    <a href="@_supplier.Website" target="_blank" rel="noopener">@_supplier.Website</a>
+                                }
+                                else { <span>—</span> }
+                            </dd>
+
+                            <dt class="small text-muted fw-semibold mb-1">Dirección</dt>
+                            <dd class="mb-3">
+                                @if (_supplier.Address is not null)
+                                {
+                                    <span>@_supplier.Address.Street, @_supplier.Address.City @_supplier.Address.PostalCode — @_supplier.Address.Country</span>
+                                }
+                                else { <span>—</span> }
+                            </dd>
+
+                            <dt class="small text-muted fw-semibold mb-1">Alta</dt>
+                            <dd class="mb-0">@_supplier.CreatedAt.ToString("dd/MM/yyyy")</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (_tab == "notas")
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                @if (!string.IsNullOrWhiteSpace(_supplier.Notes))
+                {
+                    <p style="white-space:pre-wrap">@_supplier.Notes</p>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Sin notas. Edita el proveedor para añadir observaciones.</p>
+                }
+            </div>
+        </div>
+    }
+}
+
+@if (_showEdit && _supplier is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar proveedor</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showEdit = false"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_editForm" OnValidSubmit="SaveEdit">
+                        <div class="row g-2 mb-2">
+                            <div class="col-12">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">CIF / NIF</label>
+                                <InputText class="form-control" @bind-Value="_editForm.TaxId" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Persona de contacto</label>
+                                <InputText class="form-control" @bind-Value="_editForm.ContactName" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Phone" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Email" type="email" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Web</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Website" />
+                            </div>
+                        </div>
+                        <hr class="my-2" />
+                        <div class="small text-muted fw-semibold mb-2">Dirección</div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-12">
+                                <label class="form-label">Calle</label>
+                                <InputText class="form-control" @bind-Value="_editForm.AddressStreet" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Ciudad</label>
+                                <InputText class="form-control" @bind-Value="_editForm.AddressCity" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">C.P.</label>
+                                <InputText class="form-control" @bind-Value="_editForm.AddressPostalCode" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">País</label>
+                                <InputText class="form-control" @bind-Value="_editForm.AddressCountry" />
+                            </div>
+                        </div>
+                        <hr class="my-2" />
+                        <div class="mb-2">
+                            <label class="form-label">Notas internas</label>
+                            <InputTextArea class="form-control" rows="3" @bind-Value="_editForm.Notes" />
+                        </div>
+                        @if (_editError is not null) { <div class="alert alert-danger mt-2">@_editError</div> }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="() => _showEdit = false">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private SupplierDetailDto? _supplier;
+    private bool _loading = true;
+    private string _tab = "info";
+    private bool _saving;
+    private bool _showEdit;
+    private string? _editError;
+    private EditFormModel _editForm = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _supplier = await GetById.Handle(new GetSupplierByIdQuery(Id));
+        _loading = false;
+    }
+
+    private static string TabLabel(string tab) => tab switch
+    {
+        "info"  => "Información",
+        "notas" => "Notas",
+        _       => tab
+    };
+
+    private void OpenEdit()
+    {
+        _editError = null;
+        _editForm = new()
+        {
+            Name          = _supplier!.Name,
+            TaxId         = _supplier.TaxId,
+            Phone         = _supplier.Phone,
+            Email         = _supplier.Email,
+            Website       = _supplier.Website,
+            ContactName   = _supplier.ContactName,
+            Notes         = _supplier.Notes,
+            AddressStreet     = _supplier.Address?.Street,
+            AddressCity       = _supplier.Address?.City,
+            AddressPostalCode = _supplier.Address?.PostalCode,
+            AddressCountry    = _supplier.Address?.Country
+        };
+        _showEdit = true;
+    }
+
+    private async Task SaveEdit()
+    {
+        _saving = true;
+        _editError = null;
+        try
+        {
+            _supplier = await UpdateHandler.Handle(new UpdateSupplierCommand(
+                Id, _editForm.Name!, _editForm.TaxId, _editForm.Phone, _editForm.Email,
+                _editForm.Website, _editForm.ContactName, _editForm.Notes,
+                _editForm.AddressStreet, _editForm.AddressCity,
+                _editForm.AddressPostalCode, _editForm.AddressCountry, "web"));
+            _showEdit = false;
+            Toast.Show("Proveedor actualizado correctamente");
+        }
+        catch (ArgumentException ex) { _editError = ex.Message; }
+        catch (KeyNotFoundException) { _editError = "Proveedor no encontrado."; }
+        finally { _saving = false; }
+    }
+
+    private sealed class EditFormModel
+    {
+        public string? Name { get; set; }
+        public string? TaxId { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? Website { get; set; }
+        public string? ContactName { get; set; }
+        public string? Notes { get; set; }
+        public string? AddressStreet { get; set; }
+        public string? AddressCity { get; set; }
+        public string? AddressPostalCode { get; set; }
+        public string? AddressCountry { get; set; }
+    }
+}

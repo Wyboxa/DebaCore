@@ -1,0 +1,279 @@
+@page "/catalogo/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetItemByIdHandler GetItem
+@inject UpdateItemHandler UpdateHandler
+@inject GetCatalogLookupsHandler GetLookups
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Artículo — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_item is null)
+{
+    <div class="alert alert-warning">Artículo no encontrado. <a href="/catalogo">Volver al catálogo</a></div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/catalogo">Catálogo</a></li>
+            <li class="breadcrumb-item active">@_item.Name</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="h3 mb-1">
+                <code class="me-2 text-muted fs-5">@_item.Code</code>@_item.Name
+            </h1>
+            <div class="d-flex gap-2">
+                @if (_item.IsService)
+                {
+                    <span class="badge bg-info text-dark">Servicio</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Artículo</span>
+                }
+                @if (_item.IsActive)
+                {
+                    <span class="badge bg-success">Activo</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Inactivo</span>
+                }
+            </div>
+        </div>
+        <button class="btn btn-outline-primary" @onclick="OpenEdit">Editar</button>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom fw-semibold">Información general</div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tbody>
+                            <tr><th class="text-muted fw-normal" style="width:40%">Familia</th><td>@(_item.FamilyName ?? "—")</td></tr>
+                            <tr><th class="text-muted fw-normal">Unidad de medida</th><td>@_item.UnitOfMeasureName</td></tr>
+                            <tr><th class="text-muted fw-normal">Tipo IVA</th><td>@(_item.TaxTypeName is not null ? $"{_item.TaxTypeName} ({_item.TaxRate}%)" : "—")</td></tr>
+                            <tr><th class="text-muted fw-normal">Descripción</th><td>@(_item.Description ?? "—")</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom fw-semibold">Precios</div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tbody>
+                            <tr><th class="text-muted fw-normal" style="width:50%">Precio de venta</th><td class="fw-semibold">@_item.SalePrice.ToString("N2") €</td></tr>
+                            <tr><th class="text-muted fw-normal">Precio de compra</th><td>@_item.PurchasePrice.ToString("N2") €</td></tr>
+                            <tr><th class="text-muted fw-normal">Margen bruto</th>
+                                <td>
+                                    @{
+                                        var margin = _item.SalePrice > 0
+                                            ? ((_item.SalePrice - _item.PurchasePrice) / _item.SalePrice * 100)
+                                            : 0m;
+                                    }
+                                    @margin.ToString("N1")%
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom fw-semibold">Auditoría</div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tbody>
+                            <tr><th class="text-muted fw-normal" style="width:20%">Creado</th><td>@_item.CreatedAt.ToString("dd/MM/yyyy HH:mm") @(_item.CreatedBy is not null ? $"por {_item.CreatedBy}" : "")</td></tr>
+                            @if (_item.UpdatedAt.HasValue)
+                            {
+                                <tr><th class="text-muted fw-normal">Modificado</th><td>@_item.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") @(_item.UpdatedBy is not null ? $"por {_item.UpdatedBy}" : "")</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showEdit && _item is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar artículo</h5>
+                    <button type="button" class="btn-close" @onclick="CloseEdit"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_form" OnValidSubmit="SaveItem">
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Código *</label>
+                                <InputText class="form-control text-uppercase" @bind-Value="_form.Code" />
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="_form.Name" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Familia</label>
+                                <InputSelect class="form-select" @bind-Value="_form.FamilyIdStr">
+                                    <option value="">Sin familia</option>
+                                    @foreach (var f in _lookupData?.Families ?? [])
+                                    {
+                                        <option value="@f.Id">@f.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Unidad de medida *</label>
+                                <InputSelect class="form-select" @bind-Value="_form.UnitOfMeasureIdStr">
+                                    @foreach (var u in _lookupData?.UnitsOfMeasure ?? [])
+                                    {
+                                        <option value="@u.Id">@u.Code — @u.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo IVA</label>
+                                <InputSelect class="form-select" @bind-Value="_form.TaxTypeIdStr">
+                                    <option value="">Sin IVA</option>
+                                    @foreach (var t in _lookupData?.TaxTypes ?? [])
+                                    {
+                                        <option value="@t.Id">@t.Code (@t.Rate%)</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">P. venta (€)</label>
+                                <InputNumber class="form-control" @bind-Value="_form.SalePrice" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">P. compra (€)</label>
+                                <InputNumber class="form-control" @bind-Value="_form.PurchasePrice" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input" @bind-Value="_form.IsService" id="chkServiceEdit" />
+                                    <label class="form-check-label" for="chkServiceEdit">Es un servicio</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Descripción</label>
+                                <InputTextArea class="form-control" @bind-Value="_form.Description" rows="2" />
+                            </div>
+                        </div>
+                        @if (_editError is not null)
+                        {
+                            <div class="alert alert-danger mt-2">@_editError</div>
+                        }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseEdit">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">
+                                @(_saving ? "Guardando…" : "Guardar cambios")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ItemDetailDto? _item;
+    private CatalogLookupsDto? _lookupData;
+    private bool _loading = true;
+    private bool _showEdit;
+    private bool _saving;
+    private string? _editError;
+    private EditItemForm _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _lookupData = await GetLookups.Handle();
+        await LoadItemAsync();
+    }
+
+    private async Task LoadItemAsync()
+    {
+        _loading = true;
+        _item = await GetItem.Handle(new GetItemByIdQuery(Id));
+        _loading = false;
+    }
+
+    private void OpenEdit()
+    {
+        if (_item is null) return;
+        _form = new EditItemForm
+        {
+            Code = _item.Code,
+            Name = _item.Name,
+            Description = _item.Description,
+            IsService = _item.IsService,
+            FamilyIdStr = _item.FamilyId?.ToString() ?? "",
+            UnitOfMeasureIdStr = _item.UnitOfMeasureId.ToString(),
+            TaxTypeIdStr = _item.TaxTypeId?.ToString() ?? "",
+            SalePrice = _item.SalePrice,
+            PurchasePrice = _item.PurchasePrice
+        };
+        _editError = null;
+        _showEdit = true;
+    }
+
+    private void CloseEdit() => _showEdit = false;
+
+    private async Task SaveItem()
+    {
+        _saving = true;
+        _editError = null;
+        try
+        {
+            var unitId = Guid.TryParse(_form.UnitOfMeasureIdStr, out var u) ? u : Guid.Empty;
+            if (unitId == Guid.Empty) { _editError = "Selecciona una unidad de medida."; _saving = false; return; }
+
+            _item = await UpdateHandler.Handle(new UpdateItemCommand(
+                Id, _form.Code!, _form.Name!, _form.Description,
+                _form.IsService, unitId,
+                Guid.TryParse(_form.FamilyIdStr, out var f) ? f : null,
+                Guid.TryParse(_form.TaxTypeIdStr, out var t) ? t : null,
+                _form.SalePrice, _form.PurchasePrice, "web"));
+            _showEdit = false;
+            Toast.Show("Artículo actualizado correctamente");
+        }
+        catch (InvalidOperationException ex) { _editError = ex.Message; }
+        catch (ArgumentException ex) { _editError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private sealed class EditItemForm
+    {
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public bool IsService { get; set; }
+        public string? FamilyIdStr { get; set; }
+        public string? UnitOfMeasureIdStr { get; set; }
+        public string? TaxTypeIdStr { get; set; }
+        public decimal SalePrice { get; set; }
+        public decimal PurchasePrice { get; set; }
+    }
+}

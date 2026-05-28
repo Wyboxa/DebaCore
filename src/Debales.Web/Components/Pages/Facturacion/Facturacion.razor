@@ -1,0 +1,28 @@
+@page "/facturacion"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Facturación — Debales</PageTitle>
+
+<ModulePlaceholder
+    Title="Facturación"
+    Subtitle="Emisión de facturas, rectificativas, cobros y gestión de vencimientos"
+    Phase="ERP-3"
+    IconSvg="<svg width='36' height='36' fill='currentColor' viewBox='0 0 16 16'><path d='M1 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm-1 8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2a2 2 0 0 0-2 2zm3.5-6a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zm0 2a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1zm0 2a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1z'/></svg>"
+    Features="@_features" />
+
+@code {
+    private readonly string[] _features =
+    [
+        "Facturas de venta y compra",
+        "Facturas rectificativas",
+        "Series de facturación",
+        "Vencimientos automáticos",
+        "Formas de pago configurables",
+        "Condiciones de pago",
+        "Registro de cobros y pagos",
+        "Remesas bancarias",
+        "Libro de facturas",
+        "Exportación e impresión"
+    ];
+}

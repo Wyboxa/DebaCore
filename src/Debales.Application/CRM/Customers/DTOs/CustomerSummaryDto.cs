@@ -6,5 +6,6 @@ public sealed record CustomerSummaryDto(
     string? Sector,
     string? TaxId,
     string? Phone,
+    string? Email,
     bool IsActive,
     DateTime CreatedAt);

@@ -6,5 +6,10 @@ public sealed record UpdateCustomerCommand(
     string? Sector,
     string? TaxId,
     string? Phone,
+    string? Email,
     string? Website,
+    string? AddressStreet,
+    string? AddressCity,
+    string? AddressPostalCode,
+    string? AddressCountry,
     string UpdatedBy);

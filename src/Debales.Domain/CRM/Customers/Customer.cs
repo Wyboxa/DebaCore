@@ -17,6 +17,7 @@ public sealed class Customer : AuditableEntity
     public string? Sector { get; private set; }
     public string? TaxId { get; private set; }
     public string? Phone { get; private set; }
+    public string? Email { get; private set; }
     public string? Website { get; private set; }
     public bool IsActive { get; private set; }
     public Address? Address { get; private set; }
@@ -28,7 +29,7 @@ public sealed class Customer : AuditableEntity
 
     private Customer() { }
 
-    public static Customer Create(string name, string? sector, string? taxId, string? phone, string createdBy)
+    public static Customer Create(string name, string? sector, string? taxId, string? phone, string? email, string createdBy)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre del cliente no puede estar vacío.", nameof(name));
@@ -39,12 +40,13 @@ public sealed class Customer : AuditableEntity
             Sector = sector?.Trim(),
             TaxId = taxId?.Trim(),
             Phone = phone?.Trim(),
+            Email = email?.Trim().ToLowerInvariant(),
             IsActive = true,
             CreatedBy = createdBy
         };
     }
 
-    public void Update(string name, string? sector, string? taxId, string? phone, string? website, string updatedBy)
+    public void Update(string name, string? sector, string? taxId, string? phone, string? email, string? website, string updatedBy)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre del cliente no puede estar vacío.", nameof(name));
@@ -53,11 +55,12 @@ public sealed class Customer : AuditableEntity
         Sector = sector?.Trim();
         TaxId = taxId?.Trim();
         Phone = phone?.Trim();
+        Email = email?.Trim().ToLowerInvariant();
         Website = website?.Trim();
         SetUpdated(updatedBy);
     }
 
-    public void SetAddress(Address address, string updatedBy)
+    public void SetAddress(Address? address, string updatedBy)
     {
         Address = address;
         SetUpdated(updatedBy);

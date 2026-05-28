@@ -52,3 +52,6 @@ desktop.ini
 ## Logs
 logs/
 *.log
+
+## Claude Code local preferences
+CLAUDE.local.md

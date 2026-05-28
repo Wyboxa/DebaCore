@@ -1,5 +1,6 @@
 @page "/crm/customers/{Id:guid}"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @inject GetCustomerByIdHandler GetById
 @inject UpdateCustomerHandler UpdateHandler
 @inject AddContactHandler AddContactHandler
@@ -10,6 +11,11 @@
 @inject Debales.Application.CRM.Notes.Queries.GetNotesByCustomer.GetNotesByCustomerHandler GetNotes
 @inject GetOpportunitiesByCustomerHandler GetOpportunities
 @inject CreateOpportunityHandler CreateOppHandler
+@inject UpdateOpportunityStatusHandler UpdateOppStatusHandler
+@inject CompleteActivityHandler CompleteActivityHandler
+@inject Debales.Application.AI.Chat.ChatWithCustomerHandler ChatHandler
+@inject Debales.Application.AI.Summary.GetCustomerSummaryHandler SummaryHandler
+@inject ToastService Toast
 @inject NavigationManager Nav
 
 <PageTitle>@(_customer?.Name ?? "Cliente") — Debales CRM</PageTitle>
@@ -33,18 +39,43 @@ else
 
     <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
-            <h1 class="h3 mb-0">@_customer.Name</h1>
-            <small class="text-muted">
-                @if (_customer.Sector is not null) { <span>@_customer.Sector · </span> }
-                @if (_customer.TaxId is not null) { <span>@_customer.TaxId · </span> }
-                @if (_customer.IsActive) { <span class="badge bg-success">Activo</span> } else { <span class="badge bg-secondary">Inactivo</span> }
-            </small>
+            <h1 class="h3 mb-1">@_customer.Name</h1>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                @if (_customer.Sector is not null) { <span class="text-muted small">@_customer.Sector</span> }
+                @if (_customer.TaxId is not null) { <span class="text-muted small">· @_customer.TaxId</span> }
+                @if (_customer.IsActive) { <span class="badge bg-success">Activo</span> }
+                else { <span class="badge bg-secondary">Inactivo</span> }
+            </div>
+            @{
+                var openOpps    = _opportunities.Count(o => o.Status is "New" or "InProgress");
+                var pipelineVal = _opportunities.Where(o => o.Status is "New" or "InProgress").Sum(o => o.EstimatedValue ?? 0m);
+                var pending     = _activities.Count(a => !a.IsCompleted);
+                var overdue     = _activities.Count(a => !a.IsCompleted && a.ScheduledAt < DateTime.UtcNow);
+            }
+            <div class="d-flex flex-wrap gap-2">
+                @if (_contacts.Any())
+                {
+                    <span class="badge bg-light text-dark border">@_contacts.Count contacto(s)</span>
+                }
+                @if (openOpps > 0)
+                {
+                    <span class="badge bg-light text-dark border">@openOpps opp · @pipelineVal.ToString("N0") €</span>
+                }
+                @if (overdue > 0)
+                {
+                    <span class="badge bg-danger">@overdue vencida(s)</span>
+                }
+                else if (pending > 0)
+                {
+                    <span class="badge bg-warning text-dark">@pending pendiente(s)</span>
+                }
+            </div>
         </div>
         <button class="btn btn-outline-secondary btn-sm" @onclick="OpenEdit">Editar</button>
     </div>
 
     <ul class="nav nav-tabs mb-3">
-        @foreach (var tab in new[] { "info", "contactos", "actividades", "notas", "oportunidades" })
+        @foreach (var tab in new[] { "info", "contactos", "actividades", "notas", "oportunidades", "historial", "asistente" })
         {
             <li class="nav-item">
                 <button class="nav-link @(_tab == tab ? "active" : "")" @onclick="() => SetTab(tab)">
@@ -67,13 +98,30 @@ else
                     <dd class="col-sm-9">@(_customer.TaxId ?? "—")</dd>
                     <dt class="col-sm-3">Teléfono</dt>
                     <dd class="col-sm-9">@(_customer.Phone ?? "—")</dd>
+                    <dt class="col-sm-3">Email</dt>
+                    <dd class="col-sm-9">
+                        @if (_customer.Email is not null)
+                        {
+                            <a href="mailto:@_customer.Email">@_customer.Email</a>
+                        }
+                        else { <span>—</span> }
+                    </dd>
                     <dt class="col-sm-3">Web</dt>
-                    <dd class="col-sm-9">@(_customer.Website is not null ? _customer.Website : "—")</dd>
-                    @if (_customer.Address is not null)
-                    {
-                        <dt class="col-sm-3">Dirección</dt>
-                        <dd class="col-sm-9">@_customer.Address.Street, @_customer.Address.City @_customer.Address.PostalCode, @_customer.Address.Country</dd>
-                    }
+                    <dd class="col-sm-9">
+                        @if (_customer.Website is not null)
+                        {
+                            <a href="@_customer.Website" target="_blank" rel="noopener">@_customer.Website</a>
+                        }
+                        else { <span>—</span> }
+                    </dd>
+                    <dt class="col-sm-3">Dirección</dt>
+                    <dd class="col-sm-9">
+                        @if (_customer.Address is not null)
+                        {
+                            <span>@_customer.Address.Street, @_customer.Address.City @_customer.Address.PostalCode — @_customer.Address.Country</span>
+                        }
+                        else { <span>—</span> }
+                    </dd>
                     <dt class="col-sm-3">Alta</dt>
                     <dd class="col-sm-9">@_customer.CreatedAt.ToString("dd/MM/yyyy")</dd>
                 </dl>
@@ -156,20 +204,43 @@ else
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead class="table-light">
-                    <tr><th>Tipo</th><th>Asunto</th><th>Fecha</th><th>Asignado a</th><th>Estado</th></tr>
+                    <tr><th>Tipo</th><th>Asunto</th><th>Fecha</th><th>Asignado a</th><th>Estado</th><th></th></tr>
                 </thead>
                 <tbody>
                     @foreach (var a in _activities.OrderByDescending(x => x.ScheduledAt))
                     {
-                        <tr>
-                            <td><span class="badge bg-secondary">@a.Type</span></td>
+                        <tr class="@(a.IsCompleted ? "text-muted" : "")">
+                            <td><span class="badge bg-secondary">@ActivityTypeLabel(a.Type)</span></td>
                             <td>@a.Subject</td>
                             <td>@a.ScheduledAt.ToString("dd/MM/yyyy HH:mm")</td>
                             <td>@(a.AssignedTo ?? "—")</td>
-                            <td>@(a.IsCompleted ? "✓ Completada" : "Pendiente")</td>
+                            <td>
+                                @if (a.IsCompleted)
+                                {
+                                    <span class="badge bg-success">Completada</span>
+                                }
+                                else if (a.ScheduledAt < DateTime.UtcNow)
+                                {
+                                    <span class="badge bg-danger">Vencida</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (!a.IsCompleted)
+                                {
+                                    <button class="btn btn-sm btn-outline-success"
+                                            @onclick="() => CompleteActivity(a.Id)"
+                                            disabled="@_saving">
+                                        Completar
+                                    </button>
+                                }
+                            </td>
                         </tr>
                     }
-                    @if (!_activities.Any()) { <tr><td colspan="5" class="text-center text-muted py-3">Sin actividades.</td></tr> }
+                    @if (!_activities.Any()) { <tr><td colspan="6" class="text-center text-muted py-3">Sin actividades.</td></tr> }
                 </tbody>
             </table>
         </div>
@@ -186,7 +257,7 @@ else
                                 <InputSelect class="form-select" @bind-Value="_actForm.Type">
                                     @foreach (ActivityType t in Enum.GetValues<ActivityType>())
                                     {
-                                        <option value="@t">@t</option>
+                                        <option value="@t">@ActivityTypeLabel(t.ToString())</option>
                                     }
                                 </InputSelect>
                             </div>
@@ -271,9 +342,20 @@ else
                     @foreach (var o in _opportunities)
                     {
                         <tr>
-                            <td>@o.Title</td>
-                            <td><span class="badge @BadgeClass(o.Status)">@o.Status</span></td>
-                            <td>@(o.EstimatedValue.HasValue ? o.EstimatedValue.Value.ToString("N2") + " €" : "—")</td>
+                            <td class="fw-semibold">@o.Title</td>
+                            <td>
+                                <select class="form-select form-select-sm"
+                                        style="width:130px"
+                                        value="@o.Status"
+                                        @onchange="async e => await ChangeOppStatus(o.Id, e.Value?.ToString())"
+                                        disabled="@_saving">
+                                    <option value="New"        class="@(o.Status == "New"        ? "fw-bold" : "")">Nuevo</option>
+                                    <option value="InProgress" class="@(o.Status == "InProgress" ? "fw-bold" : "")">En curso</option>
+                                    <option value="Won"        class="@(o.Status == "Won"        ? "fw-bold" : "")">Ganado</option>
+                                    <option value="Lost"       class="@(o.Status == "Lost"       ? "fw-bold" : "")">Perdido</option>
+                                </select>
+                            </td>
+                            <td>@(o.EstimatedValue.HasValue ? o.EstimatedValue.Value.ToString("N0") + " €" : "—")</td>
                             <td>@(o.ExpectedCloseDate.HasValue ? o.ExpectedCloseDate.Value.ToString("dd/MM/yyyy") : "—")</td>
                         </tr>
                     }
@@ -312,6 +394,118 @@ else
             </div>
         }
     }
+
+    @if (_tab == "historial")
+    {
+        var items = BuildTimeline().ToList();
+        @if (!items.Any())
+        {
+            <p class="text-muted py-3">Sin actividad registrada para este cliente.</p>
+        }
+        else
+        {
+            <div class="timeline">
+                @foreach (var item in items)
+                {
+                    <div class="timeline-item">
+                        <div class="timeline-dot @item.DotClass"></div>
+                        <div class="timeline-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <span class="fw-semibold small">@item.Title</span>
+                                <small class="text-muted text-nowrap ms-2">@item.Date.ToString("dd/MM/yy HH:mm")</small>
+                            </div>
+                            @if (item.Detail is not null)
+                            {
+                                <p class="mb-1 text-muted small" style="white-space:pre-wrap">@item.Detail</p>
+                            }
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="badge @item.BadgeClass">@item.KindLabel</span>
+                                @if (item.IsOverdue)  { <span class="badge bg-danger">Vencida</span> }
+                                @if (item.IsPending)  { <span class="badge bg-warning text-dark">Pendiente</span> }
+                                @if (item.Author is not null) { <small class="text-muted">@item.Author</small> }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @if (_tab == "asistente")
+    {
+        <div class="row g-3">
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Resumen IA</span>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="LoadSummary" disabled="@_summaryLoading">
+                            @(_summaryLoading ? "Generando…" : "↺ Actualizar")
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        @if (_summaryLoading)
+                        {
+                            <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+                        }
+                        else if (_summary is not null)
+                        {
+                            <p class="mb-0" style="white-space:pre-wrap">@_summary</p>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">Pulsa "Actualizar" para generar un resumen del cliente.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">Chat con contexto del cliente</div>
+                    <div class="card-body p-0">
+                        <div class="p-3" style="height:360px;overflow-y:auto;background:#f8f9fa;" id="chat-messages">
+                            @if (!_chatMessages.Any())
+                            {
+                                <p class="text-muted text-center mt-5">Escribe un mensaje para empezar.</p>
+                            }
+                            @foreach (var msg in _chatMessages)
+                            {
+                                <div class="d-flex @(msg.Role == "user" ? "justify-content-end" : "justify-content-start") mb-2">
+                                    <div class="px-3 py-2 rounded-3 @(msg.Role == "user" ? "bg-primary text-white" : "bg-white border")"
+                                         style="max-width:80%;white-space:pre-wrap;font-size:.9rem">
+                                        @msg.Content
+                                    </div>
+                                </div>
+                            }
+                            @if (_chatLoading)
+                            {
+                                <div class="d-flex justify-content-start mb-2">
+                                    <div class="px-3 py-2 rounded-3 bg-white border text-muted" style="font-size:.9rem">
+                                        <span class="spinner-border spinner-border-sm me-1"></span> Pensando…
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="input-group">
+                            <input class="form-control" placeholder="Escribe tu pregunta…"
+                                   @bind="_chatInput" @bind:event="oninput"
+                                   @onkeydown="OnChatKeyDown" disabled="@_chatLoading" />
+                            <button class="btn btn-primary" @onclick="SendChatMessage"
+                                    disabled="@(_chatLoading || string.IsNullOrWhiteSpace(_chatInput))">
+                                Enviar
+                            </button>
+                        </div>
+                        @if (_chatError is not null)
+                        {
+                            <small class="text-danger mt-1 d-block">@_chatError</small>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 }
 
 @if (_showEdit && _customer is not null)
@@ -325,28 +519,54 @@ else
                 </div>
                 <div class="modal-body">
                     <EditForm Model="_editForm" OnValidSubmit="SaveEdit">
-                        <div class="mb-3">
-                            <label class="form-label">Nombre *</label>
-                            <InputText class="form-control" @bind-Value="_editForm.Name" />
+                        <div class="row g-2 mb-2">
+                            <div class="col-12">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Sector</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Sector" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">CIF / NIF</label>
+                                <InputText class="form-control" @bind-Value="_editForm.TaxId" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Phone" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Email" type="email" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Web</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Website" />
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Sector</label>
-                            <InputText class="form-control" @bind-Value="_editForm.Sector" />
+                        <hr class="my-2" />
+                        <div class="small text-muted fw-semibold mb-2">Dirección</div>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label">Calle</label>
+                                <InputText class="form-control" @bind-Value="_editForm.AddressStreet" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Ciudad</label>
+                                <InputText class="form-control" @bind-Value="_editForm.AddressCity" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">C.P.</label>
+                                <InputText class="form-control" @bind-Value="_editForm.AddressPostalCode" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">País</label>
+                                <InputText class="form-control" @bind-Value="_editForm.AddressCountry" />
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">CIF / NIF</label>
-                            <InputText class="form-control" @bind-Value="_editForm.TaxId" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Teléfono</label>
-                            <InputText class="form-control" @bind-Value="_editForm.Phone" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Web</label>
-                            <InputText class="form-control" @bind-Value="_editForm.Website" />
-                        </div>
-                        @if (_editError is not null) { <div class="alert alert-danger">@_editError</div> }
-                        <div class="d-flex gap-2 justify-content-end">
+                        @if (_editError is not null) { <div class="alert alert-danger mt-2">@_editError</div> }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
                             <button type="button" class="btn btn-secondary" @onclick="() => _showEdit = false">Cancelar</button>
                             <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
                         </div>
@@ -395,14 +615,21 @@ else
     private string? _oppError;
     private OppFormModel _oppForm = new();
 
+    // Asistente IA
+    private string? _summary;
+    private bool _summaryLoading;
+    private bool _chatLoading;
+    private string? _chatError;
+    private string _chatInput = string.Empty;
+    private List<Debales.Application.AI.ChatMessage> _chatMessages = [];
+
     protected override async Task OnInitializedAsync()
     {
-        await Task.WhenAll(
-            LoadCustomerAsync(),
-            LoadContactsAsync(),
-            LoadActivitiesAsync(),
-            LoadNotesAsync(),
-            LoadOpportunitiesAsync());
+        await LoadCustomerAsync();
+        await LoadContactsAsync();
+        await LoadActivitiesAsync();
+        await LoadNotesAsync();
+        await LoadOpportunitiesAsync();
         _loading = false;
     }
 
@@ -421,7 +648,64 @@ else
     private async Task LoadOpportunitiesAsync() =>
         _opportunities = await GetOpportunities.Handle(new GetOpportunitiesByCustomerQuery(Id));
 
-    private void SetTab(string tab) => _tab = tab;
+    private void SetTab(string tab)
+    {
+        _tab = tab;
+        if (tab == "asistente" && _summary is null && !_summaryLoading)
+            _ = LoadSummary();
+    }
+
+    // ── Timeline ─────────────────────────────────────────────────────────────────
+
+    private sealed record TimelineItem(
+        DateTime Date, string DotClass, string BadgeClass, string KindLabel,
+        string Title, string? Detail, string? Author, bool IsPending, bool IsOverdue);
+
+    private IEnumerable<TimelineItem> BuildTimeline()
+    {
+        var now = DateTime.UtcNow;
+
+        var acts = _activities.Select(a => new TimelineItem(
+            a.ScheduledAt,
+            "dot-activity", "bg-success", ActivityTypeLabel(a.Type),
+            a.Subject, a.Notes, a.AssignedTo,
+            !a.IsCompleted, !a.IsCompleted && a.ScheduledAt < now));
+
+        var notes = _notes.Select(n => new TimelineItem(
+            n.CreatedAt,
+            "dot-note", "bg-secondary", "Nota",
+            n.Content, null, n.CreatedBy,
+            false, false));
+
+        var opps = _opportunities.Select(o => new TimelineItem(
+            o.CreatedAt,
+            "dot-opportunity", "bg-warning text-dark", "Oportunidad",
+            o.Title,
+            o.EstimatedValue.HasValue ? $"{o.EstimatedValue.Value:N0} € · {OppStatusLabel(o.Status)}" : OppStatusLabel(o.Status),
+            o.CreatedBy,
+            false, false));
+
+        return acts.Concat(notes).Concat(opps).OrderByDescending(x => x.Date);
+    }
+
+    private static string ActivityTypeLabel(string type) => type switch
+    {
+        "Call"    => "Llamada",
+        "Meeting" => "Reunión",
+        "Email"   => "Email",
+        "Task"    => "Tarea",
+        "Other"   => "Otro",
+        _         => type
+    };
+
+    private static string OppStatusLabel(string status) => status switch
+    {
+        "New"        => "Nuevo",
+        "InProgress" => "En curso",
+        "Won"        => "Ganado",
+        "Lost"       => "Perdido",
+        _            => status
+    };
 
     private static string TabLabel(string tab) => tab switch
     {
@@ -430,6 +714,8 @@ else
         "actividades" => "Actividades",
         "notas" => "Notas",
         "oportunidades" => "Oportunidades",
+        "historial"    => "Historial",
+        "asistente"    => "Asistente IA",
         _ => tab
     };
 
@@ -448,11 +734,16 @@ else
         _editError = null;
         _editForm = new()
         {
-            Name = _customer!.Name,
-            Sector = _customer.Sector,
-            TaxId = _customer.TaxId,
-            Phone = _customer.Phone,
-            Website = _customer.Website
+            Name    = _customer!.Name,
+            Sector  = _customer.Sector,
+            TaxId   = _customer.TaxId,
+            Phone   = _customer.Phone,
+            Email   = _customer.Email,
+            Website = _customer.Website,
+            AddressStreet     = _customer.Address?.Street,
+            AddressCity       = _customer.Address?.City,
+            AddressPostalCode = _customer.Address?.PostalCode,
+            AddressCountry    = _customer.Address?.Country
         };
         _showEdit = true;
     }
@@ -464,8 +755,12 @@ else
         try
         {
             _customer = await UpdateHandler.Handle(new UpdateCustomerCommand(
-                Id, _editForm.Name!, _editForm.Sector, _editForm.TaxId, _editForm.Phone, _editForm.Website, "web"));
+                Id, _editForm.Name!, _editForm.Sector, _editForm.TaxId, _editForm.Phone,
+                _editForm.Email, _editForm.Website,
+                _editForm.AddressStreet, _editForm.AddressCity,
+                _editForm.AddressPostalCode, _editForm.AddressCountry, "web"));
             _showEdit = false;
+            Toast.Show("Cliente actualizado correctamente");
         }
         catch (ArgumentException ex) { _editError = ex.Message; }
         catch (KeyNotFoundException) { _editError = "Cliente no encontrado."; }
@@ -487,6 +782,7 @@ else
                 _contactForm.Email, _contactForm.Phone, "web"));
             _showAddContact = false;
             await LoadContactsAsync();
+            Toast.Show("Contacto añadido");
         }
         catch (ArgumentException ex) { _contactError = ex.Message; }
         catch (KeyNotFoundException) { _contactError = "Cliente no encontrado."; }
@@ -508,6 +804,7 @@ else
                 Notes: _actForm.Notes, AssignedTo: _actForm.AssignedTo));
             _showLogActivity = false;
             await LoadActivitiesAsync();
+            Toast.Show("Actividad registrada");
         }
         catch (ArgumentException ex) { _actError = ex.Message; }
         catch (KeyNotFoundException) { _actError = "Cliente no encontrado."; }
@@ -528,10 +825,43 @@ else
                 Id, _noteForm.Content!, "web"));
             _showAddNote = false;
             await LoadNotesAsync();
+            Toast.Show("Nota añadida");
         }
         catch (ArgumentException ex) { _noteError = ex.Message; }
         catch (KeyNotFoundException) { _noteError = "Cliente no encontrado."; }
         finally { _saving = false; }
+    }
+
+    // ── Complete activity ────────────────────────────────────────────────────────
+
+    private async Task CompleteActivity(Guid activityId)
+    {
+        _saving = true;
+        try
+        {
+            await CompleteActivityHandler.Handle(new CompleteActivityCommand(Id, activityId, null, "web"));
+            await LoadActivitiesAsync();
+            Toast.Show("Actividad marcada como completada");
+        }
+        catch (Exception ex) { _actError = $"Error: {ex.Message}"; }
+        finally { _saving = false; StateHasChanged(); }
+    }
+
+    // ── Change opportunity status ────────────────────────────────────────────────
+
+    private async Task ChangeOppStatus(Guid oppId, string? status)
+    {
+        if (status is null || !Enum.TryParse<Debales.Domain.CRM.Opportunities.OpportunityStatus>(status, out var newStatus))
+            return;
+        _saving = true;
+        try
+        {
+            await UpdateOppStatusHandler.Handle(new UpdateOpportunityStatusCommand(Id, oppId, newStatus, "web"));
+            await LoadOpportunitiesAsync();
+            Toast.Show($"Estado cambiado a {OppStatusLabel(status)}");
+        }
+        catch (Exception ex) { _oppError = $"Error: {ex.Message}"; }
+        finally { _saving = false; StateHasChanged(); }
     }
 
     // ── Add opportunity ──────────────────────────────────────────────────────────
@@ -548,6 +878,7 @@ else
                 Id, _oppForm.Title!, "web", _oppForm.EstimatedValue, _oppForm.ExpectedCloseDate));
             _showAddOpp = false;
             await LoadOpportunitiesAsync();
+            Toast.Show("Oportunidad creada");
         }
         catch (ArgumentException ex) { _oppError = ex.Message; }
         catch (KeyNotFoundException) { _oppError = "Cliente no encontrado."; }
@@ -562,7 +893,12 @@ else
         public string? Sector { get; set; }
         public string? TaxId { get; set; }
         public string? Phone { get; set; }
+        public string? Email { get; set; }
         public string? Website { get; set; }
+        public string? AddressStreet { get; set; }
+        public string? AddressCity { get; set; }
+        public string? AddressPostalCode { get; set; }
+        public string? AddressCountry { get; set; }
     }
 
     private sealed class ContactFormModel
@@ -593,5 +929,56 @@ else
         public string? Title { get; set; }
         public decimal? EstimatedValue { get; set; }
         public DateTime? ExpectedCloseDate { get; set; }
+    }
+
+    // ── Asistente IA ─────────────────────────────────────────────────────────────
+
+    private async Task LoadSummary()
+    {
+        _summaryLoading = true;
+        _summary = null;
+        StateHasChanged();
+        try
+        {
+            _summary = await SummaryHandler.Handle(new Debales.Application.AI.Summary.GetCustomerSummaryQuery(Id));
+        }
+        catch (Exception ex) { _summary = $"Error al generar el resumen: {ex.Message}"; }
+        finally { _summaryLoading = false; StateHasChanged(); }
+    }
+
+    private async Task SendChatMessage()
+    {
+        var msg = _chatInput.Trim();
+        if (string.IsNullOrEmpty(msg) || _chatLoading) return;
+
+        _chatInput = string.Empty;
+        _chatError = null;
+        _chatMessages.Add(new Debales.Application.AI.ChatMessage("user", msg));
+        _chatLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var history = _chatMessages
+                .Take(_chatMessages.Count - 1)
+                .ToList();
+
+            var result = await ChatHandler.Handle(
+                new Debales.Application.AI.Chat.ChatWithCustomerCommand(Id, history, msg, "web"));
+
+            _chatMessages.Add(new Debales.Application.AI.ChatMessage("assistant", result.Message));
+        }
+        catch (Exception ex)
+        {
+            _chatError = $"Error: {ex.Message}";
+            _chatMessages.RemoveAt(_chatMessages.Count - 1);
+        }
+        finally { _chatLoading = false; StateHasChanged(); }
+    }
+
+    private async Task OnChatKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+            await SendChatMessage();
     }
 }

@@ -1,5 +1,20 @@
+using Debales.Application.AI.Briefing;
+using Debales.Application.AI.Chat;
+using Debales.Application.AI.Summary;
+using Debales.Application.Catalog.Commands.CreateItem;
+using Debales.Application.Catalog.Commands.UpdateItem;
+using Debales.Application.Catalog.Queries.GetItems;
+using Debales.Application.Catalog.Queries.GetItemById;
+using Debales.Application.Catalog.Queries.GetCatalogLookups;
+using Debales.Application.CRM.Dashboard;
+using Debales.Application.Suppliers.Commands.CreateSupplier;
+using Debales.Application.Suppliers.Commands.UpdateSupplier;
+using Debales.Application.Suppliers.Queries.GetSuppliers;
+using Debales.Application.Suppliers.Queries.GetSupplierById;
+using Debales.Application.Core.Auth.Commands.Login;
 using Debales.Application.Core.Users.Commands.CreateUser;
 using Debales.Application.Core.Users.Queries.GetUserById;
+using Debales.Application.CRM.Activities.Commands.CompleteActivity;
 using Debales.Application.CRM.Activities.Commands.LogActivity;
 using Debales.Application.CRM.Activities.Queries.GetActivitiesByCustomer;
 using Debales.Application.CRM.Contacts.Commands.AddContact;
@@ -21,7 +36,10 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        // Core
+        // Core — Auth
+        services.AddScoped<LoginHandler>();
+
+        // Core — Users
         services.AddScoped<CreateUserHandler>();
         services.AddScoped<GetUserByIdHandler>();
 
@@ -37,6 +55,7 @@ public static class DependencyInjection
 
         // CRM — Activities
         services.AddScoped<LogActivityHandler>();
+        services.AddScoped<CompleteActivityHandler>();
         services.AddScoped<GetActivitiesByCustomerHandler>();
 
         // CRM — Notes
@@ -47,6 +66,27 @@ public static class DependencyInjection
         services.AddScoped<CreateOpportunityHandler>();
         services.AddScoped<UpdateOpportunityStatusHandler>();
         services.AddScoped<GetOpportunitiesByCustomerHandler>();
+
+        // Catalog — Items
+        services.AddScoped<CreateItemHandler>();
+        services.AddScoped<UpdateItemHandler>();
+        services.AddScoped<GetItemsHandler>();
+        services.AddScoped<GetItemByIdHandler>();
+        services.AddScoped<GetCatalogLookupsHandler>();
+
+        // Suppliers
+        services.AddScoped<CreateSupplierHandler>();
+        services.AddScoped<UpdateSupplierHandler>();
+        services.AddScoped<GetSuppliersHandler>();
+        services.AddScoped<GetSupplierByIdHandler>();
+
+        // Dashboard
+        services.AddScoped<GetDashboardStatsHandler>();
+
+        // AI
+        services.AddScoped<ChatWithCustomerHandler>();
+        services.AddScoped<GetCustomerSummaryHandler>();
+        services.AddScoped<GetDashboardBriefingHandler>();
 
         return services;
     }

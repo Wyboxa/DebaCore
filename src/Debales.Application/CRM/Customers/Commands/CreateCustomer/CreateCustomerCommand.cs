@@ -5,4 +5,5 @@ public sealed record CreateCustomerCommand(
     string? Sector,
     string? TaxId,
     string? Phone,
+    string? Email,
     string CreatedBy);

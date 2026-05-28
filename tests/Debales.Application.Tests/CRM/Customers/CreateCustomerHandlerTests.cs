@@ -22,7 +22,7 @@ public sealed class CreateCustomerHandlerTests
     {
         _customers.ExistsByTaxIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
 
-        var command = new CreateCustomerCommand("Empresa S.L.", "Tecnología", "B12345678", "+34 91 000 00 00", "system");
+        var command = new CreateCustomerCommand("Empresa S.L.", "Tecnología", "B12345678", "+34 91 000 00 00", null, "system");
         var result = await _handler.Handle(command);
 
         Assert.Equal("Empresa S.L.", result.Name);
@@ -36,7 +36,7 @@ public sealed class CreateCustomerHandlerTests
     {
         _customers.ExistsByTaxIdAsync("B12345678", Arg.Any<CancellationToken>()).Returns(true);
 
-        var command = new CreateCustomerCommand("Empresa S.L.", null, "B12345678", null, "system");
+        var command = new CreateCustomerCommand("Empresa S.L.", null, "B12345678", null, null, "system");
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _handler.Handle(command));
     }
@@ -44,7 +44,7 @@ public sealed class CreateCustomerHandlerTests
     [Fact]
     public async Task Handle_WithoutTaxId_DoesNotCheckDuplicates()
     {
-        var command = new CreateCustomerCommand("Empresa S.L.", null, null, null, "system");
+        var command = new CreateCustomerCommand("Empresa S.L.", null, null, null, null, "system");
         var result = await _handler.Handle(command);
 
         Assert.Equal("Empresa S.L.", result.Name);

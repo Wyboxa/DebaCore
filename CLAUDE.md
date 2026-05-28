@@ -224,21 +224,35 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-05-27:** Las Fases 0, 1, 2 y 3 del roadmap técnico están completas.
-> Existen: solución .NET 8, BD LocalDB migrada, módulo Core, módulo CRM con API REST y UI Blazor.
+> **Actualización 2026-05-28:** Las Fases 0–3 técnicas y ERP-1 Suppliers están completas.
+> Existen: solución .NET 8, BD LocalDB migrada, módulo Core, módulo CRM con API REST y UI Blazor, módulo Suppliers completo.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
-El proyecto avanzó de cimentación a primer producto funcional.
+El proyecto avanzó de cimentación a primer producto funcional con base ERP iniciada.
 
 Lo que ya existe (no asumir como propuesta):
 
 - Solución .NET 8 (`Debales.slnx`) con 10 proyectos.
-- Base de datos SQL Server LocalDB con 12 tablas migradas.
+- Base de datos SQL Server LocalDB con 13 tablas migradas (incluye Suppliers).
 - Módulo Core: usuarios, roles, permisos, auditoría.
 - Módulo CRM: clientes, contactos, actividades, notas, oportunidades.
-- API REST (`Debales.Api`) con 11 endpoints CRM.
-- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes.
+- Módulo Suppliers: proveedores con búsqueda, paginación, dirección embebida, soft-delete.
+- API REST (`Debales.Api`) con endpoints CRM + Suppliers.
+- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, lista y ficha de proveedores.
+- UI con paleta teal `#6B9CA9`, sidebar oscuro, páginas placeholder para todos los módulos futuros.
 - 31 tests automatizados pasando.
+
+Lo que aún no existe y debe tratarse como propuesta:
+
+- Módulo Catálogo (Items, Families, UOM, TaxType) — ERP-1 pendiente.
+- Módulo Ventas / Compras — ERP-2.
+- Módulo Facturación — ERP-3.
+- Módulo Almacén — ERP-4.
+- Módulo Contabilidad — ERP-5.
+- IA supervisada funcional.
+- Licenciamiento.
+- Despliegue real.
+- Multi-tenant.
 
 Lo que aún no existe y debe tratarse como propuesta:
 
@@ -2461,3 +2475,80 @@ Antes de implementar cualquier elemento de la lista:
 2. Comunicarla a Carlos para aprobación.
 3. Actualizar este CLAUDE.md con el resultado.
 4. Mover de "Pendiente de decidir" a "Conflictos resueltos".
+
+---
+
+# 48. Estilo de código — preferencias de Carlos
+
+> Registrado 2026-05-28. Preferencias concretas que Claude debe aplicar en este proyecto.
+
+## 48.1 LINQ
+
+Preferir **sintaxis de query** (`from … in … where … select`) sobre método encadenado cuando la consulta tenga joins, múltiples cláusulas `where`, agrupaciones o proyecciones complejas.
+
+Para consultas simples (un solo filtro + proyección), el estilo de método encadenado es aceptable.
+
+```csharp
+// Preferido para consultas con join o múltiples cláusulas
+var result = from s in suppliers
+             join c in contacts on s.Id equals c.SupplierId
+             where s.IsActive && c.IsPrimary
+             orderby s.Name
+             select new SupplierContactDto(s.Name, c.Email);
+
+// Aceptable para consultas simples
+var names = suppliers.Where(s => s.IsActive).Select(s => s.Name);
+```
+
+## 48.2 Records e inmutabilidad
+
+Usar `record` para DTOs, value objects y resultados de queries.  
+Usar `sealed class` para entidades de dominio, handlers y repositorios.  
+Nunca usar `struct` salvo justificación explícita de rendimiento medida.
+
+## 48.3 Validación fail-fast
+
+Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidOperationException` con mensaje claro antes de ejecutar lógica.
+
+---
+
+# 49. Patrón de implementación de módulos
+
+> Registrado 2026-05-28. Patrón establecido durante ERP-1 (Suppliers). Aplicar siempre en módulos nuevos.
+
+## 49.1 Orden obligatorio de implementación
+
+```txt
+1. Domain        ← entidad + value objects
+2. Application   ← interfaces, DTOs, handlers
+3. Infrastructure← EF config, repositorio, registro DI
+4. API           ← controller con GET list/GET by id/POST/PUT
+5. Web           ← lista Blazor + ficha detalle
+6. NavMenu       ← enlace en sección correspondiente
+7. Migración EF  ← siempre con --startup-project Debales.Api
+```
+
+## 49.2 Reglas críticas del patrón
+
+- `IEntityRepository` hereda `IRepository<T>` — usar `new` en métodos que ocultan el base.
+- `internal static ToDto(Entity)` va en `Update<Entity>Handler`, reutilizado por `GetByIdHandler`.
+- Request records en controllers deben ser `public sealed record` (accesibilidad C# CS0051).
+- `OwnsOne(...)` para value objects embebidos (Address, etc.) — no tabla separada.
+- `HasQueryFilter(e => !e.IsDeleted)` en toda entidad con soft-delete.
+- Índice único en campo de unicidad: `.HasFilter("[Field] IS NOT NULL")` si el campo es nullable.
+- Namespaces de Application añadir a `_Imports.razor` para uso en Blazor.
+- Handlers registrar en `Debales.Application/DependencyInjection.cs`.
+- Repositorios registrar en `Debales.Infrastructure/DependencyInjection.cs`.
+
+## 49.3 Módulos implementados
+
+| Módulo | Estado | Migración |
+|---|---|---|
+| Core (Users, Roles, Permissions) | Completo | Fase 2 |
+| CRM (Customers, Contacts, Activities, Notes, Opportunities) | Completo | Fase 3 |
+| Suppliers | Completo — ERP-1 | `20260528174128_AddSuppliersModule` |
+| Catalog (Items, Families, UOM, TaxType) | Pendiente — ERP-1 | — |
+| Sales | Pendiente — ERP-2 | — |
+| Purchasing | Pendiente — ERP-2 | — |
+| Inventory | Pendiente — ERP-4 | — |
+| Accounting | Pendiente — ERP-5 | — |

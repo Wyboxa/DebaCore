@@ -1,0 +1,199 @@
+@page "/proveedores"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetSuppliersHandler GetSuppliers
+@inject CreateSupplierHandler CreateHandler
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Proveedores — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Proveedores</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nuevo proveedor</button>
+</div>
+
+<div class="mb-3">
+    <div class="input-group" style="max-width:400px">
+        <input class="form-control" placeholder="Buscar por nombre, CIF o contacto…"
+               @bind="_search" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+        <button class="btn btn-outline-secondary" @onclick="Search">Buscar</button>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_result is not null)
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>CIF / NIF</th>
+                        <th>Contacto</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in _result.Items)
+                    {
+                        <tr style="cursor:pointer" @onclick="() => GoToDetail(s.Id)">
+                            <td><strong>@s.Name</strong></td>
+                            <td>@(s.TaxId ?? "—")</td>
+                            <td>@(s.ContactName ?? "—")</td>
+                            <td>@(s.Phone ?? "—")</td>
+                            <td>
+                                @if (s.IsActive)
+                                {
+                                    <span class="badge bg-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => GoToDetail(s.Id)">Ver</button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_result.Items.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">No se encontraron proveedores.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (_result.TotalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination">
+                <li class="page-item @(_result.HasPreviousPage ? "" : "disabled")">
+                    <button class="page-link" @onclick="PrevPage">Anterior</button>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Página @_result.Page de @_result.TotalPages (@_result.TotalCount total)</span>
+                </li>
+                <li class="page-item @(_result.HasNextPage ? "" : "disabled")">
+                    <button class="page-link" @onclick="NextPage">Siguiente</button>
+                </li>
+            </ul>
+        </nav>
+    }
+}
+
+@if (_showCreate)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo proveedor</h5>
+                    <button type="button" class="btn-close" @onclick="CloseCreate"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_form" OnValidSubmit="CreateSupplier">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="_form.Name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">CIF / NIF</label>
+                                <InputText class="form-control" @bind-Value="_form.TaxId" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Persona de contacto</label>
+                                <InputText class="form-control" @bind-Value="_form.ContactName" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono</label>
+                                <InputText class="form-control" @bind-Value="_form.Phone" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <InputText class="form-control" @bind-Value="_form.Email" type="email" />
+                            </div>
+                        </div>
+                        @if (_createError is not null)
+                        {
+                            <div class="alert alert-danger mt-2">@_createError</div>
+                        }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseCreate">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">
+                                @(_saving ? "Guardando…" : "Crear proveedor")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private PagedResult<SupplierSummaryDto>? _result;
+    private string? _search;
+    private int _page = 1;
+    private bool _loading;
+    private bool _showCreate;
+    private bool _saving;
+    private string? _createError;
+    private SupplierForm _form = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+        _result = await GetSuppliers.Handle(new GetSuppliersQuery(_search, _page, 20));
+        _loading = false;
+    }
+
+    private async Task Search() { _page = 1; await LoadAsync(); }
+    private async Task OnSearchKeyUp(KeyboardEventArgs e) { if (e.Key == "Enter") await Search(); }
+    private async Task PrevPage() { _page--; await LoadAsync(); }
+    private async Task NextPage() { _page++; await LoadAsync(); }
+    private void GoToDetail(Guid id) => Nav.NavigateTo($"/proveedores/{id}");
+
+    private void OpenCreate() { _form = new(); _createError = null; _showCreate = true; }
+    private void CloseCreate() => _showCreate = false;
+
+    private async Task CreateSupplier()
+    {
+        _saving = true;
+        _createError = null;
+        try
+        {
+            var supplier = await CreateHandler.Handle(
+                new CreateSupplierCommand(_form.Name!, _form.TaxId, _form.Phone, _form.Email, _form.ContactName, "web"));
+            _showCreate = false;
+            Toast.Show("Proveedor creado correctamente");
+            Nav.NavigateTo($"/proveedores/{supplier.Id}");
+        }
+        catch (InvalidOperationException ex) { _createError = ex.Message; }
+        catch (ArgumentException ex) { _createError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private sealed class SupplierForm
+    {
+        public string? Name { get; set; }
+        public string? TaxId { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? ContactName { get; set; }
+    }
+}

@@ -23,11 +23,15 @@ public sealed class CreateCustomerHandler
             throw new InvalidOperationException($"Ya existe un cliente con el NIF/CIF '{command.TaxId}'.");
         }
 
-        var customer = Customer.Create(command.Name, command.Sector, command.TaxId, command.Phone, command.CreatedBy);
+        var customer = Customer.Create(
+            command.Name, command.Sector, command.TaxId,
+            command.Phone, command.Email, command.CreatedBy);
 
         await _customers.AddAsync(customer, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new CustomerSummaryDto(customer.Id, customer.Name, customer.Sector, customer.TaxId, customer.Phone, customer.IsActive, customer.CreatedAt);
+        return new CustomerSummaryDto(
+            customer.Id, customer.Name, customer.Sector, customer.TaxId,
+            customer.Phone, customer.Email, customer.IsActive, customer.CreatedAt);
     }
 }
