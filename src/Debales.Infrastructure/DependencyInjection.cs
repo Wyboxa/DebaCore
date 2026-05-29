@@ -7,11 +7,15 @@ using Debales.Application.CRM.Contacts;
 using Debales.Application.CRM.Customers;
 using Debales.Application.CRM.Notes;
 using Debales.Application.CRM.Opportunities;
+using Debales.Application.Purchasing;
+using Debales.Application.Sales;
 using Debales.Application.Suppliers;
 using Debales.Infrastructure.Persistence;
 using Debales.Infrastructure.Persistence.Repositories;
 using Debales.Infrastructure.Persistence.Repositories.Catalog;
 using Debales.Infrastructure.Persistence.Repositories.CRM;
+using Debales.Infrastructure.Persistence.Repositories.Purchasing;
+using Debales.Infrastructure.Persistence.Repositories.Sales;
 using Debales.Infrastructure.Persistence.Repositories.Suppliers;
 using Debales.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +54,14 @@ public static class DependencyInjection
         services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddScoped<INoteRepository, NoteRepository>();
         services.AddScoped<IOpportunityRepository, OpportunityRepository>();
+
+        // Sales
+        services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
+        services.AddScoped<ISalesDeliveryNoteRepository, SalesDeliveryNoteRepository>();
+
+        // Purchasing
+        services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+        services.AddScoped<IPurchaseDeliveryNoteRepository, PurchaseDeliveryNoteRepository>();
 
         return services;
     }

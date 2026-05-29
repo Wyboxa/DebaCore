@@ -1,0 +1,195 @@
+@page "/ventas/pedidos/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetSalesOrderByIdHandler GetById
+@inject ConfirmSalesOrderHandler ConfirmHandler
+@inject CancelSalesOrderHandler CancelHandler
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Pedido de venta — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_order is null)
+{
+    <div class="alert alert-warning">Pedido no encontrado.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <a href="/ventas/pedidos" class="text-decoration-none text-muted small">← Pedidos de venta</a>
+            <h1 class="h3 mb-0 mt-1"><code>@_order.Number</code></h1>
+        </div>
+        <div class="d-flex gap-2">
+            @if (_order.Status == SalesOrderStatus.Draft)
+            {
+                <button class="btn btn-success" @onclick="Confirm" disabled="@_acting">
+                    @if (_acting) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Confirmar
+                </button>
+                <button class="btn btn-outline-danger" @onclick="Cancel" disabled="@_acting">Cancelar</button>
+            }
+            else if (_order.Status == SalesOrderStatus.Confirmed || _order.Status == SalesOrderStatus.PartiallyDelivered)
+            {
+                <button class="btn btn-outline-danger" @onclick="Cancel" disabled="@_acting">Cancelar pedido</button>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-3">Datos del pedido</h6>
+                    <dl class="row mb-0">
+                        <dt class="col-5">Cliente</dt>
+                        <dd class="col-7">@_order.CustomerName</dd>
+                        <dt class="col-5">Fecha</dt>
+                        <dd class="col-7">@_order.Date.ToString("dd/MM/yyyy")</dd>
+                        <dt class="col-5">Entrega solicitada</dt>
+                        <dd class="col-7">@(_order.RequestedDeliveryDate?.ToString("dd/MM/yyyy") ?? "—")</dd>
+                        <dt class="col-5">Estado</dt>
+                        <dd class="col-7"><span class="badge @StatusBadge(_order.Status)">@_order.StatusLabel</span></dd>
+                        @if (!string.IsNullOrEmpty(_order.Notes))
+                        {
+                            <dt class="col-5">Observaciones</dt>
+                            <dd class="col-7">@_order.Notes</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-3">Importes</h6>
+                    <dl class="row mb-0">
+                        <dt class="col-5">Base imponible</dt>
+                        <dd class="col-7 fw-semibold">@_order.Subtotal.ToString("N2") €</dd>
+                        <dt class="col-5">IVA</dt>
+                        <dd class="col-7">@_order.TaxAmount.ToString("N2") €</dd>
+                        <dt class="col-5 fs-5">Total</dt>
+                        <dd class="col-7 fs-5 fw-bold text-primary">@_order.Total.ToString("N2") €</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h6 class="card-subtitle text-muted mb-3">Líneas del pedido</h6>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Artículo</th>
+                            <th>Descripción</th>
+                            <th class="text-end">Cantidad</th>
+                            <th class="text-end">P. unitario</th>
+                            <th class="text-end">IVA %</th>
+                            <th class="text-end">Base</th>
+                            <th class="text-end">IVA</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">Entregado</th>
+                            <th class="text-end">Pendiente</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var l in _order.Lines)
+                        {
+                            <tr>
+                                <td><code>@l.ItemCode</code> @l.ItemName</td>
+                                <td class="text-muted small">@l.Description</td>
+                                <td class="text-end">@l.Quantity.ToString("N2")</td>
+                                <td class="text-end">@l.UnitPrice.ToString("N2") €</td>
+                                <td class="text-end">@l.TaxRate.ToString("N1") %</td>
+                                <td class="text-end">@l.LineSubtotal.ToString("N2") €</td>
+                                <td class="text-end">@l.LineTaxAmount.ToString("N2") €</td>
+                                <td class="text-end fw-semibold">@l.LineTotal.ToString("N2") €</td>
+                                <td class="text-end @(l.DeliveredQuantity > 0 ? "text-success" : "")">@l.DeliveredQuantity.ToString("N2")</td>
+                                <td class="text-end @(l.PendingQuantity > 0 ? "text-warning" : "text-success")">@l.PendingQuantity.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mt-3">
+        <div class="card-body">
+            <h6 class="card-subtitle text-muted mb-2">Auditoría</h6>
+            <dl class="row mb-0 small text-muted">
+                <dt class="col-3">Creado</dt>
+                <dd class="col-9">@_order.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") por @(_order.CreatedBy ?? "—")</dd>
+                @if (_order.UpdatedAt.HasValue)
+                {
+                    <dt class="col-3">Modificado</dt>
+                    <dd class="col-9">@_order.UpdatedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm") por @(_order.UpdatedBy ?? "—")</dd>
+                }
+            </dl>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    bool _loading = true;
+    bool _acting;
+    string? _error;
+    SalesOrderDetailDto? _order;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _order = await GetById.Handle(new GetSalesOrderByIdQuery(Id));
+        _loading = false;
+    }
+
+    async Task Confirm()
+    {
+        _acting = true; _error = null;
+        try
+        {
+            _order = await ConfirmHandler.Handle(new ConfirmSalesOrderCommand(Id, "web"));
+            Toast.Show("Pedido confirmado.");
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _acting = false; }
+    }
+
+    async Task Cancel()
+    {
+        _acting = true; _error = null;
+        try
+        {
+            await CancelHandler.Handle(new CancelSalesOrderCommand(Id, "web"));
+            await LoadAsync();
+            Toast.Show("Pedido cancelado.", ToastKind.Warning);
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _acting = false; }
+    }
+
+    static string StatusBadge(SalesOrderStatus s) => s switch
+    {
+        SalesOrderStatus.Draft => "bg-secondary",
+        SalesOrderStatus.Confirmed => "bg-primary",
+        SalesOrderStatus.PartiallyDelivered => "bg-warning text-dark",
+        SalesOrderStatus.Delivered => "bg-success",
+        SalesOrderStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}

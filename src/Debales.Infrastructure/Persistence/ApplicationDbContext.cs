@@ -8,6 +8,8 @@ using Debales.Domain.CRM.Contacts;
 using Debales.Domain.CRM.Customers;
 using Debales.Domain.CRM.Notes;
 using Debales.Domain.CRM.Opportunities;
+using Debales.Domain.Purchasing;
+using Debales.Domain.Sales;
 using Debales.Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,6 +43,18 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<ItemFamily> ItemFamilies => Set<ItemFamily>();
     public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<TaxType> TaxTypes => Set<TaxType>();
+
+    // Sales
+    public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
+    public DbSet<SalesOrderLine> SalesOrderLines => Set<SalesOrderLine>();
+    public DbSet<SalesDeliveryNote> SalesDeliveryNotes => Set<SalesDeliveryNote>();
+    public DbSet<SalesDeliveryNoteLine> SalesDeliveryNoteLines => Set<SalesDeliveryNoteLine>();
+
+    // Purchasing
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderLine> PurchaseOrderLines => Set<PurchaseOrderLine>();
+    public DbSet<PurchaseDeliveryNote> PurchaseDeliveryNotes => Set<PurchaseDeliveryNote>();
+    public DbSet<PurchaseDeliveryNoteLine> PurchaseDeliveryNoteLines => Set<PurchaseDeliveryNoteLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

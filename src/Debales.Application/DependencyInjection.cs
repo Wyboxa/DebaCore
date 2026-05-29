@@ -28,6 +28,24 @@ using Debales.Application.CRM.Notes.Queries.GetNotesByCustomer;
 using Debales.Application.CRM.Opportunities.Commands.CreateOpportunity;
 using Debales.Application.CRM.Opportunities.Commands.UpdateOpportunityStatus;
 using Debales.Application.CRM.Opportunities.Queries.GetOpportunitiesByCustomer;
+using Debales.Application.Sales.Commands.CreateSalesOrder;
+using Debales.Application.Sales.Commands.ConfirmSalesOrder;
+using Debales.Application.Sales.Commands.CancelSalesOrder;
+using Debales.Application.Sales.Commands.CreateSalesDeliveryNote;
+using Debales.Application.Sales.Commands.PostSalesDeliveryNote;
+using Debales.Application.Sales.Queries.GetSalesOrders;
+using Debales.Application.Sales.Queries.GetSalesOrderById;
+using Debales.Application.Sales.Queries.GetSalesDeliveryNotes;
+using Debales.Application.Sales.Queries.GetSalesDeliveryNoteById;
+using Debales.Application.Purchasing.Commands.CreatePurchaseOrder;
+using Debales.Application.Purchasing.Commands.ConfirmPurchaseOrder;
+using Debales.Application.Purchasing.Commands.CancelPurchaseOrder;
+using Debales.Application.Purchasing.Commands.CreatePurchaseDeliveryNote;
+using Debales.Application.Purchasing.Commands.PostPurchaseDeliveryNote;
+using Debales.Application.Purchasing.Queries.GetPurchaseOrders;
+using Debales.Application.Purchasing.Queries.GetPurchaseOrderById;
+using Debales.Application.Purchasing.Queries.GetPurchaseDeliveryNotes;
+using Debales.Application.Purchasing.Queries.GetPurchaseDeliveryNoteById;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Debales.Application;
@@ -79,6 +97,32 @@ public static class DependencyInjection
         services.AddScoped<UpdateSupplierHandler>();
         services.AddScoped<GetSuppliersHandler>();
         services.AddScoped<GetSupplierByIdHandler>();
+
+        // Sales — Orders
+        services.AddScoped<CreateSalesOrderHandler>();
+        services.AddScoped<ConfirmSalesOrderHandler>();
+        services.AddScoped<CancelSalesOrderHandler>();
+        services.AddScoped<GetSalesOrdersHandler>();
+        services.AddScoped<GetSalesOrderByIdHandler>();
+
+        // Sales — Delivery Notes
+        services.AddScoped<CreateSalesDeliveryNoteHandler>();
+        services.AddScoped<PostSalesDeliveryNoteHandler>();
+        services.AddScoped<GetSalesDeliveryNotesHandler>();
+        services.AddScoped<GetSalesDeliveryNoteByIdHandler>();
+
+        // Purchasing — Orders
+        services.AddScoped<CreatePurchaseOrderHandler>();
+        services.AddScoped<ConfirmPurchaseOrderHandler>();
+        services.AddScoped<CancelPurchaseOrderHandler>();
+        services.AddScoped<GetPurchaseOrdersHandler>();
+        services.AddScoped<GetPurchaseOrderByIdHandler>();
+
+        // Purchasing — Delivery Notes
+        services.AddScoped<CreatePurchaseDeliveryNoteHandler>();
+        services.AddScoped<PostPurchaseDeliveryNoteHandler>();
+        services.AddScoped<GetPurchaseDeliveryNotesHandler>();
+        services.AddScoped<GetPurchaseDeliveryNoteByIdHandler>();
 
         // Dashboard
         services.AddScoped<GetDashboardStatsHandler>();
