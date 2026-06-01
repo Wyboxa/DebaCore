@@ -42,10 +42,42 @@ using Debales.Application.Purchasing.Commands.ConfirmPurchaseOrder;
 using Debales.Application.Purchasing.Commands.CancelPurchaseOrder;
 using Debales.Application.Purchasing.Commands.CreatePurchaseDeliveryNote;
 using Debales.Application.Purchasing.Commands.PostPurchaseDeliveryNote;
+using Debales.Application.Purchasing.Commands.CreatePurchaseInvoice;
+using Debales.Application.Purchasing.Commands.PostPurchaseInvoice;
+using Debales.Application.Purchasing.Commands.CancelPurchaseInvoice;
+using Debales.Application.Purchasing.Commands.CreatePurchaseCreditNote;
+using Debales.Application.Purchasing.Commands.PostPurchaseCreditNote;
+using Debales.Application.Purchasing.Commands.CreateSupplierPayment;
 using Debales.Application.Purchasing.Queries.GetPurchaseOrders;
 using Debales.Application.Purchasing.Queries.GetPurchaseOrderById;
 using Debales.Application.Purchasing.Queries.GetPurchaseDeliveryNotes;
 using Debales.Application.Purchasing.Queries.GetPurchaseDeliveryNoteById;
+using Debales.Application.Purchasing.Queries.GetPurchaseInvoices;
+using Debales.Application.Purchasing.Queries.GetPurchaseInvoiceById;
+using Debales.Application.Purchasing.Queries.GetPurchaseCreditNotes;
+using Debales.Application.Purchasing.Queries.GetPurchaseCreditNoteById;
+using Debales.Application.Purchasing.Queries.GetPayables;
+using Debales.Application.Purchasing.Queries.GetSupplierPayments;
+using Debales.Application.Sales.Commands.CreateSalesInvoice;
+using Debales.Application.Sales.Commands.PostSalesInvoice;
+using Debales.Application.Sales.Commands.CancelSalesInvoice;
+using Debales.Application.Sales.Commands.CreateSalesCreditNote;
+using Debales.Application.Sales.Commands.PostSalesCreditNote;
+using Debales.Application.Sales.Commands.CreateCustomerPayment;
+using Debales.Application.Sales.Queries.GetSalesInvoices;
+using Debales.Application.Sales.Queries.GetSalesInvoiceById;
+using Debales.Application.Sales.Queries.GetSalesCreditNotes;
+using Debales.Application.Sales.Queries.GetSalesCreditNoteById;
+using Debales.Application.Sales.Queries.GetReceivables;
+using Debales.Application.Sales.Queries.GetCustomerPayments;
+using Debales.Application.Inventory.Commands.CreateWarehouse;
+using Debales.Application.Inventory.Commands.AddWarehouseLocation;
+using Debales.Application.Inventory.Commands.CreateStockMovement;
+using Debales.Application.Inventory.Queries.GetWarehouses;
+using Debales.Application.Inventory.Queries.GetWarehouseById;
+using Debales.Application.Inventory.Queries.GetStockMovements;
+using Debales.Application.Inventory.Queries.GetStockMovementById;
+using Debales.Application.Inventory.Queries.GetStockBalance;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Debales.Application;
@@ -123,6 +155,52 @@ public static class DependencyInjection
         services.AddScoped<PostPurchaseDeliveryNoteHandler>();
         services.AddScoped<GetPurchaseDeliveryNotesHandler>();
         services.AddScoped<GetPurchaseDeliveryNoteByIdHandler>();
+
+        // Sales — Invoices
+        services.AddScoped<CreateSalesInvoiceHandler>();
+        services.AddScoped<PostSalesInvoiceHandler>();
+        services.AddScoped<CancelSalesInvoiceHandler>();
+        services.AddScoped<GetSalesInvoicesHandler>();
+        services.AddScoped<GetSalesInvoiceByIdHandler>();
+
+        // Sales — Credit Notes
+        services.AddScoped<CreateSalesCreditNoteHandler>();
+        services.AddScoped<PostSalesCreditNoteHandler>();
+        services.AddScoped<GetSalesCreditNotesHandler>();
+        services.AddScoped<GetSalesCreditNoteByIdHandler>();
+
+        // Sales — Receivables & Payments
+        services.AddScoped<GetReceivablesHandler>();
+        services.AddScoped<CreateCustomerPaymentHandler>();
+        services.AddScoped<GetCustomerPaymentsHandler>();
+
+        // Purchasing — Invoices
+        services.AddScoped<CreatePurchaseInvoiceHandler>();
+        services.AddScoped<PostPurchaseInvoiceHandler>();
+        services.AddScoped<CancelPurchaseInvoiceHandler>();
+        services.AddScoped<GetPurchaseInvoicesHandler>();
+        services.AddScoped<GetPurchaseInvoiceByIdHandler>();
+
+        // Purchasing — Credit Notes
+        services.AddScoped<CreatePurchaseCreditNoteHandler>();
+        services.AddScoped<PostPurchaseCreditNoteHandler>();
+        services.AddScoped<GetPurchaseCreditNotesHandler>();
+        services.AddScoped<GetPurchaseCreditNoteByIdHandler>();
+
+        // Purchasing — Payables & Payments
+        services.AddScoped<GetPayablesHandler>();
+        services.AddScoped<CreateSupplierPaymentHandler>();
+        services.AddScoped<GetSupplierPaymentsHandler>();
+
+        // Inventory — ERP-4
+        services.AddScoped<CreateWarehouseHandler>();
+        services.AddScoped<AddWarehouseLocationHandler>();
+        services.AddScoped<GetWarehousesHandler>();
+        services.AddScoped<GetWarehouseByIdHandler>();
+        services.AddScoped<CreateStockMovementHandler>();
+        services.AddScoped<GetStockMovementsHandler>();
+        services.AddScoped<GetStockMovementByIdHandler>();
+        services.AddScoped<GetStockBalanceHandler>();
 
         // Dashboard
         services.AddScoped<GetDashboardStatsHandler>();

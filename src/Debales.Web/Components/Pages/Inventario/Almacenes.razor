@@ -1,0 +1,223 @@
+@page "/inventario/almacenes"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetWarehousesHandler GetWarehouses
+@inject CreateWarehouseHandler CreateHandler
+@inject AddWarehouseLocationHandler AddLocationHandler
+@inject GetWarehouseByIdHandler GetWarehouseById
+@inject ToastService Toast
+
+<PageTitle>Almacenes — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Almacenes</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nuevo almacén</button>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var w in _warehouses)
+        {
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="cursor:pointer" @onclick="() => SelectWarehouse(w.Id)">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h5 class="card-title mb-0">@w.Name</h5>
+                            <span class="badge @(w.IsActive ? "bg-success" : "bg-secondary")">
+                                @(w.IsActive ? "Activo" : "Inactivo")
+                            </span>
+                        </div>
+                        <div class="text-muted small"><code>@w.Code</code></div>
+                        @if (!string.IsNullOrEmpty(w.Description))
+                        {
+                            <div class="text-muted small mt-1">@w.Description</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (_selectedWarehouse is not null)
+{
+    <div class="mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0">Ubicaciones — @_selectedWarehouse.Name</h5>
+            <button class="btn btn-sm btn-outline-primary" @onclick="OpenAddLocation">+ Ubicación</button>
+        </div>
+        @if (_selectedWarehouse.Locations.Count == 0)
+        {
+            <p class="text-muted">Sin ubicaciones definidas.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr><th>Código</th><th>Descripción</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var l in _selectedWarehouse.Locations)
+                        {
+                            <tr>
+                                <td><code>@l.Code</code></td>
+                                <td>@(l.Description ?? "—")</td>
+                                <td><span class="badge @(l.IsActive ? "bg-success" : "bg-secondary")">@(l.IsActive ? "Activa" : "Inactiva")</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@if (_showCreate)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo almacén</h5>
+                    <button class="btn-close" @onclick="CloseCreate"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Código *</label>
+                            <input class="form-control text-uppercase" @bind="_form.Code" maxlength="20" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Nombre *</label>
+                            <input class="form-control" @bind="_form.Name" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descripción</label>
+                            <input class="form-control" @bind="_form.Description" />
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="alert alert-danger py-2 mt-2">@_error</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseCreate">Cancelar</button>
+                    <button class="btn btn-primary" disabled="@_saving" @onclick="Save">Crear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showAddLocation)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nueva ubicación</h5>
+                    <button class="btn-close" @onclick="() => _showAddLocation = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Código *</label>
+                            <input class="form-control text-uppercase" @bind="_locForm.Code" maxlength="20" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Descripción</label>
+                            <input class="form-control" @bind="_locForm.Description" />
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_locError))
+                    {
+                        <div class="alert alert-danger py-2 mt-2">@_locError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _showAddLocation = false">Cancelar</button>
+                    <button class="btn btn-primary" disabled="@_saving" @onclick="SaveLocation">Añadir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    bool _loading = true;
+    bool _showCreate;
+    bool _showAddLocation;
+    bool _saving;
+    string? _error;
+    string? _locError;
+    List<WarehouseSummaryDto> _warehouses = [];
+    WarehouseDetailDto? _selectedWarehouse;
+
+    sealed class CreateForm { public string Code { get; set; } = ""; public string Name { get; set; } = ""; public string? Description { get; set; } }
+    sealed class LocForm { public string Code { get; set; } = ""; public string? Description { get; set; } }
+
+    CreateForm _form = new();
+    LocForm _locForm = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _warehouses = (await GetWarehouses.Handle(new GetWarehousesQuery())).ToList();
+        _loading = false;
+    }
+
+    async Task SelectWarehouse(Guid id)
+    {
+        _selectedWarehouse = await GetWarehouseById.Handle(new GetWarehouseByIdQuery(id));
+    }
+
+    void OpenCreate() { _form = new(); _error = null; _showCreate = true; }
+    void CloseCreate() => _showCreate = false;
+
+    async Task Save()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_form.Code) || string.IsNullOrWhiteSpace(_form.Name))
+        { _error = "Código y nombre son obligatorios."; return; }
+
+        _saving = true;
+        try
+        {
+            await CreateHandler.Handle(new CreateWarehouseCommand(_form.Code, _form.Name, _form.Description, "web"));
+            Toast.Show("Almacén creado.");
+            _showCreate = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    void OpenAddLocation() { _locForm = new(); _locError = null; _showAddLocation = true; }
+
+    async Task SaveLocation()
+    {
+        _locError = null;
+        if (string.IsNullOrWhiteSpace(_locForm.Code))
+        { _locError = "El código es obligatorio."; return; }
+
+        _saving = true;
+        try
+        {
+            await AddLocationHandler.Handle(new AddWarehouseLocationCommand(_selectedWarehouse!.Id, _locForm.Code, _locForm.Description, "web"));
+            Toast.Show("Ubicación añadida.");
+            _showAddLocation = false;
+            _selectedWarehouse = await GetWarehouseById.Handle(new GetWarehouseByIdQuery(_selectedWarehouse.Id));
+        }
+        catch (Exception ex) { _locError = ex.Message; }
+        finally { _saving = false; }
+    }
+}

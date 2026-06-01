@@ -7,15 +7,15 @@ using Debales.Application.CRM.Contacts;
 using Debales.Application.CRM.Customers;
 using Debales.Application.CRM.Notes;
 using Debales.Application.CRM.Opportunities;
+using Debales.Application.Inventory;
 using Debales.Application.Purchasing;
 using Debales.Application.Sales;
 using Debales.Application.Suppliers;
-using Debales.Infrastructure.Persistence.Repositories.Sales;
-using Debales.Infrastructure.Persistence.Repositories.Purchasing;
 using Debales.Infrastructure.Persistence;
 using Debales.Infrastructure.Persistence.Repositories;
 using Debales.Infrastructure.Persistence.Repositories.Catalog;
 using Debales.Infrastructure.Persistence.Repositories.CRM;
+using Debales.Infrastructure.Persistence.Repositories.Inventory;
 using Debales.Infrastructure.Persistence.Repositories.Purchasing;
 using Debales.Infrastructure.Persistence.Repositories.Sales;
 using Debales.Infrastructure.Persistence.Repositories.Suppliers;
@@ -74,6 +74,12 @@ public static class DependencyInjection
         services.AddScoped<ISalesCreditNoteRepository, SalesCreditNoteRepository>();
         services.AddScoped<IReceivableRepository, ReceivableRepository>();
         services.AddScoped<ICustomerPaymentRepository, CustomerPaymentRepository>();
+
+        // Inventory — ERP-4
+        services.AddScoped<IWarehouseRepository, WarehouseRepository>();
+        services.AddScoped<IWarehouseLocationRepository, WarehouseLocationRepository>();
+        services.AddScoped<IStockMovementRepository, StockMovementRepository>();
+        services.AddScoped<IStockBalanceRepository, StockBalanceRepository>();
 
         return services;
     }

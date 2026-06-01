@@ -1,0 +1,96 @@
+@page "/inventario/saldos"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetStockBalanceHandler GetBalance
+@inject GetWarehousesHandler GetWarehouses
+
+<PageTitle>Saldos de stock — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Saldos de stock</h1>
+</div>
+
+<div class="mb-3 d-flex gap-2">
+    <select class="form-select" style="max-width:220px" @onchange="OnWarehouseChanged">
+        <option value="">Todos los almacenes</option>
+        @foreach (var w in _warehouses)
+        {
+            <option value="@w.Id">@w.Name</option>
+        }
+    </select>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    @if (_balances.Count == 0)
+    {
+        <div class="alert alert-light border">Sin movimientos de stock registrados todavía.</div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Almacén</th>
+                            <th>Código</th>
+                            <th>Artículo</th>
+                            <th class="text-end">Stock</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in _balances)
+                        {
+                            <tr>
+                                <td>@b.WarehouseName</td>
+                                <td><code>@b.ItemCode</code></td>
+                                <td>@b.ItemName</td>
+                                <td class="text-end fw-semibold @(b.Quantity < 0 ? "text-danger" : b.Quantity == 0 ? "text-muted" : "")">
+                                    @b.Quantity.ToString("N4")
+                                </td>
+                                <td>
+                                    @if (b.Quantity < 0)
+                                    {
+                                        <span class="badge bg-danger">Stock negativo</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    bool _loading = true;
+    List<StockBalanceDto> _balances = [];
+    List<WarehouseSummaryDto> _warehouses = [];
+    Guid? _warehouseFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _warehouses = (await GetWarehouses.Handle(new GetWarehousesQuery(true))).ToList();
+        await LoadAsync();
+    }
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _balances = (await GetBalance.Handle(new GetStockBalanceQuery(null, _warehouseFilter))).ToList();
+        _loading = false;
+    }
+
+    async Task OnWarehouseChanged(ChangeEventArgs e)
+    {
+        _warehouseFilter = Guid.TryParse(e.Value?.ToString(), out var v) ? v : null;
+        await LoadAsync();
+    }
+}

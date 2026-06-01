@@ -1,0 +1,257 @@
+@page "/inventario/movimientos"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetStockMovementsHandler GetMovements
+@inject CreateStockMovementHandler CreateHandler
+@inject GetWarehousesHandler GetWarehouses
+@inject GetItemsHandler GetItems
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Movimientos de stock — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Movimientos de stock</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nuevo movimiento</button>
+</div>
+
+<div class="mb-3 d-flex gap-2 flex-wrap">
+    <div class="input-group" style="max-width:300px">
+        <input class="form-control" placeholder="Nº, código o artículo…"
+               @bind="_search" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+        <button class="btn btn-outline-secondary" @onclick="Search">Buscar</button>
+    </div>
+    <select class="form-select" style="max-width:160px" @onchange="OnTypeChanged">
+        <option value="">Todos los tipos</option>
+        <option value="0">Entrada</option>
+        <option value="1">Salida</option>
+        <option value="2">Ajuste</option>
+    </select>
+    <select class="form-select" style="max-width:200px" @onchange="OnWarehouseChanged">
+        <option value="">Todos los almacenes</option>
+        @foreach (var w in _warehouses)
+        {
+            <option value="@w.Id">@w.Name</option>
+        }
+    </select>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_result is not null)
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Número</th>
+                        <th>Tipo</th>
+                        <th>Artículo</th>
+                        <th>Almacén</th>
+                        <th>Fecha</th>
+                        <th class="text-end">Cantidad</th>
+                        <th>Referencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in _result.Items)
+                    {
+                        <tr>
+                            <td><code>@m.Number</code></td>
+                            <td><span class="badge @TypeBadge(m.Type)">@m.TypeLabel</span></td>
+                            <td><code>@m.ItemCode</code> @m.ItemName</td>
+                            <td>@m.WarehouseName</td>
+                            <td>@m.Date.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end fw-semibold @(m.Quantity < 0 ? "text-danger" : "text-success")">
+                                @m.Quantity.ToString("+0.####;-0.####;0")
+                            </td>
+                            <td><small class="text-muted">@(m.Reference ?? "—")</small></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (_result.TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <small class="text-muted">@_result.TotalCount resultados</small>
+            <div class="d-flex gap-1">
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(!_result.HasPreviousPage)" @onclick="PrevPage">‹</button>
+                <span class="btn btn-sm btn-outline-secondary disabled">@_page / @_result.TotalPages</span>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(!_result.HasNextPage)" @onclick="NextPage">›</button>
+            </div>
+        </div>
+    }
+}
+
+@if (_showCreate)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo movimiento de stock</h5>
+                    <button class="btn-close" @onclick="CloseCreate"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tipo *</label>
+                            <select class="form-select" @bind="_form.TypeStr">
+                                <option value="">— Seleccionar —</option>
+                                <option value="0">Entrada</option>
+                                <option value="1">Salida</option>
+                                <option value="2">Ajuste</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Fecha *</label>
+                            <input type="date" class="form-control" @bind="_form.Date" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cantidad *</label>
+                            <input type="number" step="0.0001" class="form-control" @bind="_form.Quantity" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Artículo *</label>
+                            <select class="form-select" @bind="_form.ItemIdStr">
+                                <option value="">— Seleccionar —</option>
+                                @foreach (var it in _items)
+                                {
+                                    <option value="@it.Id">@it.Code – @it.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Almacén *</label>
+                            <select class="form-select" @bind="_form.WarehouseIdStr">
+                                <option value="">— Seleccionar —</option>
+                                @foreach (var w in _warehouses)
+                                {
+                                    <option value="@w.Id">@w.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Referencia</label>
+                            <input class="form-control" @bind="_form.Reference" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Notas</label>
+                            <input class="form-control" @bind="_form.Notes" />
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="alert alert-danger py-2 mt-2">@_error</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseCreate">Cancelar</button>
+                    <button class="btn btn-primary" disabled="@_saving" @onclick="Save">Registrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    bool _loading = true;
+    bool _showCreate;
+    bool _saving;
+    string? _error;
+    string? _search;
+    StockMovementType? _typeFilter;
+    Guid? _warehouseFilter;
+    int _page = 1;
+    PagedResult<StockMovementSummaryDto>? _result;
+    List<WarehouseSummaryDto> _warehouses = [];
+    List<ItemSummaryDto> _items = [];
+    CreateForm _form = new();
+
+    sealed class CreateForm
+    {
+        public string TypeStr { get; set; } = "0";
+        public string ItemIdStr { get; set; } = "";
+        public string WarehouseIdStr { get; set; } = "";
+        public DateTime Date { get; set; } = DateTime.Today;
+        public decimal Quantity { get; set; } = 1;
+        public string? Reference { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _warehouses = (await GetWarehouses.Handle(new GetWarehousesQuery(true))).ToList();
+        var ir = await GetItems.Handle(new GetItemsQuery(null, null, null, 1, 500));
+        _items = ir.Items.ToList();
+        await LoadAsync();
+    }
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _result = await GetMovements.Handle(new GetStockMovementsQuery(_search, null, _warehouseFilter, _typeFilter, _page, 20));
+        _loading = false;
+    }
+
+    void OpenCreate() { _form = new(); _error = null; _showCreate = true; }
+    void CloseCreate() => _showCreate = false;
+
+    async Task Save()
+    {
+        _error = null;
+        if (!int.TryParse(_form.TypeStr, out var typeInt))
+        { _error = "Selecciona el tipo."; return; }
+        if (!Guid.TryParse(_form.ItemIdStr, out var itemId))
+        { _error = "Selecciona un artículo."; return; }
+        if (!Guid.TryParse(_form.WarehouseIdStr, out var warehouseId))
+        { _error = "Selecciona un almacén."; return; }
+        if (_form.Quantity == 0)
+        { _error = "La cantidad no puede ser cero."; return; }
+
+        _saving = true;
+        try
+        {
+            await CreateHandler.Handle(new CreateStockMovementCommand(
+                (StockMovementType)typeInt, itemId, warehouseId, null,
+                DateOnly.FromDateTime(_form.Date),
+                _form.Quantity, _form.Reference, _form.Notes, "web"));
+
+            Toast.Show("Movimiento registrado. Saldo actualizado.");
+            _showCreate = false;
+            _page = 1;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    async Task Search() { _page = 1; await LoadAsync(); }
+    async Task OnSearchKeyUp(KeyboardEventArgs e) { if (e.Key == "Enter") await Search(); }
+    async Task OnTypeChanged(ChangeEventArgs e)
+    {
+        _typeFilter = int.TryParse(e.Value?.ToString(), out var v) ? (StockMovementType)v : null;
+        _page = 1; await LoadAsync();
+    }
+    async Task OnWarehouseChanged(ChangeEventArgs e)
+    {
+        _warehouseFilter = Guid.TryParse(e.Value?.ToString(), out var v) ? v : null;
+        _page = 1; await LoadAsync();
+    }
+    async Task PrevPage() { _page--; await LoadAsync(); }
+    async Task NextPage() { _page++; await LoadAsync(); }
+
+    static string TypeBadge(StockMovementType t) => t switch
+    {
+        StockMovementType.In => "bg-success",
+        StockMovementType.Out => "bg-danger",
+        StockMovementType.Adjustment => "bg-info text-dark",
+        _ => "bg-secondary"
+    };
+}

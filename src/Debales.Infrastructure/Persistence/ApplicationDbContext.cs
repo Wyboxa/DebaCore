@@ -8,6 +8,7 @@ using Debales.Domain.CRM.Contacts;
 using Debales.Domain.CRM.Customers;
 using Debales.Domain.CRM.Notes;
 using Debales.Domain.CRM.Opportunities;
+using Debales.Domain.Inventory;
 using Debales.Domain.Purchasing;
 using Debales.Domain.Sales;
 using Debales.Domain.Suppliers;
@@ -69,6 +70,12 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<SalesCreditNoteLine> SalesCreditNoteLines => Set<SalesCreditNoteLine>();
     public DbSet<Receivable> Receivables => Set<Receivable>();
     public DbSet<CustomerPayment> CustomerPayments => Set<CustomerPayment>();
+
+    // Inventory — ERP-4
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+    public DbSet<WarehouseLocation> WarehouseLocations => Set<WarehouseLocation>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<StockBalance> StockBalances => Set<StockBalance>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
