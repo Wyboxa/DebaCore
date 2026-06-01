@@ -1,0 +1,320 @@
+@page "/facturacion/ventas/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetSalesInvoiceByIdHandler GetInvoice
+@inject PostSalesInvoiceHandler PostHandler
+@inject CancelSalesInvoiceHandler CancelHandler
+@inject GetReceivablesHandler GetReceivables
+@inject CreateCustomerPaymentHandler CreatePayment
+@inject GetItemsHandler GetItems
+@inject GetCustomersHandler GetCustomers
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Factura venta — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_invoice is null)
+{
+    <div class="alert alert-warning">Factura no encontrada.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <button class="btn btn-sm btn-outline-secondary me-2" @onclick="GoBack">← Volver</button>
+            <h1 class="h3 d-inline mb-0"><code>@_invoice.Number</code></h1>
+            <span class="badge @StatusBadge(_invoice.Status) ms-2">@_invoice.StatusLabel</span>
+        </div>
+        <div class="d-flex gap-2">
+            @if (_invoice.Status == SalesInvoiceStatus.Draft)
+            {
+                <button class="btn btn-success" disabled="@_busy" @onclick="PostInvoice">Contabilizar</button>
+                <button class="btn btn-outline-danger" disabled="@_busy" @onclick="CancelInvoice">Cancelar</button>
+            }
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Cliente</div>
+                <div class="fw-semibold">@_invoice.CustomerName</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Fecha</div>
+                <div class="fw-semibold">@_invoice.Date.ToString("dd/MM/yyyy")</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Vencimiento</div>
+                <div class="fw-semibold">@_invoice.DueDate.ToString("dd/MM/yyyy")</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Base imponible</div>
+                <div class="fw-semibold">@_invoice.Subtotal.ToString("N2") €</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Total</div>
+                <div class="fw-semibold fs-5">@_invoice.Total.ToString("N2") €</div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_invoice.Notes))
+    {
+        <div class="alert alert-light border mb-3">@_invoice.Notes</div>
+    }
+
+    <h5 class="mb-2">Líneas</h5>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">P. unitario</th>
+                        <th class="text-end">IVA %</th>
+                        <th class="text-end">Subtotal</th>
+                        <th class="text-end">IVA</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in _invoice.Lines)
+                    {
+                        <tr>
+                            <td class="text-muted">@l.SortOrder</td>
+                            <td><code>@l.ItemCode</code></td>
+                            <td>@(l.Description ?? l.ItemName)</td>
+                            <td class="text-end">@l.Quantity.ToString("N2")</td>
+                            <td class="text-end">@l.UnitPrice.ToString("N4") €</td>
+                            <td class="text-end">@l.TaxRate.ToString("N0")%</td>
+                            <td class="text-end">@l.LineSubtotal.ToString("N2") €</td>
+                            <td class="text-end">@l.LineTaxAmount.ToString("N2") €</td>
+                            <td class="text-end fw-semibold">@l.LineTotal.ToString("N2") €</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light fw-semibold">
+                    <tr>
+                        <td colspan="6" class="text-end">Base / IVA / Total:</td>
+                        <td class="text-end">@_invoice.Subtotal.ToString("N2") €</td>
+                        <td class="text-end">@_invoice.TaxAmount.ToString("N2") €</td>
+                        <td class="text-end">@_invoice.Total.ToString("N2") €</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    @if (_invoice.Status == SalesInvoiceStatus.Posted && _receivables.Count > 0)
+    {
+        <h5 class="mb-2">Vencimientos de cobro</h5>
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Número</th>
+                            <th>Vencimiento</th>
+                            <th class="text-end">Importe</th>
+                            <th class="text-end">Cobrado</th>
+                            <th class="text-end">Pendiente</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in _receivables)
+                        {
+                            <tr>
+                                <td><code>@r.Number</code></td>
+                                <td>@r.DueDate.ToString("dd/MM/yyyy")</td>
+                                <td class="text-end">@r.OriginalAmount.ToString("N2") €</td>
+                                <td class="text-end">@r.PaidAmount.ToString("N2") €</td>
+                                <td class="text-end fw-semibold">@r.PendingAmount.ToString("N2") €</td>
+                                <td><span class="badge @ReceivableBadge(r.Status)">@r.StatusLabel</span></td>
+                                <td>
+                                    @if (r.Status == ReceivableStatus.Pending || r.Status == ReceivableStatus.Partial)
+                                    {
+                                        <button class="btn btn-sm btn-outline-success"
+                                                @onclick="() => OpenPayment(r.Id, r.PendingAmount)">
+                                            Cobrar
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_actionError))
+    {
+        <div class="alert alert-danger py-2">@_actionError</div>
+    }
+}
+
+@if (_showPaymentModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar cobro</h5>
+                    <button class="btn-close" @onclick="ClosePayment"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha *</label>
+                            <input type="date" class="form-control" @bind="_payForm.Date" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Importe *</label>
+                            <input type="number" step="0.01" class="form-control" @bind="_payForm.Amount" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Referencia</label>
+                            <input class="form-control" @bind="_payForm.Reference" />
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_payError))
+                    {
+                        <div class="alert alert-danger py-2 mt-2">@_payError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="ClosePayment">Cancelar</button>
+                    <button class="btn btn-success" disabled="@_busy" @onclick="SavePayment">Registrar cobro</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    bool _loading = true;
+    bool _busy;
+    string? _actionError;
+    SalesInvoiceDetailDto? _invoice;
+    List<ReceivableSummaryDto> _receivables = [];
+
+    bool _showPaymentModal;
+    string? _payError;
+    Guid _payReceivableId;
+    PayForm _payForm = new();
+
+    sealed class PayForm
+    {
+        public DateTime Date { get; set; } = DateTime.Today;
+        public decimal Amount { get; set; }
+        public string? Reference { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _invoice = await GetInvoice.Handle(new GetSalesInvoiceByIdQuery(Id));
+        if (_invoice?.Status == SalesInvoiceStatus.Posted)
+        {
+            var r = await GetReceivables.Handle(new GetReceivablesQuery(null, null, null, 1, 50));
+            _receivables = r.Items.Where(x => x.SalesInvoiceId == Id).ToList();
+        }
+        _loading = false;
+    }
+
+    async Task PostInvoice()
+    {
+        _actionError = null; _busy = true;
+        try
+        {
+            await PostHandler.Handle(new PostSalesInvoiceCommand(Id, "web"));
+            Toast.Show("Factura contabilizada. Vencimiento creado.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _actionError = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    async Task CancelInvoice()
+    {
+        _actionError = null; _busy = true;
+        try
+        {
+            await CancelHandler.Handle(new CancelSalesInvoiceCommand(Id, "web"));
+            Toast.Show("Factura cancelada.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _actionError = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    void OpenPayment(Guid receivableId, decimal pendingAmount)
+    {
+        _payReceivableId = receivableId;
+        _payForm = new PayForm { Amount = pendingAmount };
+        _payError = null;
+        _showPaymentModal = true;
+    }
+
+    void ClosePayment() => _showPaymentModal = false;
+
+    async Task SavePayment()
+    {
+        _payError = null; _busy = true;
+        try
+        {
+            await CreatePayment.Handle(new CreateCustomerPaymentCommand(
+                _invoice!.CustomerId, _payReceivableId,
+                DateOnly.FromDateTime(_payForm.Date),
+                _payForm.Amount, _payForm.Reference, null, "web"));
+
+            Toast.Show("Cobro registrado.");
+            _showPaymentModal = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _payError = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    void GoBack() => Nav.NavigateTo("/facturacion/ventas");
+
+    static string StatusBadge(SalesInvoiceStatus s) => s switch
+    {
+        SalesInvoiceStatus.Draft => "bg-secondary",
+        SalesInvoiceStatus.Posted => "bg-success",
+        SalesInvoiceStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    static string ReceivableBadge(ReceivableStatus s) => s switch
+    {
+        ReceivableStatus.Pending => "bg-warning text-dark",
+        ReceivableStatus.Partial => "bg-info text-dark",
+        ReceivableStatus.Settled => "bg-success",
+        ReceivableStatus.Defaulted => "bg-danger",
+        ReceivableStatus.Cancelled => "bg-secondary",
+        _ => "bg-secondary"
+    };
+}

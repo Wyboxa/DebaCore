@@ -55,6 +55,20 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<PurchaseOrderLine> PurchaseOrderLines => Set<PurchaseOrderLine>();
     public DbSet<PurchaseDeliveryNote> PurchaseDeliveryNotes => Set<PurchaseDeliveryNote>();
     public DbSet<PurchaseDeliveryNoteLine> PurchaseDeliveryNoteLines => Set<PurchaseDeliveryNoteLine>();
+    public DbSet<PurchaseInvoice> PurchaseInvoices => Set<PurchaseInvoice>();
+    public DbSet<PurchaseInvoiceLine> PurchaseInvoiceLines => Set<PurchaseInvoiceLine>();
+    public DbSet<PurchaseCreditNote> PurchaseCreditNotes => Set<PurchaseCreditNote>();
+    public DbSet<PurchaseCreditNoteLine> PurchaseCreditNoteLines => Set<PurchaseCreditNoteLine>();
+    public DbSet<Payable> Payables => Set<Payable>();
+    public DbSet<SupplierPayment> SupplierPayments => Set<SupplierPayment>();
+
+    // Sales — ERP-3
+    public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
+    public DbSet<SalesInvoiceLine> SalesInvoiceLines => Set<SalesInvoiceLine>();
+    public DbSet<SalesCreditNote> SalesCreditNotes => Set<SalesCreditNote>();
+    public DbSet<SalesCreditNoteLine> SalesCreditNoteLines => Set<SalesCreditNoteLine>();
+    public DbSet<Receivable> Receivables => Set<Receivable>();
+    public DbSet<CustomerPayment> CustomerPayments => Set<CustomerPayment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

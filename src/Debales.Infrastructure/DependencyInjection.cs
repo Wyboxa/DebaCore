@@ -10,6 +10,8 @@ using Debales.Application.CRM.Opportunities;
 using Debales.Application.Purchasing;
 using Debales.Application.Sales;
 using Debales.Application.Suppliers;
+using Debales.Infrastructure.Persistence.Repositories.Sales;
+using Debales.Infrastructure.Persistence.Repositories.Purchasing;
 using Debales.Infrastructure.Persistence;
 using Debales.Infrastructure.Persistence.Repositories;
 using Debales.Infrastructure.Persistence.Repositories.Catalog;
@@ -62,6 +64,16 @@ public static class DependencyInjection
         // Purchasing
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<IPurchaseDeliveryNoteRepository, PurchaseDeliveryNoteRepository>();
+        services.AddScoped<IPurchaseInvoiceRepository, PurchaseInvoiceRepository>();
+        services.AddScoped<IPurchaseCreditNoteRepository, PurchaseCreditNoteRepository>();
+        services.AddScoped<IPayableRepository, PayableRepository>();
+        services.AddScoped<ISupplierPaymentRepository, SupplierPaymentRepository>();
+
+        // Sales — ERP-3
+        services.AddScoped<ISalesInvoiceRepository, SalesInvoiceRepository>();
+        services.AddScoped<ISalesCreditNoteRepository, SalesCreditNoteRepository>();
+        services.AddScoped<IReceivableRepository, ReceivableRepository>();
+        services.AddScoped<ICustomerPaymentRepository, CustomerPaymentRepository>();
 
         return services;
     }
