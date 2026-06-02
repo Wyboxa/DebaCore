@@ -19,7 +19,7 @@ internal sealed class PurchaseInvoiceRepository : BaseRepository<PurchaseInvoice
         string? search, Guid? supplierId, PurchaseInvoiceStatus? status,
         int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var query = DbSet.Include(i => i.Supplier).AsQueryable();
+        var query = DbSet.Include(i => i.Supplier).Include(i => i.Lines).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {

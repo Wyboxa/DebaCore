@@ -1,0 +1,168 @@
+@page "/contabilidad/ejercicios"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetFiscalYearsHandler GetYears
+@inject CreateFiscalYearHandler CreateHandler
+@inject ToastService Toast
+
+<PageTitle>Ejercicios Fiscales — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Ejercicios fiscales</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nuevo ejercicio</button>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_years is not null)
+{
+    @foreach (var y in _years)
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>@y.Name</strong>
+                <div class="d-flex gap-2 align-items-center">
+                    <small class="text-muted">@y.StartDate.ToString("dd/MM/yyyy") — @y.EndDate.ToString("dd/MM/yyyy")</small>
+                    <span class="badge @(y.Status == FiscalYearStatus.Open ? "bg-success" : "bg-secondary")">@y.StatusLabel</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Período</th>
+                                <th>Inicio</th>
+                                <th>Fin</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in y.Periods.OrderBy(p => p.StartDate))
+                            {
+                                <tr>
+                                    <td>@p.Name</td>
+                                    <td>@p.StartDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@p.EndDate.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <span class="badge @(p.Status == FiscalPeriodStatus.Open ? "bg-success" : "bg-secondary")">
+                                            @p.StatusLabel
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    @if (!_years.Any())
+    {
+        <div class="text-center text-muted py-5">
+            <p>No hay ejercicios fiscales. Crea uno para poder contabilizar asientos.</p>
+        </div>
+    }
+}
+
+@if (_showCreate)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo ejercicio fiscal</h5>
+                    <button type="button" class="btn-close" @onclick="CloseCreate"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_form" OnValidSubmit="CreateYear">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="_form.Name" placeholder="Ej: Ejercicio 2026" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha inicio *</label>
+                                <InputDate class="form-control" @bind-Value="_form.StartDate" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha fin *</label>
+                                <InputDate class="form-control" @bind-Value="_form.EndDate" />
+                            </div>
+                        </div>
+                        <p class="text-muted small mt-2">Los 12 períodos mensuales se crearán automáticamente.</p>
+                        @if (_createError is not null)
+                        {
+                            <div class="alert alert-danger mt-2">@_createError</div>
+                        }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseCreate">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">
+                                @(_saving ? "Creando…" : "Crear ejercicio")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<FiscalYearDetailDto>? _years;
+    private bool _loading;
+    private bool _showCreate;
+    private bool _saving;
+    private string? _createError;
+    private YearForm _form = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+        _years = await GetYears.Handle(new GetFiscalYearsQuery());
+        _loading = false;
+    }
+
+    private void OpenCreate()
+    {
+        _form = new YearForm
+        {
+            Name = $"Ejercicio {DateTime.Now.Year}",
+            StartDate = new DateOnly(DateTime.Now.Year, 1, 1),
+            EndDate = new DateOnly(DateTime.Now.Year, 12, 31)
+        };
+        _createError = null;
+        _showCreate = true;
+    }
+
+    private void CloseCreate() => _showCreate = false;
+
+    private async Task CreateYear()
+    {
+        _saving = true;
+        _createError = null;
+        try
+        {
+            await CreateHandler.Handle(
+                new CreateFiscalYearCommand(_form.Name!, _form.StartDate, _form.EndDate, "web"));
+            _showCreate = false;
+            Toast.Show("Ejercicio fiscal creado correctamente");
+            await LoadAsync();
+        }
+        catch (InvalidOperationException ex) { _createError = ex.Message; }
+        catch (ArgumentException ex) { _createError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private sealed class YearForm
+    {
+        public string? Name { get; set; }
+        public DateOnly StartDate { get; set; } = new DateOnly(DateTime.Now.Year, 1, 1);
+        public DateOnly EndDate { get; set; } = new DateOnly(DateTime.Now.Year, 12, 31);
+    }
+}

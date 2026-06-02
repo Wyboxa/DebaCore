@@ -21,6 +21,7 @@ public sealed class Customer : AuditableEntity
     public string? Website { get; private set; }
     public bool IsActive { get; private set; }
     public Address? Address { get; private set; }
+    public string? AccountCode { get; private set; }
 
     public IReadOnlyList<Contact> Contacts => _contacts.AsReadOnly();
     public IReadOnlyList<Activity> Activities => _activities.AsReadOnly();
@@ -69,6 +70,12 @@ public sealed class Customer : AuditableEntity
     public void Deactivate(string updatedBy)
     {
         IsActive = false;
+        SetUpdated(updatedBy);
+    }
+
+    public void SetAccountCode(string? accountCode, string updatedBy)
+    {
+        AccountCode = accountCode?.Trim().ToUpper();
         SetUpdated(updatedBy);
     }
 }

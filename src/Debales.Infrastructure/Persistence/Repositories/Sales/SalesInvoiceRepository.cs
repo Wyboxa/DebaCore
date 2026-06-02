@@ -19,7 +19,7 @@ internal sealed class SalesInvoiceRepository : BaseRepository<SalesInvoice>, ISa
         string? search, Guid? customerId, SalesInvoiceStatus? status,
         int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var query = DbSet.Include(i => i.Customer).AsQueryable();
+        var query = DbSet.Include(i => i.Customer).Include(i => i.Lines).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {

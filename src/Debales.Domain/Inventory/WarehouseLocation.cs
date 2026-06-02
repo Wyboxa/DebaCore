@@ -1,4 +1,4 @@
-using Debales.Domain.Common;
+ using Debales.Domain.Common;
 
 namespace Debales.Domain.Inventory;
 

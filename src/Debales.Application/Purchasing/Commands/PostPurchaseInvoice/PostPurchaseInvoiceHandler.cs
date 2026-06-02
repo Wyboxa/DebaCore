@@ -1,3 +1,4 @@
+using Debales.Application.Accounting.Services;
 using Debales.Application.Common;
 using Debales.Application.Purchasing.DTOs;
 using Debales.Application.Purchasing.Queries.GetPurchaseInvoiceById;
@@ -9,12 +10,16 @@ public sealed class PostPurchaseInvoiceHandler
 {
     private readonly IPurchaseInvoiceRepository _invoices;
     private readonly IPayableRepository _payables;
+    private readonly IAccountingEntryService _accounting;
     private readonly IUnitOfWork _uow;
 
-    public PostPurchaseInvoiceHandler(IPurchaseInvoiceRepository invoices, IPayableRepository payables, IUnitOfWork uow)
+    public PostPurchaseInvoiceHandler(
+        IPurchaseInvoiceRepository invoices, IPayableRepository payables,
+        IAccountingEntryService accounting, IUnitOfWork uow)
     {
         _invoices = invoices;
         _payables = payables;
+        _accounting = accounting;
         _uow = uow;
     }
 
@@ -31,6 +36,14 @@ public sealed class PostPurchaseInvoiceHandler
             invoice.DueDate, invoice.Total, command.UpdatedBy);
 
         await _payables.AddAsync(payable, cancellationToken);
+
+        // Asiento contable automático (no bloqueante — si faltan prereqs se omite)
+        await _accounting.GenerateFromPurchaseInvoiceAsync(
+            invoice.Id, invoice.Number, invoice.Date,
+            invoice.SupplierId, invoice.Supplier?.AccountCode,
+            invoice.Subtotal, invoice.TaxAmount, invoice.Total,
+            cancellationToken);
+
         await _uow.SaveChangesAsync(cancellationToken);
 
         var saved = await _invoices.GetByIdAsync(invoice.Id, cancellationToken);

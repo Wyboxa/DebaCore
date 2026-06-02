@@ -22,6 +22,763 @@ namespace Debales.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Debales.Domain.Accounting.Account", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPostable")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ParentCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Accounts", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000001"),
+                            Code = "300",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "Mercaderías",
+                            Type = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000002"),
+                            Code = "400",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = false,
+                            Name = "Proveedores",
+                            Type = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000003"),
+                            Code = "430",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = false,
+                            Name = "Clientes",
+                            Type = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000004"),
+                            Code = "472",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "HP IVA soportado",
+                            Type = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000005"),
+                            Code = "475",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "HP acreedora por conceptos fiscales",
+                            Type = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000006"),
+                            Code = "477",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "HP IVA repercutido",
+                            Type = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000007"),
+                            Code = "570",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "Caja",
+                            Type = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000008"),
+                            Code = "572",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "Bancos c/c",
+                            Type = 0
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000009"),
+                            Code = "600",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "Compras de mercaderías",
+                            Type = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000010"),
+                            Code = "621",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "Arrendamientos y cánones",
+                            Type = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000011"),
+                            Code = "628",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "Suministros",
+                            Type = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000012"),
+                            Code = "640",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "Sueldos y salarios",
+                            Type = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000013"),
+                            Code = "700",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "Ventas de mercaderías",
+                            Type = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000014"),
+                            Code = "705",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            IsPostable = true,
+                            Name = "Prestaciones de servicios",
+                            Type = 3
+                        });
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.AccountingEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("FiscalPeriodId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("JournalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid?>("SourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FiscalPeriodId");
+
+                    b.HasIndex("JournalId");
+
+                    b.HasIndex("Number")
+                        .IsUnique();
+
+                    b.ToTable("AccountingEntries", (string)null);
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.AccountingEntryLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountingEntryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Credit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Debit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ThirdPartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ThirdPartyType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("AccountingEntryId");
+
+                    b.ToTable("AccountingEntryLines", (string)null);
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.AccountingJournal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("AccountingJournals", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000001"),
+                            Code = "VTA",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Diario de Ventas"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000002"),
+                            Code = "CPR",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Diario de Compras"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000003"),
+                            Code = "BCO",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Diario de Banco"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000004"),
+                            Code = "CAJ",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Diario de Caja"
+                        });
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.AccountingTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JournalCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("EventType")
+                        .IsUnique();
+
+                    b.ToTable("AccountingTemplates", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("22222222-0000-0000-0000-000000000001"),
+                            Code = "SALES_INV_POSTED",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            EventType = "SalesInvoicePosted",
+                            IsActive = true,
+                            IsDeleted = false,
+                            JournalCode = "VTA",
+                            Name = "Factura de venta contabilizada"
+                        },
+                        new
+                        {
+                            Id = new Guid("22222222-0000-0000-0000-000000000002"),
+                            Code = "PURCH_INV_POSTED",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "system",
+                            EventType = "PurchaseInvoicePosted",
+                            IsActive = true,
+                            IsDeleted = false,
+                            JournalCode = "CPR",
+                            Name = "Factura de compra contabilizada"
+                        });
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.AccountingTemplateLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("AccountingTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AmountType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Side")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountingTemplateId");
+
+                    b.ToTable("AccountingTemplateLines", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("44444444-0000-0000-0000-000000000001"),
+                            AccountCode = "{CUSTOMER}",
+                            AccountingTemplateId = new Guid("22222222-0000-0000-0000-000000000001"),
+                            AmountType = 0,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Cliente — total factura",
+                            Side = 0,
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("44444444-0000-0000-0000-000000000002"),
+                            AccountCode = "700",
+                            AccountingTemplateId = new Guid("22222222-0000-0000-0000-000000000001"),
+                            AmountType = 1,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Ventas de mercaderías",
+                            Side = 1,
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("44444444-0000-0000-0000-000000000003"),
+                            AccountCode = "477",
+                            AccountingTemplateId = new Guid("22222222-0000-0000-0000-000000000001"),
+                            AmountType = 2,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "IVA repercutido",
+                            Side = 1,
+                            SortOrder = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("44444444-0000-0000-0000-000000000004"),
+                            AccountCode = "600",
+                            AccountingTemplateId = new Guid("22222222-0000-0000-0000-000000000002"),
+                            AmountType = 1,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Compras de mercaderías",
+                            Side = 0,
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("44444444-0000-0000-0000-000000000005"),
+                            AccountCode = "472",
+                            AccountingTemplateId = new Guid("22222222-0000-0000-0000-000000000002"),
+                            AmountType = 2,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "IVA soportado",
+                            Side = 0,
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("44444444-0000-0000-0000-000000000006"),
+                            AccountCode = "{SUPPLIER}",
+                            AccountingTemplateId = new Guid("22222222-0000-0000-0000-000000000002"),
+                            AmountType = 0,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Proveedor — total factura",
+                            Side = 1,
+                            SortOrder = 3
+                        });
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.FiscalPeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
+
+                    b.ToTable("FiscalPeriods", (string)null);
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.FiscalYear", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("[Name] IS NOT NULL");
+
+                    b.ToTable("FiscalYears", (string)null);
+                });
+
             modelBuilder.Entity("Debales.Domain.CRM.Activities.Activity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -148,6 +905,9 @@ namespace Debales.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountCode")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -2232,6 +2992,9 @@ namespace Debales.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AccountCode")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ContactName")
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
@@ -2295,6 +3058,58 @@ namespace Debales.Infrastructure.Persistence.Migrations
                         .HasFilter("[TaxId] IS NOT NULL");
 
                     b.ToTable("Suppliers", (string)null);
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.AccountingEntry", b =>
+                {
+                    b.HasOne("Debales.Domain.Accounting.FiscalPeriod", "FiscalPeriod")
+                        .WithMany()
+                        .HasForeignKey("FiscalPeriodId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Debales.Domain.Accounting.AccountingJournal", "Journal")
+                        .WithMany()
+                        .HasForeignKey("JournalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FiscalPeriod");
+
+                    b.Navigation("Journal");
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.AccountingEntryLine", b =>
+                {
+                    b.HasOne("Debales.Domain.Accounting.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Debales.Domain.Accounting.AccountingEntry", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("AccountingEntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.AccountingTemplateLine", b =>
+                {
+                    b.HasOne("Debales.Domain.Accounting.AccountingTemplate", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("AccountingTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.FiscalPeriod", b =>
+                {
+                    b.HasOne("Debales.Domain.Accounting.FiscalYear", null)
+                        .WithMany("Periods")
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Debales.Domain.CRM.Activities.Activity", b =>
@@ -2820,6 +3635,21 @@ namespace Debales.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Address");
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.AccountingEntry", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.AccountingTemplate", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("Debales.Domain.Accounting.FiscalYear", b =>
+                {
+                    b.Navigation("Periods");
                 });
 
             modelBuilder.Entity("Debales.Domain.CRM.Customers.Customer", b =>

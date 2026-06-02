@@ -1,3 +1,4 @@
+using Debales.Application.Accounting;
 using Debales.Application.Catalog;
 using Debales.Application.Common;
 using Debales.Application.Core.Auth;
@@ -13,6 +14,7 @@ using Debales.Application.Sales;
 using Debales.Application.Suppliers;
 using Debales.Infrastructure.Persistence;
 using Debales.Infrastructure.Persistence.Repositories;
+using Debales.Infrastructure.Persistence.Repositories.Accounting;
 using Debales.Infrastructure.Persistence.Repositories.Catalog;
 using Debales.Infrastructure.Persistence.Repositories.CRM;
 using Debales.Infrastructure.Persistence.Repositories.Inventory;
@@ -74,6 +76,13 @@ public static class DependencyInjection
         services.AddScoped<ISalesCreditNoteRepository, SalesCreditNoteRepository>();
         services.AddScoped<IReceivableRepository, ReceivableRepository>();
         services.AddScoped<ICustomerPaymentRepository, CustomerPaymentRepository>();
+
+        // Accounting — ERP-5
+        services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IFiscalYearRepository, FiscalYearRepository>();
+        services.AddScoped<IAccountingJournalRepository, AccountingJournalRepository>();
+        services.AddScoped<IAccountingEntryRepository, AccountingEntryRepository>();
+        services.AddScoped<IAccountingTemplateRepository, AccountingTemplateRepository>();
 
         // Inventory — ERP-4
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();

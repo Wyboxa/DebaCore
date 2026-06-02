@@ -13,6 +13,7 @@ public sealed class Supplier : AuditableEntity
     public string? Notes { get; private set; }
     public bool IsActive { get; private set; }
     public SupplierAddress? Address { get; private set; }
+    public string? AccountCode { get; private set; }
 
     private Supplier() { }
 
@@ -71,6 +72,12 @@ public sealed class Supplier : AuditableEntity
     public void Deactivate(string updatedBy)
     {
         IsActive = false;
+        SetUpdated(updatedBy);
+    }
+
+    public void SetAccountCode(string? accountCode, string updatedBy)
+    {
+        AccountCode = accountCode?.Trim().ToUpper();
         SetUpdated(updatedBy);
     }
 }

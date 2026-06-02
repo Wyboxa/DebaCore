@@ -1,3 +1,4 @@
+using Debales.Domain.Accounting;
 using Debales.Domain.Catalog;
 using Debales.Domain.Core.Audit;
 using Debales.Domain.Core.Modules;
@@ -76,6 +77,16 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<WarehouseLocation> WarehouseLocations => Set<WarehouseLocation>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockBalance> StockBalances => Set<StockBalance>();
+
+    // Accounting — ERP-5
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<FiscalYear> FiscalYears => Set<FiscalYear>();
+    public DbSet<FiscalPeriod> FiscalPeriods => Set<FiscalPeriod>();
+    public DbSet<AccountingJournal> AccountingJournals => Set<AccountingJournal>();
+    public DbSet<AccountingEntry> AccountingEntries => Set<AccountingEntry>();
+    public DbSet<AccountingEntryLine> AccountingEntryLines => Set<AccountingEntryLine>();
+    public DbSet<AccountingTemplate> AccountingTemplates => Set<AccountingTemplate>();
+    public DbSet<AccountingTemplateLine> AccountingTemplateLines => Set<AccountingTemplateLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

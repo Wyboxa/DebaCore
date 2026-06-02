@@ -70,6 +70,18 @@ using Debales.Application.Sales.Queries.GetSalesCreditNotes;
 using Debales.Application.Sales.Queries.GetSalesCreditNoteById;
 using Debales.Application.Sales.Queries.GetReceivables;
 using Debales.Application.Sales.Queries.GetCustomerPayments;
+using Debales.Application.Accounting.Commands.CreateAccount;
+using Debales.Application.Accounting.Commands.CreateAccountingEntry;
+using Debales.Application.Accounting.Commands.CreateAccountingJournal;
+using Debales.Application.Accounting.Commands.CreateFiscalYear;
+using Debales.Application.Accounting.Commands.PostAccountingEntry;
+using Debales.Application.Accounting.Queries.GetAccountById;
+using Debales.Application.Accounting.Queries.GetAccounts;
+using Debales.Application.Accounting.Queries.GetAccountingEntries;
+using Debales.Application.Accounting.Queries.GetAccountingEntryById;
+using Debales.Application.Accounting.Queries.GetAccountingJournals;
+using Debales.Application.Accounting.Queries.GetFiscalYears;
+using Debales.Application.Accounting.Services;
 using Debales.Application.Inventory.Commands.CreateWarehouse;
 using Debales.Application.Inventory.Commands.AddWarehouseLocation;
 using Debales.Application.Inventory.Commands.CreateStockMovement;
@@ -201,6 +213,20 @@ public static class DependencyInjection
         services.AddScoped<GetStockMovementsHandler>();
         services.AddScoped<GetStockMovementByIdHandler>();
         services.AddScoped<GetStockBalanceHandler>();
+
+        // Accounting — ERP-5
+        services.AddScoped<IAccountingEntryService, AccountingEntryService>();
+        services.AddScoped<CreateAccountHandler>();
+        services.AddScoped<GetAccountsHandler>();
+        services.AddScoped<GetAccountByIdHandler>();
+        services.AddScoped<CreateFiscalYearHandler>();
+        services.AddScoped<GetFiscalYearsHandler>();
+        services.AddScoped<CreateAccountingJournalHandler>();
+        services.AddScoped<GetAccountingJournalsHandler>();
+        services.AddScoped<CreateAccountingEntryHandler>();
+        services.AddScoped<PostAccountingEntryHandler>();
+        services.AddScoped<GetAccountingEntriesHandler>();
+        services.AddScoped<GetAccountingEntryByIdHandler>();
 
         // Dashboard
         services.AddScoped<GetDashboardStatsHandler>();
