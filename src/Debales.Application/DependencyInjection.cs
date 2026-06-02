@@ -70,6 +70,7 @@ using Debales.Application.Sales.Queries.GetSalesCreditNotes;
 using Debales.Application.Sales.Queries.GetSalesCreditNoteById;
 using Debales.Application.Sales.Queries.GetReceivables;
 using Debales.Application.Sales.Queries.GetCustomerPayments;
+using Debales.Application.AI.ERP;
 using Debales.Application.Accounting.Commands.CreateAccount;
 using Debales.Application.Accounting.Commands.CreateAccountingEntry;
 using Debales.Application.Accounting.Commands.CreateAccountingJournal;
@@ -213,6 +214,12 @@ public static class DependencyInjection
         services.AddScoped<GetStockMovementsHandler>();
         services.AddScoped<GetStockMovementByIdHandler>();
         services.AddScoped<GetStockBalanceHandler>();
+
+        // AI — ERP-6
+        services.AddScoped<ChatWithERPHandler>();
+        services.AddScoped<GetERPAnomaliesHandler>();
+        services.AddScoped<GetCustomerERPSummaryHandler>();
+        services.AddScoped<GetSupplierERPSummaryHandler>();
 
         // Accounting — ERP-5
         services.AddScoped<IAccountingEntryService, AccountingEntryService>();

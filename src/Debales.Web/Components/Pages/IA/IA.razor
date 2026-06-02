@@ -1,97 +1,325 @@
 @page "/ia"
 @rendermode InteractiveServer
 @attribute [Authorize]
+@inject ChatWithERPHandler ERPChat
+@inject GetERPAnomaliesHandler GetAnomalies
+@inject GetCustomerERPSummaryHandler GetCustomerSummary
+@inject GetSupplierERPSummaryHandler GetSupplierSummary
+@inject GetCustomersHandler GetCustomers
+@inject GetSuppliersHandler GetSuppliers
+@inject ToastService Toast
 
-<PageTitle>Asistente IA — Debales</PageTitle>
+<PageTitle>Asistente IA ERP — Debales</PageTitle>
 
-<div class="d-flex justify-content-between align-items-start mb-4">
+<div class="d-flex justify-content-between align-items-start mb-3">
     <div>
         <h1 class="h4 fw-bold mb-0">Asistente IA</h1>
-        <small class="text-muted">Inteligencia artificial supervisada integrada en tu plataforma</small>
+        <small class="text-muted">Inteligencia artificial supervisada sobre CRM y ERP</small>
     </div>
-    <span class="badge-ia" style="font-size:0.8rem;padding:0.35em 0.8em">NUEVO</span>
+    <span class="badge bg-primary">ERP-6</span>
 </div>
 
-<div class="row g-3 mb-3">
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <div class="icon-wrap icon-teal">
-                        <svg width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828z"/>
-                        </svg>
-                    </div>
-                    <span class="fw-semibold">IA ya disponible en CRM</span>
-                </div>
-                <p class="small text-muted mb-0">El asistente IA ya está integrado en la ficha de cada cliente. Accede a él desde la pestaña <strong>Asistente IA</strong> dentro de cualquier cliente.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <div class="icon-wrap icon-amber">
-                        <svg width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1z"/>
-                        </svg>
-                    </div>
-                    <span class="fw-semibold">Briefing diario</span>
-                </div>
-                <p class="small text-muted mb-0">Cada día el asistente genera un análisis del pipeline, actividades pendientes y oportunidades prioritarias desde el <a href="/">panel de control</a>.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <div class="icon-wrap icon-violet">
-                        <svg width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1"/>
-                        </svg>
-                    </div>
-                    <span class="fw-semibold">Resumen de cliente</span>
-                </div>
-                <p class="small text-muted mb-0">El asistente puede generar un resumen ejecutivo de cualquier cliente: actividad, oportunidades, notas y contexto del negocio.</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white border-bottom py-3">
-        <span class="fw-semibold">Capacidades futuras del Asistente IA</span>
-    </div>
-    <div class="card-body">
-        <div class="row g-0">
-            @foreach (var cap in _capabilities)
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <button class="nav-link @(_tab == "erp" ? "active" : "")" @onclick='() => SetTab("erp")'>
+            Chat ERP
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(_tab == "anomalies" ? "active" : "")" @onclick='() => SetTab("anomalies")'>
+            Anomalías
+            @if (_anomalies is not null && _anomalies.Any(a => a.Severity == "Alta"))
             {
-                <div class="col-md-6 d-flex align-items-start gap-2 py-2 pe-4">
-                    <div class="feature-dot mt-1"></div>
-                    <div>
-                        <div class="small fw-semibold">@cap.Title</div>
-                        <div class="small text-muted">@cap.Description</div>
+                <span class="badge bg-danger ms-1">@_anomalies.Count(a => a.Severity == "Alta")</span>
+            }
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(_tab == "customer" ? "active" : "")" @onclick='() => SetTab("customer")'>
+            Análisis cliente
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(_tab == "supplier" ? "active" : "")" @onclick='() => SetTab("supplier")'>
+            Análisis proveedor
+        </button>
+    </li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════
+     TAB: CHAT ERP
+════════════════════════════════════════════════════ -->
+@if (_tab == "erp")
+{
+    <div class="card border-0 shadow-sm" style="height:600px;display:flex;flex-direction:column">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-2">
+            <span class="fw-semibold small">Chat ERP — Ventas, Compras, Cobros y Contabilidad</span>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearChat">Limpiar</button>
+        </div>
+        <div class="flex-grow-1 p-3 overflow-auto" style="background:#f8f9fa" @ref="_chatBox">
+            @if (!_erpMessages.Any())
+            {
+                <div class="text-center text-muted py-5">
+                    <p class="mb-2">Pregunta sobre el estado financiero de la empresa:</p>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        @foreach (var hint in _erpHints)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => SendHint(hint)">@hint</button>
+                        }
+                    </div>
+                </div>
+            }
+            @foreach (var m in _erpMessages)
+            {
+                @if (m.Role == "user")
+                {
+                    <div class="d-flex justify-content-end mb-2">
+                        <div class="rounded-3 px-3 py-2 text-white" style="background:#6B9CA9;max-width:75%;white-space:pre-wrap">@m.Content</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex justify-content-start mb-2">
+                        <div class="rounded-3 px-3 py-2 bg-white border" style="max-width:85%;white-space:pre-wrap">@m.Content</div>
+                    </div>
+                }
+            }
+            @if (_erpLoading)
+            {
+                <div class="d-flex justify-content-start mb-2">
+                    <div class="rounded-3 px-3 py-2 bg-white border text-muted">
+                        <span class="spinner-border spinner-border-sm me-1"></span> Analizando datos ERP…
                     </div>
                 </div>
             }
         </div>
+        <div class="card-footer bg-white border-top p-2">
+            <div class="input-group">
+                <input class="form-control" placeholder="Pregunta sobre facturas, cobros, pagos, contabilidad…"
+                       @bind="_erpInput" @bind:event="oninput"
+                       @onkeydown="OnERPKeyDown" disabled="@_erpLoading" />
+                <button class="btn btn-primary" @onclick="SendERP" disabled="@(_erpLoading || string.IsNullOrWhiteSpace(_erpInput))">
+                    Enviar
+                </button>
+            </div>
+        </div>
     </div>
-</div>
+}
+
+<!-- ══════════════════════════════════════════════════
+     TAB: ANOMALÍAS
+════════════════════════════════════════════════════ -->
+@if (_tab == "anomalies")
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <p class="text-muted mb-0 small">Análisis automático de indicadores ERP.</p>
+        <button class="btn btn-sm btn-outline-primary" @onclick="LoadAnomalies" disabled="@_anomalyLoading">
+            @(_anomalyLoading ? "Analizando…" : "Actualizar")
+        </button>
+    </div>
+
+    @if (_anomalyLoading)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+    }
+    else if (_anomalies is not null)
+    {
+        @foreach (var a in _anomalies)
+        {
+            var (bg, icon) = a.Severity switch
+            {
+                "Alta"  => ("danger", "⚠️"),
+                "Media" => ("warning", "🔶"),
+                "Ok"    => ("success", "✅"),
+                _       => ("info", "ℹ️")
+            };
+            <div class="alert alert-@bg border-0 shadow-sm mb-2" role="alert">
+                <div class="d-flex align-items-start gap-2">
+                    <span>@icon</span>
+                    <div>
+                        <strong>@a.Type</strong>
+                        <div class="small mt-1">@a.Description</div>
+                        @if (a.Action is not null)
+                        {
+                            <div class="small text-muted mt-1">→ @a.Action</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="text-center py-5 text-muted">
+            <p>Pulsa "Actualizar" para analizar el estado del ERP.</p>
+        </div>
+    }
+}
+
+<!-- ══════════════════════════════════════════════════
+     TAB: ANÁLISIS CLIENTE
+════════════════════════════════════════════════════ -->
+@if (_tab == "customer")
+{
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Seleccionar cliente</label>
+            <select class="form-select" @bind="_selectedCustomerId" @bind:after="OnCustomerSelected">
+                <option value="">— Selecciona un cliente —</option>
+                @foreach (var c in _customers)
+                {
+                    <option value="@c.Id">@c.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    @if (_customerSummaryLoading)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+    }
+    else if (_customerSummary is not null)
+    {
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white fw-semibold">Análisis financiero — @_customers.FirstOrDefault(c => c.Id.ToString() == _selectedCustomerId)?.Name</div>
+            <div class="card-body" style="white-space:pre-wrap">@_customerSummary</div>
+        </div>
+    }
+}
+
+<!-- ══════════════════════════════════════════════════
+     TAB: ANÁLISIS PROVEEDOR
+════════════════════════════════════════════════════ -->
+@if (_tab == "supplier")
+{
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Seleccionar proveedor</label>
+            <select class="form-select" @bind="_selectedSupplierId" @bind:after="OnSupplierSelected">
+                <option value="">— Selecciona un proveedor —</option>
+                @foreach (var s in _suppliers)
+                {
+                    <option value="@s.Id">@s.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    @if (_supplierSummaryLoading)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+    }
+    else if (_supplierSummary is not null)
+    {
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white fw-semibold">Análisis financiero — @_suppliers.FirstOrDefault(s => s.Id.ToString() == _selectedSupplierId)?.Name</div>
+            <div class="card-body" style="white-space:pre-wrap">@_supplierSummary</div>
+        </div>
+    }
+}
 
 @code {
-    private readonly (string Title, string Description)[] _capabilities =
-    [
-        ("Chat general de negocio", "Consulta datos de clientes, ventas y actividad sin abrir cada ficha"),
-        ("Propuestas de mejora", "La IA detecta patrones y sugiere acciones en el pipeline"),
-        ("Generación de tareas", "Convierte conversaciones en tareas accionables con un clic"),
-        ("Análisis de oportunidades", "Priorización automática de oportunidades por probabilidad de cierre"),
-        ("Código asistido supervisado", "Genera propuestas de cambios técnicos para revisión humana"),
-        ("Documentación automática", "Genera documentación de procesos a partir de la actividad registrada"),
-        ("Detección de anomalías", "Alerta sobre desviaciones en ventas, cobros o stock"),
-        ("Informes en lenguaje natural", "Pide informes en texto plano, la IA los genera al instante")
+    string _tab = "erp";
+    ElementReference _chatBox;
+
+    // ERP Chat
+    List<ChatMessage> _erpMessages = [];
+    string _erpInput = "";
+    bool _erpLoading;
+    readonly string[] _erpHints = [
+        "¿Cuánto hemos facturado este mes?",
+        "¿Qué cobros están vencidos?",
+        "¿Cuál es el saldo pendiente de pago a proveedores?",
+        "Resume el estado financiero actual",
+        "¿Hay facturas sin contabilizar?"
     ];
+
+    // Anomalías
+    IReadOnlyList<ERPAnomalyDto>? _anomalies;
+    bool _anomalyLoading;
+
+    // Customer summary
+    IReadOnlyList<CustomerSummaryDto> _customers = [];
+    string _selectedCustomerId = "";
+    string? _customerSummary;
+    bool _customerSummaryLoading;
+
+    // Supplier summary
+    IReadOnlyList<SupplierSummaryDto> _suppliers = [];
+    string _selectedSupplierId = "";
+    string? _supplierSummary;
+    bool _supplierSummaryLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var custResult = await GetCustomers.Handle(new GetCustomersQuery(null, 1, 100));
+        _customers = custResult.Items;
+        var suppResult = await GetSuppliers.Handle(new GetSuppliersQuery(null, 1, 100));
+        _suppliers = suppResult.Items;
+    }
+
+    void SetTab(string tab)
+    {
+        _tab = tab;
+        if (tab == "anomalies" && _anomalies is null) _ = LoadAnomalies();
+    }
+
+    void ClearChat() { _erpMessages.Clear(); _erpInput = ""; }
+
+    async Task SendHint(string hint) { _erpInput = hint; await SendERP(); }
+
+    async Task OnERPKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey && !string.IsNullOrWhiteSpace(_erpInput))
+            await SendERP();
+    }
+
+    async Task SendERP()
+    {
+        if (string.IsNullOrWhiteSpace(_erpInput) || _erpLoading) return;
+        var msg = _erpInput.Trim();
+        _erpInput = "";
+        _erpMessages.Add(new ChatMessage("user", msg));
+        _erpLoading = true;
+
+        try
+        {
+            var result = await ERPChat.Handle(new ChatWithERPCommand(_erpMessages.SkipLast(1).ToList(), msg, "web"));
+            _erpMessages.Add(new ChatMessage("assistant", result.Message));
+        }
+        catch (Exception ex)
+        {
+            _erpMessages.Add(new ChatMessage("assistant", $"Error al procesar la consulta: {ex.Message}"));
+        }
+        finally { _erpLoading = false; }
+    }
+
+    async Task LoadAnomalies()
+    {
+        _anomalyLoading = true;
+        try { _anomalies = await GetAnomalies.Handle(new GetERPAnomaliesQuery()); }
+        catch (Exception ex) { Toast.Show($"Error: {ex.Message}"); }
+        finally { _anomalyLoading = false; }
+    }
+
+    async Task OnCustomerSelected()
+    {
+        if (!Guid.TryParse(_selectedCustomerId, out var id)) { _customerSummary = null; return; }
+        _customerSummaryLoading = true;
+        _customerSummary = null;
+        try { _customerSummary = await GetCustomerSummary.Handle(new GetCustomerERPSummaryQuery(id)); }
+        catch (Exception ex) { _customerSummary = $"Error: {ex.Message}"; }
+        finally { _customerSummaryLoading = false; }
+    }
+
+    async Task OnSupplierSelected()
+    {
+        if (!Guid.TryParse(_selectedSupplierId, out var id)) { _supplierSummary = null; return; }
+        _supplierSummaryLoading = true;
+        _supplierSummary = null;
+        try { _supplierSummary = await GetSupplierSummary.Handle(new GetSupplierERPSummaryQuery(id)); }
+        catch (Exception ex) { _supplierSummary = $"Error: {ex.Message}"; }
+        finally { _supplierSummaryLoading = false; }
+    }
 }
