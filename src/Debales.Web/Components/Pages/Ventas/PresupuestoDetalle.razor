@@ -1,0 +1,256 @@
+@page "/ventas/presupuestos/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetSalesQuoteByIdHandler GetById
+@inject SendSalesQuoteHandler SendHandler
+@inject AcceptSalesQuoteHandler AcceptHandler
+@inject RejectSalesQuoteHandler RejectHandler
+@inject ConvertQuoteToOrderHandler ConvertHandler
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Presupuesto — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_quote is null)
+{
+    <div class="alert alert-warning">Presupuesto no encontrado.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <a href="/ventas/presupuestos" class="text-decoration-none text-muted small">← Presupuestos</a>
+            <h1 class="h3 mb-0 mt-1"><code>@_quote.Number</code></h1>
+            <small class="text-muted">@_quote.CustomerName</small>
+        </div>
+        <div class="d-flex gap-2 flex-wrap justify-content-end">
+            @if (_quote.Status == SalesQuoteStatus.Draft)
+            {
+                <button class="btn btn-info text-white" @onclick="Send" disabled="@_acting">
+                    @if (_acting) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Enviar al cliente
+                </button>
+                <button class="btn btn-outline-danger" @onclick="Reject" disabled="@_acting">Rechazar</button>
+            }
+            else if (_quote.Status == SalesQuoteStatus.Sent)
+            {
+                <button class="btn btn-success" @onclick="Accept" disabled="@_acting">
+                    @if (_acting) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Aceptar
+                </button>
+                <button class="btn btn-outline-danger" @onclick="Reject" disabled="@_acting">Rechazar</button>
+            }
+            else if (_quote.Status == SalesQuoteStatus.Accepted && !_quote.ConvertedToOrderId.HasValue)
+            {
+                <button class="btn btn-primary" @onclick="Convert" disabled="@_acting">
+                    @if (_acting) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Convertir en pedido
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger alert-dismissible py-2">
+            @_error
+            <button type="button" class="btn-close" @onclick="() => _error = null"></button>
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="fw-semibold text-muted mb-3">DATOS DEL PRESUPUESTO</h6>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <span class="text-muted small">Estado</span><br />
+                            <span class="badge @StatusBadge(_quote.Status) fs-6">@_quote.StatusLabel</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted small">Cliente</span><br />
+                            <strong>@_quote.CustomerName</strong>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted small">Fecha</span><br />
+                            <strong>@_quote.Date.ToString("dd/MM/yyyy")</strong>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted small">Válido hasta</span><br />
+                            <strong class="@(_quote.ValidUntil < DateOnly.FromDateTime(DateTime.Today) && _quote.Status == SalesQuoteStatus.Sent ? "text-danger" : "")">
+                                @_quote.ValidUntil.ToString("dd/MM/yyyy")
+                            </strong>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_quote.Notes))
+                        {
+                            <div class="col-12">
+                                <span class="text-muted small">Observaciones</span><br />
+                                <span>@_quote.Notes</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="background:#1e2d3d;color:#fff">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <div class="mb-2">
+                        <span class="text-white-50 small">Subtotal</span>
+                        <div class="fs-5">@_quote.Subtotal.ToString("N2") €</div>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-white-50 small">IVA</span>
+                        <div class="fs-5">@_quote.TaxAmount.ToString("N2") €</div>
+                    </div>
+                    <div class="border-top border-secondary pt-2">
+                        <span class="text-white-50 small">TOTAL</span>
+                        <div class="fs-3 fw-bold">@_quote.Total.ToString("N2") €</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (_quote.ConvertedToOrderId.HasValue)
+    {
+        <div class="alert alert-success d-flex align-items-center gap-3 mb-4">
+            <span>Convertido en pedido</span>
+            <button class="btn btn-sm btn-success" @onclick="GoToOrder">Ver pedido →</button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent fw-semibold">Líneas del presupuesto</div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Código</th>
+                        <th>Artículo</th>
+                        <th>Descripción</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">P. unit.</th>
+                        <th class="text-end">IVA %</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in _quote.Lines)
+                    {
+                        <tr>
+                            <td class="text-muted">@l.SortOrder</td>
+                            <td><code>@l.ItemCode</code></td>
+                            <td>@l.ItemName</td>
+                            <td class="text-muted">@l.Description</td>
+                            <td class="text-end">@l.Quantity.ToString("N2")</td>
+                            <td class="text-end">@l.UnitPrice.ToString("N2") €</td>
+                            <td class="text-end">@l.TaxRate.ToString("N1") %</td>
+                            <td class="text-end fw-semibold">@l.LineTotal.ToString("N2") €</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row g-2 text-muted small">
+        <div class="col">Creado: @_quote.CreatedAt.ToString("dd/MM/yyyy HH:mm") por @_quote.CreatedBy</div>
+        @if (_quote.UpdatedAt.HasValue)
+        {
+            <div class="col text-end">Actualizado: @_quote.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") por @_quote.UpdatedBy</div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    bool _loading = true;
+    bool _acting;
+    string? _error;
+    SalesQuoteDetailDto? _quote;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _quote = await GetById.Handle(new GetSalesQuoteByIdQuery(Id));
+        _loading = false;
+    }
+
+    async Task Send()
+    {
+        _acting = true; _error = null;
+        try
+        {
+            await SendHandler.Handle(new SendSalesQuoteCommand(Id, "web"));
+            Toast.Show("Presupuesto marcado como enviado.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _acting = false; }
+    }
+
+    async Task Accept()
+    {
+        _acting = true; _error = null;
+        try
+        {
+            await AcceptHandler.Handle(new AcceptSalesQuoteCommand(Id, "web"));
+            Toast.Show("Presupuesto aceptado.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _acting = false; }
+    }
+
+    async Task Reject()
+    {
+        _acting = true; _error = null;
+        try
+        {
+            await RejectHandler.Handle(new RejectSalesQuoteCommand(Id, "web"));
+            Toast.Show("Presupuesto rechazado.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _acting = false; }
+    }
+
+    async Task Convert()
+    {
+        _acting = true; _error = null;
+        try
+        {
+            var order = await ConvertHandler.Handle(new ConvertQuoteToOrderCommand(Id, null, "web"));
+            Toast.Show($"Pedido {order.Number} creado correctamente.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _acting = false; }
+    }
+
+    void GoToOrder()
+    {
+        if (_quote?.ConvertedToOrderId.HasValue == true)
+            Nav.NavigateTo($"/ventas/pedidos/{_quote.ConvertedToOrderId.Value}");
+    }
+
+    static string StatusBadge(SalesQuoteStatus s) => s switch
+    {
+        SalesQuoteStatus.Draft => "bg-secondary",
+        SalesQuoteStatus.Sent => "bg-info text-dark",
+        SalesQuoteStatus.Accepted => "bg-success",
+        SalesQuoteStatus.Rejected => "bg-danger",
+        SalesQuoteStatus.Expired => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}

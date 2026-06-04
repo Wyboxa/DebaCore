@@ -70,6 +70,7 @@ public static class DependencyInjection
         services.AddScoped<IOpportunityRepository, OpportunityRepository>();
 
         // Sales
+        services.AddScoped<ISalesQuoteRepository, SalesQuoteRepository>();
         services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
         services.AddScoped<ISalesDeliveryNoteRepository, SalesDeliveryNoteRepository>();
 

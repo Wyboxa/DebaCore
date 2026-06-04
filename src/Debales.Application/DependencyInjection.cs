@@ -108,6 +108,13 @@ using Debales.Application.Core.Users.Commands.ReactivateUser;
 using Debales.Application.Core.Users.Commands.ChangePassword;
 using Debales.Application.Core.Users.Commands.AssignRole;
 using Debales.Application.Core.Roles.Queries.GetRoles;
+using Debales.Application.Sales.Commands.CreateSalesQuote;
+using Debales.Application.Sales.Commands.SendSalesQuote;
+using Debales.Application.Sales.Commands.AcceptSalesQuote;
+using Debales.Application.Sales.Commands.RejectSalesQuote;
+using Debales.Application.Sales.Commands.ConvertQuoteToOrder;
+using Debales.Application.Sales.Queries.GetSalesQuotes;
+using Debales.Application.Sales.Queries.GetSalesQuoteById;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Debales.Application;
@@ -167,6 +174,15 @@ public static class DependencyInjection
         services.AddScoped<UpdateSupplierHandler>();
         services.AddScoped<GetSuppliersHandler>();
         services.AddScoped<GetSupplierByIdHandler>();
+
+        // Sales — Quotes
+        services.AddScoped<CreateSalesQuoteHandler>();
+        services.AddScoped<SendSalesQuoteHandler>();
+        services.AddScoped<AcceptSalesQuoteHandler>();
+        services.AddScoped<RejectSalesQuoteHandler>();
+        services.AddScoped<ConvertQuoteToOrderHandler>();
+        services.AddScoped<GetSalesQuotesHandler>();
+        services.AddScoped<GetSalesQuoteByIdHandler>();
 
         // Sales — Orders
         services.AddScoped<CreateSalesOrderHandler>();
