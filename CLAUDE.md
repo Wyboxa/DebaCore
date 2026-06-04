@@ -224,8 +224,8 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-06-04:** Fases 0–3 técnicas y ERP-1 a ERP-6 completadas.
-> 9 migraciones aplicadas. 31 tests pasando. Siguiente fase: Licenciamiento (Fase 6).
+> **Actualización 2026-06-04:** Fases 0–3 técnicas, ERP-1 a ERP-6, Licenciamiento (Fase 6) y Despliegue Docker (Fase 7) completadas.
+> 10 migraciones aplicadas. 31 tests pasando. Vault Obsidian generado en `docs/obsidian/`.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
 El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada sobre ERP.
@@ -233,7 +233,7 @@ El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada so
 Lo que ya existe (no asumir como propuesta):
 
 - Solución .NET 8 (`Debales.slnx`) con 10 proyectos.
-- Base de datos SQL Server LocalDB con 9 migraciones aplicadas.
+- Base de datos SQL Server LocalDB con 10 migraciones aplicadas.
 - Módulo Core: usuarios, roles, permisos, auditoría.
 - Módulo CRM: clientes, contactos, actividades, notas, oportunidades.
 - Módulo Suppliers: proveedores con búsqueda, paginación, dirección embebida, soft-delete.
@@ -243,16 +243,20 @@ Lo que ya existe (no asumir como propuesta):
 - Módulo Inventory: almacenes, ubicaciones, movimientos de stock, saldos. `AddERP4Module`.
 - Módulo Accounting: plan contable, cuentas, diarios, ejercicios, períodos, asientos (manuales y automáticos desde facturas/cobros). `AddAccountingModule`.
 - Módulo AI (ERP-6): chat financiero con contexto ERP, detección de anomalías, resúmenes cliente/proveedor, aprobación humana.
+- Módulo Licensing: entidades `License`, `LicenseModule`, `SubscriptionPlan`, controller, UI, migración `AddLicensingModule`. `AddLicensingModule`.
+- Despliegue Docker: `docker-compose.yml`, `Dockerfile.api`, `Dockerfile.web` en raíz del repositorio.
+- Flujo Ventas completo: Pedido → Albarán → Factura con trazabilidad, navegación y automatización batch.
 - API REST (`Debales.Api`) con controllers para todos los módulos.
-- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, lista y ficha de proveedores, y páginas placeholder para el resto.
+- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, proveedores, ventas, compras, inventario, contabilidad, licencias y IA.
 - UI con paleta teal `#6B9CA9`, sidebar oscuro.
 - 31 tests automatizados pasando.
+- Vault Obsidian en `docs/obsidian/` con 63 notas, marcadores, graph view y plantillas.
 
 Lo que aún no existe y debe tratarse como propuesta:
 
-- Licenciamiento (Fase 6).
-- Despliegue local / Docker Compose (Fase 7).
-- Multi-tenant.
+- Middleware de validación de licencia (el módulo existe pero no bloquea acceso por módulo contratado).
+- Flujo Compras espejo: botones Generar albarán / Generar factura en UI de Compras.
+- Multi-tenant (`TenantId` en tablas).
 
 ---
 
@@ -2354,7 +2358,7 @@ Debales.Modules.Manufacturing.Windows  ← módulo vertical de mamparas
 
 # 46. Roadmap ERP ampliado
 
-> **Actualización 2026-06-04:** ERP-1 a ERP-6 completadas. Siguiente: Fase 6 — Licenciamiento (§30).
+> **Actualización 2026-06-04:** ERP-1 a ERP-6, Fase 6 (Licenciamiento) y Fase 7 (Docker) completadas.
 > El roadmap original (§30) describe la progresión técnica base. Este roadmap describe la expansión funcional ERP.
 
 ## Fase ERP-1 — Proveedores y catálogo base ✓ COMPLETA
@@ -2381,16 +2385,17 @@ Commit: `feat(erp5)` | Migración: `AddAccountingModule`.
 
 Commit: `feat(erp6)` | Sin migración propia (usa datos de módulos anteriores).
 
-## Fase 6 — Licenciamiento (§30) — SIGUIENTE
+## Fase 6 — Licenciamiento ✓ COMPLETA
 
-Objetivo:
+Commit: `feat(licensing)` | Migración: `20260604121322_AddLicensingModule`.
 
-- Entidades: `License`, `LicenseModule`, `SubscriptionPlan`.
-- Validación de módulos contratados.
-- Modo online + offline con expiración controlada.
-- Bloqueo gradual, no destructivo.
+Implementado: entidades `License`, `LicenseModule`, `SubscriptionPlan`, controller, UI, handlers, repositorio.
 
-Dependencias: Core completo.
+Pendiente funcional: middleware que restrinja acceso por módulo contratado (el módulo existe pero no gatea aún).
+
+## Fase 7 — Despliegue Docker ✓ COMPLETA
+
+Archivos: `docker-compose.yml`, `Dockerfile.api`, `Dockerfile.web` en raíz del repositorio.
 
 ---
 
@@ -2505,4 +2510,5 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 | Inventory (Warehouses, Locations, StockMovements, StockBalance) | Completo — ERP-4 | `20260601212414_AddERP4Module` |
 | Accounting (ChartOfAccounts, FiscalYear, Journals, Entries) | Completo — ERP-5 | `20260602195700_AddAccountingModule` |
 | AI supervisada ERP (chat, anomalías, resúmenes) | Completo — ERP-6 | sin migración propia |
-| Licensing | Pendiente — Fase 6 | — |
+| Licensing | Completo — Fase 6 | `20260604121322_AddLicensingModule` |
+| Docker Compose | Completo — Fase 7 | sin migración |
