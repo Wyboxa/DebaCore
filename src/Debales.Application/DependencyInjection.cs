@@ -46,6 +46,7 @@ using Debales.Application.Purchasing.Commands.ConfirmPurchaseOrder;
 using Debales.Application.Purchasing.Commands.CancelPurchaseOrder;
 using Debales.Application.Purchasing.Commands.CreatePurchaseDeliveryNote;
 using Debales.Application.Purchasing.Commands.PostPurchaseDeliveryNote;
+using Debales.Application.Purchasing.Commands.GenerateInvoiceFromPurchaseDeliveryNote;
 using Debales.Application.Purchasing.Commands.CreatePurchaseInvoice;
 using Debales.Application.Purchasing.Commands.PostPurchaseInvoice;
 using Debales.Application.Purchasing.Commands.CancelPurchaseInvoice;
@@ -101,6 +102,12 @@ using Debales.Application.Inventory.Queries.GetWarehouseById;
 using Debales.Application.Inventory.Queries.GetStockMovements;
 using Debales.Application.Inventory.Queries.GetStockMovementById;
 using Debales.Application.Inventory.Queries.GetStockBalance;
+using Debales.Application.Core.Users.Queries.GetUsers;
+using Debales.Application.Core.Users.Commands.DeactivateUser;
+using Debales.Application.Core.Users.Commands.ReactivateUser;
+using Debales.Application.Core.Users.Commands.ChangePassword;
+using Debales.Application.Core.Users.Commands.AssignRole;
+using Debales.Application.Core.Roles.Queries.GetRoles;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Debales.Application;
@@ -115,6 +122,14 @@ public static class DependencyInjection
         // Core — Users
         services.AddScoped<CreateUserHandler>();
         services.AddScoped<GetUserByIdHandler>();
+        services.AddScoped<GetUsersHandler>();
+        services.AddScoped<DeactivateUserHandler>();
+        services.AddScoped<ReactivateUserHandler>();
+        services.AddScoped<ChangePasswordHandler>();
+        services.AddScoped<AssignRoleHandler>();
+
+        // Core — Roles
+        services.AddScoped<GetRolesHandler>();
 
         // CRM — Customers
         services.AddScoped<CreateCustomerHandler>();
@@ -180,6 +195,7 @@ public static class DependencyInjection
         // Purchasing — Delivery Notes
         services.AddScoped<CreatePurchaseDeliveryNoteHandler>();
         services.AddScoped<PostPurchaseDeliveryNoteHandler>();
+        services.AddScoped<GenerateInvoiceFromPurchaseDeliveryNoteHandler>();
         services.AddScoped<GetPurchaseDeliveryNotesHandler>();
         services.AddScoped<GetPurchaseDeliveryNoteByIdHandler>();
 

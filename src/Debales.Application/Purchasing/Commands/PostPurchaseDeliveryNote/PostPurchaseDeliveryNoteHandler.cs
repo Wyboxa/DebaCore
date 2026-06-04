@@ -1,17 +1,30 @@
 using Debales.Application.Common;
+using Debales.Application.Inventory;
 using Debales.Application.Purchasing.DTOs;
 using Debales.Application.Purchasing.Queries.GetPurchaseDeliveryNoteById;
+using Debales.Domain.Inventory;
 
 namespace Debales.Application.Purchasing.Commands.PostPurchaseDeliveryNote;
 
 public sealed class PostPurchaseDeliveryNoteHandler
 {
     private readonly IPurchaseDeliveryNoteRepository _notes;
+    private readonly IStockMovementRepository _movements;
+    private readonly IStockBalanceRepository _balances;
+    private readonly IWarehouseRepository _warehouses;
     private readonly IUnitOfWork _uow;
 
-    public PostPurchaseDeliveryNoteHandler(IPurchaseDeliveryNoteRepository notes, IUnitOfWork uow)
+    public PostPurchaseDeliveryNoteHandler(
+        IPurchaseDeliveryNoteRepository notes,
+        IStockMovementRepository movements,
+        IStockBalanceRepository balances,
+        IWarehouseRepository warehouses,
+        IUnitOfWork uow)
     {
         _notes = notes;
+        _movements = movements;
+        _balances = balances;
+        _warehouses = warehouses;
         _uow = uow;
     }
 
@@ -22,9 +35,52 @@ public sealed class PostPurchaseDeliveryNoteHandler
 
         note.Post(command.UpdatedBy);
         _notes.Update(note);
+
+        // Genera movimientos de stock In por cada línea
+        var warehouseId = await ResolveWarehouseAsync(command.WarehouseId, cancellationToken);
+        if (warehouseId.HasValue)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var noteRef = note.Number;
+
+            foreach (var line in note.Lines.Where(l => l.Quantity > 0))
+            {
+                var number = await _movements.GetNextNumberAsync(cancellationToken);
+                var qty = Math.Abs(line.Quantity); // In = positivo
+
+                var movement = StockMovement.Create(
+                    number, StockMovementType.In,
+                    line.ItemId, line.ItemCode, line.ItemName,
+                    warehouseId.Value, null,
+                    today, qty,
+                    noteRef, $"Albarán compra {noteRef}", command.UpdatedBy);
+
+                await _movements.AddAsync(movement, cancellationToken);
+
+                var balance = await _balances.GetAsync(line.ItemId, warehouseId.Value, cancellationToken);
+                if (balance is null)
+                {
+                    balance = StockBalance.Create(line.ItemId, warehouseId.Value);
+                    balance.Apply(qty);
+                    await _balances.AddAsync(balance, cancellationToken);
+                }
+                else
+                {
+                    balance.Apply(qty);
+                }
+            }
+        }
+
         await _uow.SaveChangesAsync(cancellationToken);
 
         var saved = await _notes.GetByIdAsync(note.Id, cancellationToken);
         return GetPurchaseDeliveryNoteByIdHandler.ToDto(saved!);
+    }
+
+    private async Task<Guid?> ResolveWarehouseAsync(Guid? requested, CancellationToken ct)
+    {
+        if (requested.HasValue) return requested;
+        var all = await _warehouses.GetAllActiveAsync(ct);
+        return all.FirstOrDefault()?.Id;
     }
 }

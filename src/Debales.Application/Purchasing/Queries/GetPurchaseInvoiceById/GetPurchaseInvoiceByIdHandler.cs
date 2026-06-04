@@ -46,7 +46,8 @@ public sealed class GetPurchaseInvoiceByIdHandler
         invoice.DueDate,
         invoice.Status,
         StatusLabel(invoice.Status),
-        invoice.Total);
+        invoice.Total,
+        invoice.PurchaseDeliveryNoteId);
 
     private static PurchaseInvoiceLineSummaryDto ToLineDto(PurchaseInvoiceLine l) => new(
         l.Id, l.SortOrder,

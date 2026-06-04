@@ -3,6 +3,9 @@
 @attribute [Authorize]
 @inject GetPurchaseDeliveryNoteByIdHandler GetNote
 @inject PostPurchaseDeliveryNoteHandler PostHandler
+@inject GetPurchaseInvoicesHandler GetInvoices
+@inject GenerateInvoiceFromPurchaseDeliveryNoteHandler GenerateInvoiceHandler
+@inject GetWarehousesHandler GetWarehouses
 @inject NavigationManager Nav
 @inject ToastService Toast
 
@@ -20,15 +23,31 @@ else
 {
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <button class="btn btn-sm btn-outline-secondary me-2" @onclick="GoBack">← Volver</button>
-            <h1 class="h3 d-inline mb-0"><code>@_note.Number</code></h1>
-            <span class="badge @StatusBadge(_note.Status) ms-2">@_note.StatusLabel</span>
+            <a href="/compras/albaranes" class="text-decoration-none text-muted small">← Albaranes de compra</a>
+            <h1 class="h3 mb-0 mt-1"><code>@_note.Number</code></h1>
+            <span class="badge @StatusBadge(_note.Status) mt-1">@_note.StatusLabel</span>
         </div>
-        @if (_note.Status == PurchaseDeliveryNoteStatus.Draft)
-        {
-            <button class="btn btn-success" disabled="@_busy" @onclick="PostNote">Recepcionar albarán</button>
-        }
+        <div class="d-flex gap-2 flex-wrap justify-content-end">
+            @if (_note.Status == PurchaseDeliveryNoteStatus.Draft)
+            {
+                <button class="btn btn-success" disabled="@_busy" @onclick="OpenPostModal">
+                    Recepcionar albarán
+                </button>
+            }
+            else if (_note.Status == PurchaseDeliveryNoteStatus.Posted && _linkedInvoice is null)
+            {
+                <button class="btn btn-primary" disabled="@_busy" @onclick="GenerateInvoice">
+                    @if (_busy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Generar factura
+                </button>
+            }
+        </div>
     </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
 
     <div class="row g-3 mb-4">
         <div class="col-md-4">
@@ -43,12 +62,28 @@ else
                 <div class="fw-semibold">@_note.Date.ToString("dd/MM/yyyy")</div>
             </div>
         </div>
-        @if (_note.PurchaseOrderNumber is not null)
+        @if (_note.PurchaseOrderId.HasValue)
         {
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm p-3">
+                <div class="card border-0 shadow-sm p-3 border-start border-primary border-3">
                     <div class="text-muted small mb-1">Pedido origen</div>
-                    <div class="fw-semibold"><code>@_note.PurchaseOrderNumber</code></div>
+                    <div class="fw-semibold">
+                        <code>@_note.PurchaseOrderNumber</code>
+                        <button class="btn btn-link btn-sm p-0 ms-2" @onclick="GoToOrder">Ver pedido</button>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (_linkedInvoice is not null)
+        {
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 border-start border-success border-3">
+                    <div class="text-muted small mb-1">Factura generada</div>
+                    <div class="fw-semibold">
+                        <code>@_linkedInvoice.Number</code>
+                        <span class="badge @InvoiceBadge(_linkedInvoice.Status) ms-1">@_linkedInvoice.StatusLabel</span>
+                        <button class="btn btn-link btn-sm p-0 ms-2" @onclick="GoToInvoice">Ver factura</button>
+                    </div>
                 </div>
             </div>
         }
@@ -95,20 +130,51 @@ else
             <span class="ms-3">Modificado: @_note.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
         }
     </div>
+}
 
-    @if (!string.IsNullOrEmpty(_error))
-    {
-        <div class="alert alert-danger py-2 mt-3">@_error</div>
-    }
+@if (_showPostModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Recepcionar albarán</h5>
+                    <button class="btn-close" @onclick="ClosePostModal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">Almacén de entrada</label>
+                    <select class="form-select" @bind="_selectedWarehouseId">
+                        <option value="">— Usar almacén por defecto —</option>
+                        @foreach (var w in _warehouses)
+                        {
+                            <option value="@w.Id">@w.Name</option>
+                        }
+                    </select>
+                    <div class="text-muted small mt-2">
+                        Se generará un movimiento de entrada de stock por cada línea del albarán.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary btn-sm" @onclick="ClosePostModal">Cancelar</button>
+                    <button class="btn btn-success btn-sm" disabled="@_busy" @onclick="PostNote">
+                        @if (_busy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Confirmar recepción
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    bool _loading = true;
-    bool _busy;
+    bool _loading = true, _busy, _showPostModal;
     string? _error;
+    string _selectedWarehouseId = "";
     PurchaseDeliveryNoteDetailDto? _note;
+    PurchaseInvoiceSummaryDto? _linkedInvoice;
+    List<WarehouseSummaryDto> _warehouses = [];
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -116,29 +182,64 @@ else
     {
         _loading = true;
         _note = await GetNote.Handle(new GetPurchaseDeliveryNoteByIdQuery(Id));
+        if (_note is not null)
+        {
+            var invoices = await GetInvoices.Handle(new GetPurchaseInvoicesQuery(null, _note.SupplierId, null, 1, 50));
+            _linkedInvoice = invoices.Items.FirstOrDefault(i => i.PurchaseDeliveryNoteId == Id);
+        }
+        _warehouses = (await GetWarehouses.Handle(new GetWarehousesQuery(true))).ToList();
         _loading = false;
     }
+
+    void OpenPostModal() { _error = null; _selectedWarehouseId = ""; _showPostModal = true; }
+    void ClosePostModal() => _showPostModal = false;
 
     async Task PostNote()
     {
         _error = null; _busy = true;
         try
         {
-            await PostHandler.Handle(new PostPurchaseDeliveryNoteCommand(Id, "web"));
-            Toast.Show("Albarán recepcionado correctamente.");
+            Guid? warehouseId = Guid.TryParse(_selectedWarehouseId, out var wid) ? wid : null;
+            await PostHandler.Handle(new PostPurchaseDeliveryNoteCommand(Id, "web", warehouseId));
+            Toast.Show("Albarán recepcionado. Movimientos de stock generados.");
+            _showPostModal = false;
             await LoadAsync();
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }
     }
 
-    void GoBack() => Nav.NavigateTo("/compras/albaranes");
+    async Task GenerateInvoice()
+    {
+        _error = null; _busy = true;
+        try
+        {
+            var dueDate = DateOnly.FromDateTime(DateTime.Today.AddDays(30));
+            var invoice = await GenerateInvoiceHandler.Handle(
+                new GenerateInvoiceFromPurchaseDeliveryNoteCommand(Id, dueDate, "web"));
+            Toast.Show($"Factura {invoice.Number} generada.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    void GoToOrder() => Nav.NavigateTo($"/compras/pedidos/{_note!.PurchaseOrderId}");
+    void GoToInvoice() => Nav.NavigateTo($"/facturacion/compras/{_linkedInvoice!.Id}");
 
     static string StatusBadge(PurchaseDeliveryNoteStatus s) => s switch
     {
         PurchaseDeliveryNoteStatus.Draft => "bg-secondary",
         PurchaseDeliveryNoteStatus.Posted => "bg-success",
         PurchaseDeliveryNoteStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    static string InvoiceBadge(PurchaseInvoiceStatus s) => s switch
+    {
+        PurchaseInvoiceStatus.Draft => "bg-secondary",
+        PurchaseInvoiceStatus.Posted => "bg-success",
+        PurchaseInvoiceStatus.Cancelled => "bg-danger",
         _ => "bg-secondary"
     };
 }

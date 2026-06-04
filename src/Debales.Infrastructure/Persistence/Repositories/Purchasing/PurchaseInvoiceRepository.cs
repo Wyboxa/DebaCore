@@ -55,4 +55,9 @@ internal sealed class PurchaseInvoiceRepository : BaseRepository<PurchaseInvoice
             .CountAsync(i => i.Number.StartsWith(prefix), cancellationToken);
         return $"{prefix}{(count + 1):D4}";
     }
+
+    public async Task<PurchaseInvoice?> GetByPurchaseDeliveryNoteIdAsync(Guid purchaseDeliveryNoteId, CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(i => i.Lines)
+            .FirstOrDefaultAsync(i => i.PurchaseDeliveryNoteId == purchaseDeliveryNoteId, cancellationToken);
 }

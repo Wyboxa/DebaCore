@@ -5,6 +5,7 @@
 @inject PostSalesDeliveryNoteHandler PostHandler
 @inject GetSalesInvoicesHandler GetInvoices
 @inject GenerateInvoiceFromDeliveryNoteHandler GenerateInvoiceHandler
+@inject GetWarehousesHandler GetWarehouses
 @inject NavigationManager Nav
 @inject ToastService Toast
 
@@ -29,8 +30,7 @@ else
         <div class="d-flex gap-2 flex-wrap justify-content-end">
             @if (_note.Status == SalesDeliveryNoteStatus.Draft)
             {
-                <button class="btn btn-success" disabled="@_busy" @onclick="PostNote">
-                    @if (_busy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                <button class="btn btn-success" disabled="@_busy" @onclick="OpenPostModal">
                     Emitir albarán
                 </button>
             }
@@ -138,14 +138,49 @@ else
     </div>
 }
 
+@if (_showPostModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Emitir albarán</h5>
+                    <button class="btn-close" @onclick="ClosePostModal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">Almacén de salida</label>
+                    <select class="form-select" @bind="_selectedWarehouseId">
+                        <option value="">— Usar almacén por defecto —</option>
+                        @foreach (var w in _warehouses)
+                        {
+                            <option value="@w.Id">@w.Name</option>
+                        }
+                    </select>
+                    <div class="text-muted small mt-2">
+                        Se generará un movimiento de salida de stock por cada línea del albarán.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary btn-sm" @onclick="ClosePostModal">Cancelar</button>
+                    <button class="btn btn-success btn-sm" disabled="@_busy" @onclick="PostNote">
+                        @if (_busy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    bool _loading = true;
-    bool _busy;
+    bool _loading = true, _busy, _showPostModal;
     string? _error;
+    string _selectedWarehouseId = "";
     SalesDeliveryNoteDetailDto? _note;
     SalesInvoiceSummaryDto? _linkedInvoice;
+    List<WarehouseSummaryDto> _warehouses = [];
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -158,16 +193,22 @@ else
             var invoices = await GetInvoices.Handle(new GetSalesInvoicesQuery(null, _note.CustomerId, null, 1, 50));
             _linkedInvoice = invoices.Items.FirstOrDefault(i => i.SalesDeliveryNoteId == Id);
         }
+        _warehouses = (await GetWarehouses.Handle(new GetWarehousesQuery(true))).ToList();
         _loading = false;
     }
+
+    void OpenPostModal() { _error = null; _selectedWarehouseId = ""; _showPostModal = true; }
+    void ClosePostModal() => _showPostModal = false;
 
     async Task PostNote()
     {
         _error = null; _busy = true;
         try
         {
-            await PostHandler.Handle(new PostSalesDeliveryNoteCommand(Id, "web"));
-            Toast.Show("Albarán emitido correctamente.");
+            Guid? warehouseId = Guid.TryParse(_selectedWarehouseId, out var wid) ? wid : null;
+            await PostHandler.Handle(new PostSalesDeliveryNoteCommand(Id, "web", warehouseId));
+            Toast.Show("Albarán emitido. Movimientos de stock generados.");
+            _showPostModal = false;
             await LoadAsync();
         }
         catch (Exception ex) { _error = ex.Message; }

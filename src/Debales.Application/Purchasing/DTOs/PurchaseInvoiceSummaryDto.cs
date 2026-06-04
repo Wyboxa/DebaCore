@@ -12,4 +12,5 @@ public sealed record PurchaseInvoiceSummaryDto(
     DateOnly DueDate,
     PurchaseInvoiceStatus Status,
     string StatusLabel,
-    decimal Total);
+    decimal Total,
+    Guid? PurchaseDeliveryNoteId = null);
