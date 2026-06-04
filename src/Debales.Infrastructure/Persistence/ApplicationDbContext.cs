@@ -1,5 +1,6 @@
 using Debales.Domain.Accounting;
 using Debales.Domain.Catalog;
+using Debales.Domain.Licensing;
 using Debales.Domain.Core.Audit;
 using Debales.Domain.Core.Modules;
 using Debales.Domain.Core.Roles;
@@ -77,6 +78,11 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<WarehouseLocation> WarehouseLocations => Set<WarehouseLocation>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockBalance> StockBalances => Set<StockBalance>();
+
+    // Licensing — Fase 6
+    public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
+    public DbSet<License> Licenses => Set<License>();
+    public DbSet<LicenseModule> LicenseModules => Set<LicenseModule>();
 
     // Accounting — ERP-5
     public DbSet<Account> Accounts => Set<Account>();

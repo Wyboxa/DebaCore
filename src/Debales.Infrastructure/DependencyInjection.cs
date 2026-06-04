@@ -1,5 +1,6 @@
 using Debales.Application.Accounting;
 using Debales.Application.Catalog;
+using Debales.Application.Licensing;
 using Debales.Application.Common;
 using Debales.Application.Core.Auth;
 using Debales.Application.Core.Users;
@@ -15,6 +16,8 @@ using Debales.Application.Suppliers;
 using Debales.Infrastructure.Persistence;
 using Debales.Infrastructure.Persistence.Repositories;
 using Debales.Infrastructure.Persistence.Repositories.Accounting;
+using Debales.Infrastructure.Persistence.Repositories.Licensing;
+using Debales.Infrastructure.Services;
 using Debales.Infrastructure.Persistence.Repositories.Catalog;
 using Debales.Infrastructure.Persistence.Repositories.CRM;
 using Debales.Infrastructure.Persistence.Repositories.Inventory;
@@ -83,6 +86,11 @@ public static class DependencyInjection
         services.AddScoped<IAccountingJournalRepository, AccountingJournalRepository>();
         services.AddScoped<IAccountingEntryRepository, AccountingEntryRepository>();
         services.AddScoped<IAccountingTemplateRepository, AccountingTemplateRepository>();
+
+        // Licensing — Fase 6
+        services.AddScoped<ILicenseRepository, LicenseRepository>();
+        services.AddScoped<ISubscriptionPlanRepository, SubscriptionPlanRepository>();
+        services.AddScoped<ILicenseService, LicenseService>();
 
         // Inventory — ERP-4
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();

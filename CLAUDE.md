@@ -224,45 +224,34 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-05-28:** Las Fases 0–3 técnicas y ERP-1 Suppliers están completas.
-> Existen: solución .NET 8, BD LocalDB migrada, módulo Core, módulo CRM con API REST y UI Blazor, módulo Suppliers completo.
+> **Actualización 2026-06-04:** Fases 0–3 técnicas y ERP-1 a ERP-6 completadas.
+> 9 migraciones aplicadas. 31 tests pasando. Siguiente fase: Licenciamiento (Fase 6).
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
-El proyecto avanzó de cimentación a primer producto funcional con base ERP iniciada.
+El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada sobre ERP.
 
 Lo que ya existe (no asumir como propuesta):
 
 - Solución .NET 8 (`Debales.slnx`) con 10 proyectos.
-- Base de datos SQL Server LocalDB con 13 tablas migradas (incluye Suppliers).
+- Base de datos SQL Server LocalDB con 9 migraciones aplicadas.
 - Módulo Core: usuarios, roles, permisos, auditoría.
 - Módulo CRM: clientes, contactos, actividades, notas, oportunidades.
 - Módulo Suppliers: proveedores con búsqueda, paginación, dirección embebida, soft-delete.
-- API REST (`Debales.Api`) con endpoints CRM + Suppliers.
-- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, lista y ficha de proveedores.
-- UI con paleta teal `#6B9CA9`, sidebar oscuro, páginas placeholder para todos los módulos futuros.
+- Módulo Catalog: artículos, familias, unidades de medida, tipos de IVA.
+- Módulo Sales: pedidos cliente, albaranes, facturas, rectificativas, vencimientos, cobros. `AddERP2Module` + `AddERP3Module`.
+- Módulo Purchasing: pedidos proveedor, albaranes, facturas, rectificativas, vencimientos, pagos. `AddERP2Module` + `AddERP3Module`.
+- Módulo Inventory: almacenes, ubicaciones, movimientos de stock, saldos. `AddERP4Module`.
+- Módulo Accounting: plan contable, cuentas, diarios, ejercicios, períodos, asientos (manuales y automáticos desde facturas/cobros). `AddAccountingModule`.
+- Módulo AI (ERP-6): chat financiero con contexto ERP, detección de anomalías, resúmenes cliente/proveedor, aprobación humana.
+- API REST (`Debales.Api`) con controllers para todos los módulos.
+- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, lista y ficha de proveedores, y páginas placeholder para el resto.
+- UI con paleta teal `#6B9CA9`, sidebar oscuro.
 - 31 tests automatizados pasando.
 
 Lo que aún no existe y debe tratarse como propuesta:
 
-- Módulo Catálogo (Items, Families, UOM, TaxType) — ERP-1 pendiente.
-- Módulo Ventas / Compras — ERP-2.
-- Módulo Facturación — ERP-3.
-- Módulo Almacén — ERP-4.
-- Módulo Contabilidad — ERP-5.
-- IA supervisada funcional.
-- Licenciamiento.
-- Despliegue real.
-- Multi-tenant.
-
-Lo que aún no existe y debe tratarse como propuesta:
-
-- Módulo Ventas / Compras.
-- Módulo Contabilidad.
-- Módulo Catálogo.
-- Módulo Almacén.
-- IA supervisada funcional.
-- Licenciamiento.
-- Despliegue real.
+- Licenciamiento (Fase 6).
+- Despliegue local / Docker Compose (Fase 7).
 - Multi-tenant.
 
 ---
@@ -2365,80 +2354,43 @@ Debales.Modules.Manufacturing.Windows  ← módulo vertical de mamparas
 
 # 46. Roadmap ERP ampliado
 
-> Este roadmap continúa desde donde está el proyecto a 2026-05-28 (Fases 0-3 técnicas completadas).
+> **Actualización 2026-06-04:** ERP-1 a ERP-6 completadas. Siguiente: Fase 6 — Licenciamiento (§30).
 > El roadmap original (§30) describe la progresión técnica base. Este roadmap describe la expansión funcional ERP.
 
-## Fase ERP-1 — Proveedores y catálogo base
+## Fase ERP-1 — Proveedores y catálogo base ✓ COMPLETA
+
+Commit: `feat(erp1-catalog)` | Migraciones: `AddSuppliersModule`, `AddCatalogModule`.
+
+## Fase ERP-2 — Ventas y compras básicas ✓ COMPLETA
+
+Commit: `feat(erp2)` | Migración: `AddERP2Module`.
+
+## Fase ERP-3 — Facturación ✓ COMPLETA
+
+Commit: `feat(erp3)` | Migración: `AddERP3Module`.
+
+## Fase ERP-4 — Almacén básico ✓ COMPLETA
+
+Commit: `feat(erp4)` | Migración: `AddERP4Module`.
+
+## Fase ERP-5 — Contabilidad mínima ✓ COMPLETA
+
+Commit: `feat(erp5)` | Migración: `AddAccountingModule`.
+
+## Fase ERP-6 — IA supervisada sobre ERP ✓ COMPLETA
+
+Commit: `feat(erp6)` | Sin migración propia (usa datos de módulos anteriores).
+
+## Fase 6 — Licenciamiento (§30) — SIGUIENTE
 
 Objetivo:
 
-- Módulo Supplier (proveedor, contacto, dirección).
-- Módulo Catalog (artículo, servicio, familia, unidad de medida, tipo IVA).
-- Tarifas y precios base.
-- Series documentales.
+- Entidades: `License`, `LicenseModule`, `SubscriptionPlan`.
+- Validación de módulos contratados.
+- Modo online + offline con expiración controlada.
+- Bloqueo gradual, no destructivo.
 
-Dependencias: Core, CRM completados.
-
-## Fase ERP-2 — Ventas y compras básicas
-
-Objetivo:
-
-- Pedido cliente.
-- Pedido proveedor.
-- Albarán de venta.
-- Albarán de compra.
-- Sin contabilidad todavía.
-
-Dependencias: Fase ERP-1.
-
-## Fase ERP-3 — Facturación
-
-Objetivo:
-
-- Factura de venta.
-- Factura de compra.
-- Rectificativas.
-- Vencimientos (Receivable, Payable).
-- Cobros y pagos básicos (sin contabilizar todavía).
-
-Dependencias: Fase ERP-2.
-
-## Fase ERP-4 — Almacén básico
-
-Objetivo:
-
-- Almacenes y ubicaciones.
-- Movimientos de stock desde albaranes.
-- Stock balance.
-- Ajustes de inventario.
-
-Dependencias: Fase ERP-2.
-
-## Fase ERP-5 — Contabilidad mínima
-
-Objetivo:
-
-- Plan contable.
-- Cuentas contables.
-- Ejercicios y periodos.
-- Diarios.
-- Asientos manuales.
-- Asientos automáticos desde facturas y cobros/pagos.
-- Cierre de periodo y ejercicio.
-
-Dependencias: Fase ERP-3. Requiere ADR-0004 y ADR-0005 aprobados.
-
-## Fase ERP-6 — IA supervisada sobre ERP
-
-Objetivo:
-
-- IA con contexto de ventas, compras y contabilidad.
-- Propuestas de asientos.
-- Detección de anomalías.
-- Resúmenes de cliente/proveedor.
-- Aprobación humana antes de contabilizar.
-
-Dependencias: Fase ERP-5, Fase IA técnica (§30 Fase 5).
+Dependencias: Core completo.
 
 ---
 
@@ -2544,11 +2496,13 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 
 | Módulo | Estado | Migración |
 |---|---|---|
-| Core (Users, Roles, Permissions) | Completo | Fase 2 |
-| CRM (Customers, Contacts, Activities, Notes, Opportunities) | Completo | Fase 3 |
+| Core (Users, Roles, Permissions) | Completo | `20260527211045_InitialCreate` |
+| CRM (Customers, Contacts, Activities, Notes, Opportunities) | Completo | `20260527211933_AddCrmModule` |
 | Suppliers | Completo — ERP-1 | `20260528174128_AddSuppliersModule` |
-| Catalog (Items, Families, UOM, TaxType) | Pendiente — ERP-1 | — |
-| Sales | Pendiente — ERP-2 | — |
-| Purchasing | Pendiente — ERP-2 | — |
-| Inventory | Pendiente — ERP-4 | — |
-| Accounting | Pendiente — ERP-5 | — |
+| Catalog (Items, Families, UOM, TaxType) | Completo — ERP-1 | `20260528180338_AddCatalogModule` |
+| Sales (Orders, DeliveryNotes, Invoices, CreditNotes, Receivables, Payments) | Completo — ERP-2/3 | `20260529075409_AddERP2Module` + `20260601201930_AddERP3Module` |
+| Purchasing (Orders, DeliveryNotes, Invoices, CreditNotes, Payables, Payments) | Completo — ERP-2/3 | `20260529075409_AddERP2Module` + `20260601201930_AddERP3Module` |
+| Inventory (Warehouses, Locations, StockMovements, StockBalance) | Completo — ERP-4 | `20260601212414_AddERP4Module` |
+| Accounting (ChartOfAccounts, FiscalYear, Journals, Entries) | Completo — ERP-5 | `20260602195700_AddAccountingModule` |
+| AI supervisada ERP (chat, anomalías, resúmenes) | Completo — ERP-6 | sin migración propia |
+| Licensing | Pendiente — Fase 6 | — |

@@ -83,6 +83,10 @@ using Debales.Application.Accounting.Queries.GetAccountingEntryById;
 using Debales.Application.Accounting.Queries.GetAccountingJournals;
 using Debales.Application.Accounting.Queries.GetFiscalYears;
 using Debales.Application.Accounting.Services;
+using Debales.Application.Licensing;
+using Debales.Application.Licensing.Commands.ActivateLicense;
+using Debales.Application.Licensing.Queries.GetCurrentLicense;
+using Debales.Application.Licensing.Queries.GetSubscriptionPlans;
 using Debales.Application.Inventory.Commands.CreateWarehouse;
 using Debales.Application.Inventory.Commands.AddWarehouseLocation;
 using Debales.Application.Inventory.Commands.CreateStockMovement;
@@ -234,6 +238,11 @@ public static class DependencyInjection
         services.AddScoped<PostAccountingEntryHandler>();
         services.AddScoped<GetAccountingEntriesHandler>();
         services.AddScoped<GetAccountingEntryByIdHandler>();
+
+        // Licensing — Fase 6
+        services.AddScoped<GetCurrentLicenseHandler>();
+        services.AddScoped<GetSubscriptionPlansHandler>();
+        services.AddScoped<ActivateLicenseHandler>();
 
         // Dashboard
         services.AddScoped<GetDashboardStatsHandler>();
