@@ -79,7 +79,7 @@ public sealed class PurchaseOrder : AuditableEntity
         SetUpdated(updatedBy);
     }
 
-    internal void UpdateReceiptStatus(string updatedBy)
+    public void UpdateReceiptStatus(string updatedBy)
     {
         if (Status == PurchaseOrderStatus.Cancelled) return;
 

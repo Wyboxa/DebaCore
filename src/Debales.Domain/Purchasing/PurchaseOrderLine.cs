@@ -50,7 +50,7 @@ public sealed class PurchaseOrderLine : Entity
         };
     }
 
-    internal void RecordReceipt(decimal receivedQty)
+    public void RecordReceipt(decimal receivedQty)
     {
         if (receivedQty <= 0) throw new ArgumentException("Received quantity must be positive.", nameof(receivedQty));
         if (ReceivedQuantity + receivedQty > Quantity)

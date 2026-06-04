@@ -9,6 +9,7 @@ namespace Debales.Application.Purchasing.Commands.PostPurchaseDeliveryNote;
 public sealed class PostPurchaseDeliveryNoteHandler
 {
     private readonly IPurchaseDeliveryNoteRepository _notes;
+    private readonly IPurchaseOrderRepository _orders;
     private readonly IStockMovementRepository _movements;
     private readonly IStockBalanceRepository _balances;
     private readonly IWarehouseRepository _warehouses;
@@ -16,12 +17,14 @@ public sealed class PostPurchaseDeliveryNoteHandler
 
     public PostPurchaseDeliveryNoteHandler(
         IPurchaseDeliveryNoteRepository notes,
+        IPurchaseOrderRepository orders,
         IStockMovementRepository movements,
         IStockBalanceRepository balances,
         IWarehouseRepository warehouses,
         IUnitOfWork uow)
     {
         _notes = notes;
+        _orders = orders;
         _movements = movements;
         _balances = balances;
         _warehouses = warehouses;
@@ -35,6 +38,27 @@ public sealed class PostPurchaseDeliveryNoteHandler
 
         note.Post(command.UpdatedBy);
         _notes.Update(note);
+
+        // Actualiza cantidades recibidas en el pedido origen si existe
+        if (note.PurchaseOrderId.HasValue)
+        {
+            var order = await _orders.GetByIdAsync(note.PurchaseOrderId.Value, cancellationToken);
+            if (order is not null)
+            {
+                foreach (var noteLine in note.Lines.Where(l => l.PurchaseOrderLineId.HasValue))
+                {
+                    var orderLine = order.Lines.FirstOrDefault(l => l.Id == noteLine.PurchaseOrderLineId);
+                    if (orderLine is not null && noteLine.Quantity > 0)
+                    {
+                        var canReceive = Math.Min(noteLine.Quantity, orderLine.PendingQuantity);
+                        if (canReceive > 0)
+                            orderLine.RecordReceipt(canReceive);
+                    }
+                }
+                order.UpdateReceiptStatus(command.UpdatedBy);
+                _orders.Update(order);
+            }
+        }
 
         // Genera movimientos de stock In por cada línea
         var warehouseId = await ResolveWarehouseAsync(command.WarehouseId, cancellationToken);
