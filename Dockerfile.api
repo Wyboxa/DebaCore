@@ -1,0 +1,27 @@
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copia solo los csproj primero para aprovechar la caché de capas
+COPY src/Debales.Domain/Debales.Domain.csproj                   src/Debales.Domain/
+COPY src/Debales.Application/Debales.Application.csproj         src/Debales.Application/
+COPY src/Debales.Infrastructure/Debales.Infrastructure.csproj   src/Debales.Infrastructure/
+COPY src/Debales.AI/Debales.AI.csproj                           src/Debales.AI/
+COPY src/Debales.Modules/Core/Debales.Modules.Core.csproj       src/Debales.Modules/Core/
+COPY src/Debales.Api/Debales.Api.csproj                         src/Debales.Api/
+
+RUN dotnet restore src/Debales.Api/Debales.Api.csproj
+
+COPY src/ src/
+
+RUN dotnet publish src/Debales.Api/Debales.Api.csproj \
+    -c Release -o /app/publish \
+    --no-restore
+
+FROM base AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "Debales.Api.dll"]

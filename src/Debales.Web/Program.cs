@@ -1,5 +1,6 @@
 using Debales.AI;
 using Debales.Application;
+using Microsoft.EntityFrameworkCore;
 using Debales.Application.Common;
 using Debales.Application.Core.Auth.Commands.Login;
 using Debales.Infrastructure;
@@ -41,10 +42,11 @@ builder.Services.AddScoped<ToastService>();
 
 var app = builder.Build();
 
-// Seed inicial de BD
+// Migraciones + seed al arrancar (idempotente — seguro en Docker y en local)
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await context.Database.MigrateAsync();
     var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
     await DbSeeder.SeedAsync(context, hasher);
     await CatalogSeeder.SeedAsync(context);
