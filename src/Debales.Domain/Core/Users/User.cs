@@ -48,9 +48,29 @@ public sealed class User : AuditableEntity
         SetUpdated(updatedBy);
     }
 
+    public void Reactivate(string updatedBy)
+    {
+        IsActive = true;
+        SetUpdated(updatedBy);
+    }
+
     public void UpdateEmail(Email newEmail, string updatedBy)
     {
         Email = newEmail;
         SetUpdated(updatedBy);
+    }
+
+    public void UpdatePasswordHash(string newPasswordHash, string updatedBy)
+    {
+        if (string.IsNullOrWhiteSpace(newPasswordHash))
+            throw new ArgumentException("El hash de contraseña no puede estar vacío.", nameof(newPasswordHash));
+        PasswordHash = newPasswordHash;
+        SetUpdated(updatedBy);
+    }
+
+    public void RemoveRole(Guid roleId)
+    {
+        var ur = _userRoles.FirstOrDefault(r => r.RoleId == roleId);
+        if (ur is not null) _userRoles.Remove(ur);
     }
 }

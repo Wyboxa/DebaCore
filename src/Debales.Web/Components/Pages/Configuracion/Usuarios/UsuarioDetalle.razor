@@ -1,0 +1,212 @@
+@page "/configuracion/usuarios/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetUserByIdHandler GetUserById
+@inject GetUsersHandler GetUsers
+@inject GetRolesHandler GetRoles
+@inject DeactivateUserHandler Deactivate
+@inject ReactivateUserHandler Reactivate
+@inject ChangePasswordHandler ChangePassword
+@inject AssignRoleHandler AssignRole
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Usuario — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_user is null)
+{
+    <div class="alert alert-warning">Usuario no encontrado.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a href="/configuracion/usuarios" class="text-decoration-none text-muted small">← Usuarios</a>
+            <h1 class="h3 fw-bold mb-0 mt-1">@_user.Username</h1>
+            @if (_user.IsActive)
+            { <span class="badge bg-success mt-1">Activo</span> }
+            else
+            { <span class="badge bg-secondary mt-1">Inactivo</span> }
+        </div>
+        <div class="d-flex gap-2">
+            @if (_user.IsActive)
+            {
+                <button class="btn btn-outline-danger btn-sm" disabled="@_busy" @onclick="DoDeactivate">
+                    Desactivar
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-outline-success btn-sm" disabled="@_busy" @onclick="DoReactivate">
+                    Reactivar
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_actionError))
+    {
+        <div class="alert alert-danger py-2 small">@_actionError</div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Email</div>
+                <div class="fw-semibold">@_user.Email</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Alta</div>
+                <div class="fw-semibold">@_user.CreatedAt.ToString("dd/MM/yyyy")</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Roles actuales</div>
+                <div>
+                    @if (!_userRoles.Any())
+                    { <span class="text-muted small">Sin rol asignado</span> }
+                    @foreach (var r in _userRoles)
+                    {
+                        <span class="badge bg-primary me-1">@r</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asignar rol -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold py-3">Asignar rol</div>
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm" @bind="_selectedRoleId">
+                            <option value="">— Seleccionar rol —</option>
+                            @foreach (var r in _roles)
+                            {
+                                <option value="@r.Id">@r.Name — @r.Description</option>
+                            }
+                        </select>
+                        <button class="btn btn-primary btn-sm" disabled="@_busy" @onclick="DoAssignRole">
+                            Asignar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cambiar contraseña -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold py-3">Cambiar contraseña</div>
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <input type="password" class="form-control form-control-sm"
+                               placeholder="Nueva contraseña (mín. 8 caracteres)"
+                               @bind="_newPassword" />
+                        <button class="btn btn-warning btn-sm" disabled="@_busy" @onclick="DoChangePassword">
+                            Cambiar
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_passwordError))
+                    {
+                        <div class="text-danger small mt-1">@_passwordError</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    bool _loading = true, _busy;
+    string _actionError = "", _passwordError = "", _newPassword = "", _selectedRoleId = "";
+
+    UserDto? _user;
+    List<string> _userRoles = [];
+    List<RoleDto> _roles = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _user = await GetUserById.Handle(new GetUserByIdQuery(Id));
+
+        if (_user is not null)
+        {
+            _roles = (await GetRoles.Handle()).ToList();
+            // Carga los roles del usuario desde la lista completa
+            var summary = (await GetUsers.Handle(new GetUsersQuery())).FirstOrDefault(u => u.Id == Id);
+            _userRoles = summary?.Roles.ToList() ?? [];
+        }
+
+        _loading = false;
+    }
+
+    async Task DoDeactivate()
+    {
+        _actionError = ""; _busy = true;
+        try
+        {
+            await Deactivate.Handle(new DeactivateUserCommand(Id, "web"));
+            Toast.Show("Usuario desactivado.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _actionError = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    async Task DoReactivate()
+    {
+        _actionError = ""; _busy = true;
+        try
+        {
+            await Reactivate.Handle(new ReactivateUserCommand(Id, "web"));
+            Toast.Show("Usuario reactivado.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _actionError = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    async Task DoAssignRole()
+    {
+        if (!Guid.TryParse(_selectedRoleId, out var roleId)) return;
+        _actionError = ""; _busy = true;
+        try
+        {
+            await AssignRole.Handle(new AssignRoleCommand(Id, roleId, "web"));
+            Toast.Show("Rol asignado.");
+            _selectedRoleId = "";
+            await LoadAsync();
+        }
+        catch (Exception ex) { _actionError = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    async Task DoChangePassword()
+    {
+        _passwordError = "";
+        if (_newPassword.Length < 8) { _passwordError = "Mínimo 8 caracteres."; return; }
+        _busy = true;
+        try
+        {
+            await ChangePassword.Handle(new ChangePasswordCommand(Id, _newPassword, "web"));
+            Toast.Show("Contraseña actualizada.");
+            _newPassword = "";
+        }
+        catch (Exception ex) { _passwordError = ex.Message; }
+        finally { _busy = false; }
+    }
+}

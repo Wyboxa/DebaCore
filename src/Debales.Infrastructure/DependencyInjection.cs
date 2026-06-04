@@ -3,6 +3,7 @@ using Debales.Application.Catalog;
 using Debales.Application.Licensing;
 using Debales.Application.Common;
 using Debales.Application.Core.Auth;
+using Debales.Application.Core.Roles;
 using Debales.Application.Core.Users;
 using Debales.Application.CRM.Activities;
 using Debales.Application.CRM.Contacts;
@@ -44,6 +45,7 @@ public static class DependencyInjection
 
         // Core
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.Configure<JwtSettings>(opts => configuration.GetSection("Jwt").Bind(opts));
         services.AddScoped<ITokenService, JwtTokenService>();

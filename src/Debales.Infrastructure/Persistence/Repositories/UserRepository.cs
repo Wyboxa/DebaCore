@@ -23,4 +23,10 @@ internal sealed class UserRepository : BaseRepository<User>, IUserRepository
 
     public async Task<bool> ExistsByUsernameAsync(string username, CancellationToken cancellationToken = default) =>
         await DbSet.AnyAsync(u => u.Username == username, cancellationToken);
+
+    public async Task<IReadOnlyList<Domain.Core.Users.User>> GetAllWithRolesAsync(CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(u => u.UserRoles)
+            .OrderBy(u => u.Username)
+            .ToListAsync(cancellationToken);
 }
