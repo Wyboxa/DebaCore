@@ -19,9 +19,9 @@ related:
 
 # Módulo Licenciamiento
 
-## AVISO: Contradicción con CLAUDE.md
+## Estado
 
-CLAUDE.md §46 y §49.3 declaran que "Fase 6 — Licenciamiento" está pendiente. El código confirma que está completamente implementado con migración aplicada (`AddLicensingModule`, 2026-06-04). Ver [[Contradicciones detectadas]].
+CLAUDE.md actualizado el 2026-06-04 — Licensing declarado como ✓ COMPLETA en §46 y §49.3.
 
 ## Qué problema resuelve
 
@@ -93,9 +93,25 @@ Los planes se definen con `ForSeed` factory method. Los datos exactos no se leen
 - Formulario de activación en UI
 - Validación de vigencia
 
+## Enforcement de licencia en UI (implementado 2026-06-05)
+
+`ModuleRequired.razor` — componente Razor shared que actúa como guard:
+
+```razor
+<ModuleRequired Module="Sales">
+    @* contenido del hub/página *@
+</ModuleRequired>
+```
+
+Comportamiento:
+- Si no hay licencia activa → permite el acceso (nueva instalación)
+- Si hay licencia pero el módulo no está en `LicenseModules` → muestra pantalla de bloqueo con enlace a `/licencia`
+- Si el módulo está activo → renderiza `ChildContent` normalmente
+
+Aplicado en: `Ventas.razor`, `Compras.razor`, `Inventario.razor`, `Facturacion.razor`, `Analitica.razor`
+
 ## Lo que falta
 
-- Validación de licencia en middleware (bloqueo gradual si caduca)
+- Aplicar `ModuleRequired` en páginas de lista/detalle individuales (no solo hubs)
 - Modo offline con expiración controlada
 - Renovación desde UI
-- CLAUDE.md debe actualizarse para reflejar que está implementado

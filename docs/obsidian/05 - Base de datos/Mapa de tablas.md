@@ -116,6 +116,21 @@ Base de datos: `DebalesDb` (SQL Server LocalDB en desarrollo, SQL Server 2022 en
 
 **Total tablas: ~48**
 
+## Relaciones clave de trazabilidad (navegación)
+
+| Desde | Campo FK | Hacia | Uso |
+|-------|----------|-------|-----|
+| `SalesDeliveryNote` | `SalesOrderId` | `SalesOrder` | Trazabilidad albarán → pedido |
+| `SalesInvoice` | `SalesDeliveryNoteId` | `SalesDeliveryNote` | Trazabilidad factura → albarán |
+| `PurchaseDeliveryNote` | `PurchaseOrderId` | `PurchaseOrder` | Trazabilidad albarán → pedido |
+| `PurchaseInvoice` | `PurchaseDeliveryNoteId` | `PurchaseDeliveryNote` | Trazabilidad factura → albarán |
+| `StockMovement` | `Reference` | string | Referencia al albarán origen (`"ALV-001"`) |
+| `AccountingEntry` | — | `SalesInvoice` / `PurchaseInvoice` | Asiento generado por factura |
+
+## Nota: StockMovements generados automáticamente
+
+A partir de 2026-06-05, `PostSalesDeliveryNoteHandler` y `PostPurchaseDeliveryNoteHandler` insertan filas en `StockMovements` y actualizan `StockBalances` de forma automática. El campo `Reference` del movimiento contiene el número del albarán origen.
+
 ## Campos comunes (AuditableEntity)
 
 Todas las entidades que heredan de `AuditableEntity` tienen:

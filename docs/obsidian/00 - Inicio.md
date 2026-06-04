@@ -53,20 +53,29 @@ Debales es una plataforma CRM/ERP modular con inteligencia artificial supervisad
 | Inventory (Almacenes, Ubicaciones, Movimientos, Saldos) | Implementado |
 | Accounting (Plan Contable, Ejercicios, Diarios, Asientos) | Implementado |
 | AI ERP-6 (Chat ERP, Anomalías, Resúmenes cliente/proveedor) | Implementado |
-| Licensing (Planes, Licencias, Módulos de licencia) | **Implementado — contradice CLAUDE.md §46 y §49.3** |
-| Despliegue Docker | **Implementado (docker-compose.yml + Dockerfile.api + Dockerfile.web) — contradice CLAUDE.md §30 Fase 7** |
+| Licensing (Planes, Licencias, Módulos de licencia) | Implementado |
+| Despliegue Docker | Implementado (docker-compose.yml + Dockerfile.api + Dockerfile.web) |
+| User management UI (`/configuracion/usuarios`) | Implementado — 2026-06-05 |
+| Stock auto-movimientos desde albaranes | Implementado — 2026-06-05 |
+| Flujo espejo Compras (albarán → factura) | Implementado — 2026-06-05 |
+| PDF export facturas (QuestPDF) | Implementado — 2026-06-05 |
+| ModuleRequired (enforcement de licencia en UI) | Implementado — 2026-06-05 |
 
 ### Tests
 
-- `Debales.Domain.Tests` — Tests de dominio (Customer, Opportunity, Role, User, Entity)
-- `Debales.Application.Tests` — Tests de handlers (CreateCustomer, CreateUser) y contratos de repositorio
-- `Debales.Integration.Tests` — Smoke tests de solución
+**Total: 49 tests — 0 errores**
+
+| Suite | Tests | Última actualización |
+|-------|-------|---------------------|
+| `Debales.Domain.Tests` | Dominio: Customer, Opportunity, Role, User, UserExtended, SalesDeliveryNote | 2026-06-05 |
+| `Debales.Application.Tests` | Handlers: CreateCustomer, CreateUser, ChangePassword, PostSalesDeliveryNote, GenerateInvoiceFromPurchaseDeliveryNote | 2026-06-05 |
+| `Debales.Integration.Tests` | Smoke tests de solución | 2026-06-04 |
 
 ---
 
 ## Estado declarado en CLAUDE.md
 
-CLAUDE.md §46 declara Licensing y Docker Compose como fases pendientes (Fase 6 y Fase 7). El código demuestra que ambas están implementadas. Ver detalles en [[Contradicciones detectadas]].
+CLAUDE.md actualizado el 2026-06-04 — refleja correctamente el estado implementado de Licensing (Fase 6), Docker (Fase 7) y los módulos ERP-1 a ERP-6. Las contradicciones anteriores han sido resueltas. Ver [[Contradicciones detectadas]].
 
 ---
 

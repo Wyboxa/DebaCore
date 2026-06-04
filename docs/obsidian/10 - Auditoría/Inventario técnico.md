@@ -113,15 +113,22 @@ Generado mediante auditoría del repositorio en 2026-06-04.
 | LicensesController | api/licenses | Licenciamiento | implemented |
 | SubscriptionPlansController | api/subscription-plans | Licenciamiento | implemented |
 
-## Páginas Blazor (44)
+## Páginas Blazor (46 rutas + 2 componentes shared)
 
 Ver [[Rutas Blazor]] para el mapa completo de rutas.
+
+Páginas añadidas en sesión 2026-06-05:
+- `Configuracion/Usuarios/Usuarios.razor` — `/configuracion/usuarios`
+- `Configuracion/Usuarios/UsuarioDetalle.razor` — `/configuracion/usuarios/{id:guid}`
+
+Componentes shared añadidos:
+- `Shared/ModuleRequired.razor` — guard de licencia por módulo
 
 ## Migraciones (10)
 
 Ver [[Migraciones EF Core]] para detalle.
 
-## Repositorios (30+)
+## Repositorios (31+)
 
 | Repositorio | Implementación | Módulo |
 |-------------|---------------|--------|
@@ -159,3 +166,29 @@ Ver [[Migraciones EF Core]] para detalle.
 | IAccountingTemplateRepository | AccountingTemplateRepository | Contabilidad |
 | ILicenseRepository | LicenseRepository | Licenciamiento |
 | ISubscriptionPlanRepository | SubscriptionPlanRepository | Licenciamiento |
+| IRoleRepository | RoleRepository | Core |
+
+## Handlers de Application nuevos en sesión 2026-06-05
+
+| Handler | Comando | Módulo |
+|---------|---------|--------|
+| `GetUsersHandler` | `GetUsersQuery` | Core |
+| `GetRolesHandler` | `GetRolesQuery` | Core |
+| `DeactivateUserHandler` | `DeactivateUserCommand` | Core |
+| `ReactivateUserHandler` | `ReactivateUserCommand` | Core |
+| `ChangePasswordHandler` | `ChangePasswordCommand` | Core |
+| `AssignRoleHandler` | `AssignRoleCommand` | Core |
+| `GenerateInvoiceFromPurchaseDeliveryNoteHandler` | `GenerateInvoiceFromPurchaseDeliveryNoteCommand` | Purchasing |
+
+## Servicios de infraestructura nuevos
+
+| Interfaz | Implementación | Descripción |
+|----------|---------------|-------------|
+| `IInvoicePdfGenerator` | `InvoicePdfGenerator` (Singleton) | Genera PDF de facturas con QuestPDF Community |
+
+## DTOs nuevos en sesión 2026-06-05
+
+| DTO | Módulo |
+|-----|--------|
+| `UserSummaryDto` | Core |
+| `RoleDto` | Core |

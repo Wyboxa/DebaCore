@@ -55,9 +55,17 @@ graph TD
 
 - Handler: `PostPurchaseDeliveryNoteHandler`
 - Status: Draft → Posted
-- Nota: puede actualizar stock (integración no confirmada)
+- **Genera movimiento de stock automático** `StockMovement.In` por cada línea (implementado 2026-06-05)
+- UI: selector de almacén modal en `AlbaranCompraDetalle.razor`
 
-### 5. Registrar factura del proveedor
+### 5. Generar factura desde albarán (flujo espejo — implementado 2026-06-05)
+
+- Handler: `GenerateInvoiceFromPurchaseDeliveryNoteHandler`
+- Crea `PurchaseInvoice` automáticamente desde el albarán Posted
+- Precios: toma de líneas de `PurchaseOrder` vía `PurchaseOrderLineId`; fallback a `item.PurchasePrice`
+- UI: botón "Generar factura" en `AlbaranCompraDetalle.razor` (visible cuando albarán Posted y sin factura)
+
+### 6. (Alternativo) Registrar factura manual del proveedor
 
 - Handler: `CreatePurchaseInvoiceHandler`
 - `SupplierInvoiceNumber` — número de factura del proveedor (campo específico)
@@ -80,6 +88,10 @@ graph TD
 | Aspecto | Ventas | Compras |
 |---------|--------|---------|
 | Número factura proveedor | N/A | `SupplierInvoiceNumber` adicional |
-| Generación automática batch | Sí (`BatchGenerateDocuments`) | No (manual) |
+| Generación automática batch | Sí (`BatchGenerateDocuments`) | No implementado |
+| Generar factura desde albarán | Sí (batch + individual) | Sí (individual, desde AlbaranCompraDetalle) |
+| Actualización estado pedido al confirmar albarán | Sí → `Delivered` | **No** — pendiente (Prioridad 5) |
+| Stock movimiento al confirmar albarán | Out (salida) | In (entrada) |
 | Vencimiento generado | `Receivable` | `Payable` |
 | Cobro/Pago | `CustomerPayment` | `SupplierPayment` |
+| PDF factura | Sí — `/descargar/factura-venta/{id}` | Sí — `/descargar/factura-compra/{id}` |

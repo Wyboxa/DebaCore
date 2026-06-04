@@ -44,3 +44,15 @@ related:
 | `SubscriptionPlansController` | `api/subscription-plans` | Licenciamiento |
 
 **Total: 22 controllers**
+
+## Endpoints minimal API (Debales.Web)
+
+Estos endpoints viven en `Debales.Web/Program.cs`, no en `Debales.Api`.  
+Se sirven desde el mismo proceso que la UI Blazor (mismo origen, sin CORS).
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/descargar/factura-venta/{id}` | PDF factura de venta (QuestPDF) |
+| GET | `/descargar/factura-compra/{id}` | PDF factura de compra (QuestPDF) |
+
+Ver [[PDF Export API]] para detalles completos.

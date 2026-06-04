@@ -12,11 +12,30 @@ related:
 
 # Pendientes priorizados
 
-## Prioridad 1 — Corrección de CLAUDE.md
+> Última actualización: 2026-06-05
 
-Actualizar CLAUDE.md para reflejar que Licensing (Fase 6) y Docker Compose (Fase 7) están implementados. Ver [[Contradicciones detectadas]].
+## Resueltos en sesión 2026-06-05
 
-**Acción**: Actualizar secciones §6, §46, §49.3 de CLAUDE.md.
+| Item | Estado |
+|------|--------|
+| P1 — Actualizar CLAUDE.md (Licensing, Docker como completos) | ✓ Resuelto — commit `f434a9f` |
+| P3 — Validación de licencia en middleware | ✓ Resuelto — `ModuleRequired.razor` en hub pages |
+| P4 — Integración almacén con albaranes | ✓ Resuelto — `PostSalesDeliveryNoteHandler` crea movimientos Out; `PostPurchaseDeliveryNoteHandler` crea In |
+| P5 — Gestión de usuarios desde UI | ✓ Resuelto — `/configuracion/usuarios` + `/configuracion/usuarios/{id}` |
+| P10 — Dashboard analítico | ✓ Resuelto — `Home.razor` con 6 KPIs reales, alertas, pedidos e facturas recientes |
+| Flujo espejo Compras (Generar albarán → Generar factura) | ✓ Resuelto — `AlbaranCompraDetalle.razor` con selector de almacén + botón generar factura |
+| PDF export facturas | ✓ Resuelto — QuestPDF en `InvoicePdfGenerator`, endpoints `/descargar/factura-{venta,compra}/{id}` |
+| Configuración con datos reales | ✓ Resuelto — `Configuracion.razor` muestra versión, usuarios activos, roles, estado de licencia |
+
+---
+
+## Prioridad 1 — Presupuestos de venta (SalesQuote)
+
+**Qué falta**: La entidad `SalesQuote` / `SalesQuoteLine` está en el modelo conceptual (CLAUDE.md §42.5) pero no existe en el dominio, base de datos ni UI.
+
+**Impacto**: El ciclo comercial está incompleto — Presupuesto → Pedido → Albarán → Factura. Sin presupuesto, el primer paso documentado es el pedido.
+
+**Estimación**: Media. Patron idéntico a SalesOrder.
 
 ---
 
@@ -24,55 +43,59 @@ Actualizar CLAUDE.md para reflejar que Licensing (Fase 6) y Docker Compose (Fase
 
 **Qué falta**: Cuando se registra un `CustomerPayment` o `SupplierPayment`, no se confirma que se genere asiento contable automático.
 
-Las plantillas de asiento (`AccountingTemplate`) están definidas para `SalesInvoicePosted` y `PurchaseInvoicePosted`, pero no se encuentran plantillas para cobros/pagos en `AccountingSeeds`.
+Las plantillas de asiento (`AccountingTemplate`) están definidas para `SalesInvoicePosted` y `PurchaseInvoicePosted`, pero no hay plantillas para cobros/pagos en `AccountingSeeds`.
 
 **Impacto**: La contabilidad queda incompleta — los cobros y pagos no tienen reflejo contable automático.
 
 ---
 
-## Prioridad 3 — Validación de licencia en middleware
-
-**Qué falta**: La licencia se puede ver y activar desde la UI, pero no hay middleware que bloquee el acceso si la licencia está caducada o suspendida.
-
-**Impacto**: La plataforma funciona sin licencia activa. El módulo de licenciamiento no tiene efecto práctico en el acceso.
-
----
-
-## Prioridad 4 — Integración almacén con albaranes
-
-**Qué falta**: Los albaranes de venta (salida) y compra (entrada) no generan movimientos de stock automáticos en `StockMovements`.
-
-**Impacto**: El inventario solo se actualiza con movimientos manuales. El stock no refleja la operativa real de ventas y compras.
-
----
-
-## Prioridad 5 — Gestión de usuarios desde UI
-
-**Qué falta**: No hay páginas Blazor para crear, listar o gestionar usuarios y roles. Solo existe el endpoint API `POST /api/users`.
-
-**Impacto**: Solo se puede crear usuarios vía API directamente.
-
----
-
-## Prioridad 6 — Presupuestos de venta (SalesQuote)
-
-**Qué falta**: La entidad `SalesQuote` está en el catálogo conceptual del CLAUDE.md pero no existe en el dominio ni en la base de datos.
-
----
-
-## Prioridad 7 — Informes contables
+## Prioridad 3 — Informes contables
 
 **Qué falta**: No hay endpoints ni páginas para:
 - Balance de situación
 - Cuenta de pérdidas y ganancias
-- Balance de comprobación de sumas y saldos
+- Balance de comprobación (sumas y saldos)
 - Libro diario
+
+**Impacto**: Sin informes, la contabilidad es solo entrada de datos.
 
 ---
 
-## Prioridad 8 — Tarifas de precio y códigos de artículo por tercero
+## Prioridad 4 — ModuleRequired en páginas de lista (no solo hubs)
 
-**Qué falta**: Las entidades `PriceList`, `ItemPrice`, `SupplierItemCode`, `CustomerItemCode` del CLAUDE.md §42.4 no están implementadas en el dominio.
+**Qué falta**: `ModuleRequired` está aplicado en los hubs (`/ventas`, `/compras`, `/inventario`, `/facturacion`, `/analitica`), pero no en las páginas de lista y detalle individuales (`/ventas/pedidos`, `/contabilidad/asientos`, etc.).
+
+**Impacto**: Un usuario sin módulo Sales puede navegar directamente a `/ventas/pedidos` sin bloqueo.
+
+**Solución**: Envolver `@body` en cada página de lista/detalle con `<ModuleRequired Module="Sales">`.
+
+---
+
+## Prioridad 5 — Actualización de estado de PurchaseOrder al confirmar albarán
+
+**Qué falta**: `PostPurchaseDeliveryNoteHandler` no actualiza `PurchaseOrder.Status` a `Delivered` cuando se confirma el albarán de compra, a diferencia del handler de ventas que sí actualiza `SalesOrder.Status`.
+
+**Impacto**: El pedido de compra queda en estado `Pending` aunque el albarán esté confirmado.
+
+---
+
+## Prioridad 6 — Tarifas de precio y códigos de artículo por tercero
+
+**Qué falta**: Las entidades `PriceList`, `ItemPrice`, `SupplierItemCode`, `CustomerItemCode` del CLAUDE.md §42.4 no están implementadas.
+
+---
+
+## Prioridad 7 — AuditLog UI
+
+**Qué falta**: La tabla `AuditEntries` existe en la base de datos y se escribe, pero no hay página Blazor para consultarla.
+
+**Impacto**: La auditoría es invisible para el usuario.
+
+---
+
+## Prioridad 8 — Tests para AssignRoleHandler y DeactivateUserHandler
+
+**Qué falta**: Los handlers `AssignRoleHandler` y `DeactivateUserHandler` no tienen tests unitarios todavía.
 
 ---
 
@@ -82,6 +105,8 @@ Las plantillas de asiento (`AccountingTemplate`) están definidas para `SalesInv
 
 ---
 
-## Prioridad 10 — Dashboard analítico
+## Prioridad 10 — Multi-tenant
 
-**Qué falta**: La página `/analitica` existe pero el nivel de implementación no se confirmó. No hay KPIs ni gráficos confirmados.
+**Qué falta**: Decisión arquitectónica pendiente (ver CLAUDE.md §47.2). Si se decide multi-tenant, todas las tablas necesitan `TenantId`.
+
+**Impacto estratégico alto** — afecta a toda la base de datos y lógica de acceso.
