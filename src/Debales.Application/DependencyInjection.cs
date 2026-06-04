@@ -87,6 +87,9 @@ using Debales.Application.Accounting.Queries.GetAccountById;
 using Debales.Application.Accounting.Queries.GetAccounts;
 using Debales.Application.Accounting.Queries.GetAccountingEntries;
 using Debales.Application.Accounting.Queries.GetAccountingEntryById;
+using Debales.Application.Accounting.Queries.GetTrialBalance;
+using Debales.Application.Accounting.Queries.GetJournalBook;
+using Debales.Application.Accounting.Queries.GetBalanceSheet;
 using Debales.Application.Accounting.Queries.GetAccountingJournals;
 using Debales.Application.Accounting.Queries.GetFiscalYears;
 using Debales.Application.Accounting.Services;
@@ -282,6 +285,11 @@ public static class DependencyInjection
         services.AddScoped<PostAccountingEntryHandler>();
         services.AddScoped<GetAccountingEntriesHandler>();
         services.AddScoped<GetAccountingEntryByIdHandler>();
+
+        // Accounting — Reports
+        services.AddScoped<GetTrialBalanceHandler>();
+        services.AddScoped<GetJournalBookHandler>();
+        services.AddScoped<GetBalanceSheetHandler>();
 
         // Licensing — Fase 6
         services.AddScoped<GetCurrentLicenseHandler>();

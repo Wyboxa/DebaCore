@@ -74,6 +74,69 @@ internal sealed class AccountingEntryRepository : IAccountingEntryRepository
         return $"{prefix}{seq:D5}";
     }
 
+    public async Task<IReadOnlyList<(string AccountId, string AccountCode, string AccountName, string AccountType, decimal TotalDebit, decimal TotalCredit)>>
+        GetTrialBalanceDataAsync(DateOnly? from, DateOnly? to, CancellationToken ct = default)
+    {
+        var query = _db.AccountingEntryLines
+            .Join(_db.AccountingEntries,
+                l => l.AccountingEntryId,
+                e => e.Id,
+                (l, e) => new { Line = l, Entry = e })
+            .Join(_db.Accounts,
+                x => x.Line.AccountId,
+                a => a.Id,
+                (x, a) => new { x.Line, x.Entry, Account = a })
+            .Where(x => x.Entry.Status == EntryStatus.Posted);
+
+        if (from.HasValue)
+            query = query.Where(x => x.Entry.Date >= from.Value);
+        if (to.HasValue)
+            query = query.Where(x => x.Entry.Date <= to.Value);
+
+        var grouped = await query
+            .GroupBy(x => new
+            {
+                AccountId = x.Account.Id.ToString(),
+                x.Account.Code,
+                x.Account.Name,
+                AccountType = x.Account.Type.ToString()
+            })
+            .Select(g => new
+            {
+                g.Key.AccountId,
+                g.Key.Code,
+                g.Key.Name,
+                g.Key.AccountType,
+                TotalDebit = g.Sum(x => x.Line.Debit),
+                TotalCredit = g.Sum(x => x.Line.Credit)
+            })
+            .OrderBy(r => r.Code)
+            .ToListAsync(ct);
+
+        return grouped
+            .Select(r => (r.AccountId, r.Code, r.Name, r.AccountType, r.TotalDebit, r.TotalCredit))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<AccountingEntry>> GetPostedEntriesWithLinesAsync(
+        DateOnly? from, DateOnly? to, CancellationToken ct = default)
+    {
+        var query = _db.AccountingEntries
+            .Include(e => e.Journal)
+            .Include(e => e.Lines)
+            .Where(e => e.Status == EntryStatus.Posted);
+
+        if (from.HasValue)
+            query = query.Where(e => e.Date >= from.Value);
+        if (to.HasValue)
+            query = query.Where(e => e.Date <= to.Value);
+
+        return await query
+            .OrderBy(e => e.Date)
+            .ThenBy(e => e.Number)
+            .ToListAsync(ct);
+    }
+
     public async Task AddAsync(AccountingEntry entity, CancellationToken ct = default) =>
         await _db.AccountingEntries.AddAsync(entity, ct);
 

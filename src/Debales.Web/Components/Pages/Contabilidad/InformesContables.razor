@@ -1,0 +1,309 @@
+@page "/contabilidad/informes"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetTrialBalanceHandler TrialBalanceHandler
+@inject GetJournalBookHandler JournalBookHandler
+@inject GetBalanceSheetHandler BalanceSheetHandler
+
+<PageTitle>Informes contables — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Informes contables</h1>
+</div>
+
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <button class="nav-link @(_tab == 0 ? "active" : "")" @onclick="() => SetTab(0)">
+            Balance de comprobación
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(_tab == 1 ? "active" : "")" @onclick="() => SetTab(1)">
+            Libro diario
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(_tab == 2 ? "active" : "")" @onclick="() => SetTab(2)">
+            Balance de situación
+        </button>
+    </li>
+</ul>
+
+@if (_tab == 0)
+{
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Desde</label>
+                    <input type="date" class="form-control" @bind="_tbFrom" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Hasta</label>
+                    <input type="date" class="form-control" @bind="_tbTo" />
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary" @onclick="LoadTrialBalance" disabled="@_loading">
+                        @if (_loading) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Generar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (_trialBalance is not null)
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between">
+                <span class="fw-semibold">Balance de comprobación de sumas y saldos</span>
+                @if (_tbFrom.HasValue || _tbTo.HasValue)
+                {
+                    <small class="text-muted">
+                        @(_tbFrom?.ToString("dd/MM/yyyy") ?? "—") → @(_tbTo?.ToString("dd/MM/yyyy") ?? "hoy")
+                    </small>
+                }
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Cuenta</th>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th class="text-end">Debe</th>
+                            <th class="text-end">Haber</th>
+                            <th class="text-end">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var l in _trialBalance.Lines)
+                        {
+                            <tr>
+                                <td><code>@l.AccountCode</code></td>
+                                <td>@l.AccountName</td>
+                                <td class="text-muted small">@AccountTypeLabel(l.AccountType)</td>
+                                <td class="text-end">@l.TotalDebit.ToString("N2")</td>
+                                <td class="text-end">@l.TotalCredit.ToString("N2")</td>
+                                <td class="text-end fw-semibold @(l.Balance < 0 ? "text-danger" : "")">
+                                    @l.Balance.ToString("N2")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-dark">
+                        <tr class="fw-bold">
+                            <td colspan="3">TOTALES</td>
+                            <td class="text-end">@_trialBalance.GrandTotalDebit.ToString("N2")</td>
+                            <td class="text-end">@_trialBalance.GrandTotalCredit.ToString("N2")</td>
+                            <td class="text-end @(Math.Abs(_trialBalance.GrandTotalDebit - _trialBalance.GrandTotalCredit) < 0.01m ? "text-success" : "text-danger")">
+                                @(_trialBalance.GrandTotalDebit - _trialBalance.GrandTotalCredit).ToString("N2")
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@if (_tab == 1)
+{
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Desde</label>
+                    <input type="date" class="form-control" @bind="_jbFrom" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Hasta</label>
+                    <input type="date" class="form-control" @bind="_jbTo" />
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary" @onclick="LoadJournalBook" disabled="@_loading">
+                        @if (_loading) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Generar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (_journalBook is not null)
+    {
+        <div class="text-muted small mb-2">@_journalBook.Count asientos encontrados</div>
+        @foreach (var entry in _journalBook)
+        {
+            <div class="card border-0 shadow-sm mb-2">
+                <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
+                    <div>
+                        <code class="me-2">@entry.Number</code>
+                        <span class="text-muted me-2">@entry.Date.ToString("dd/MM/yyyy")</span>
+                        <span class="badge bg-secondary me-2">@entry.JournalCode</span>
+                        <span>@entry.Description</span>
+                    </div>
+                    <div class="text-muted small text-end">
+                        D: @entry.TotalDebit.ToString("N2") · H: @entry.TotalCredit.ToString("N2")
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            @foreach (var l in entry.Lines)
+                            {
+                                <tr>
+                                    <td style="width:100px"><code>@l.AccountCode</code></td>
+                                    <td>@l.Description</td>
+                                    <td class="text-end" style="width:110px">
+                                        @(l.Debit > 0 ? l.Debit.ToString("N2") : "")
+                                    </td>
+                                    <td class="text-end" style="width:110px">
+                                        @(l.Credit > 0 ? l.Credit.ToString("N2") : "")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+}
+
+@if (_tab == 2)
+{
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Fecha de corte</label>
+                    <input type="date" class="form-control" @bind="_bsTo" />
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary" @onclick="LoadBalanceSheet" disabled="@_loading">
+                        @if (_loading) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Generar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (_balanceSheet is not null)
+    {
+        <div class="row g-3">
+            @foreach (var group in _balanceSheet.Groups)
+            {
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-transparent fw-semibold">
+                            @group.TypeLabel
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                    @foreach (var l in group.Lines)
+                                    {
+                                        <tr>
+                                            <td><code>@l.AccountCode</code></td>
+                                            <td>@l.AccountName</td>
+                                            <td class="text-end fw-semibold">@l.Balance.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr class="fw-bold">
+                                        <td colspan="2">Total @group.TypeLabel</td>
+                                        <td class="text-end">@group.Total.ToString("N2")</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col">
+                        <div class="text-muted small">TOTAL ACTIVO</div>
+                        <div class="fs-4 fw-bold">@_balanceSheet.TotalAssets.ToString("N2") €</div>
+                    </div>
+                    <div class="col">
+                        <div class="text-muted small">PASIVO + PATRIMONIO</div>
+                        <div class="fs-4 fw-bold">@_balanceSheet.TotalLiabilitiesAndEquity.ToString("N2") €</div>
+                    </div>
+                    <div class="col">
+                        <div class="text-muted small">CUADRA</div>
+                        <div class="fs-4 fw-bold @(_balanceSheet.IsBalanced ? "text-success" : "text-danger")">
+                            @(_balanceSheet.IsBalanced ? "Sí" : "No")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    int _tab;
+    bool _loading;
+
+    // Trial balance
+    DateTime? _tbFrom;
+    DateTime? _tbTo;
+    TrialBalanceDto? _trialBalance;
+
+    // Journal book
+    DateTime? _jbFrom;
+    DateTime? _jbTo;
+    IReadOnlyList<JournalBookEntryDto>? _journalBook;
+
+    // Balance sheet
+    DateTime? _bsTo;
+    BalanceSheetDto? _balanceSheet;
+
+    void SetTab(int tab)
+    {
+        _tab = tab;
+    }
+
+    async Task LoadTrialBalance()
+    {
+        _loading = true;
+        var from = _tbFrom.HasValue ? DateOnly.FromDateTime(_tbFrom.Value) : (DateOnly?)null;
+        var to = _tbTo.HasValue ? DateOnly.FromDateTime(_tbTo.Value) : (DateOnly?)null;
+        _trialBalance = await TrialBalanceHandler.Handle(new GetTrialBalanceQuery(from, to));
+        _loading = false;
+    }
+
+    async Task LoadJournalBook()
+    {
+        _loading = true;
+        var from = _jbFrom.HasValue ? DateOnly.FromDateTime(_jbFrom.Value) : (DateOnly?)null;
+        var to = _jbTo.HasValue ? DateOnly.FromDateTime(_jbTo.Value) : (DateOnly?)null;
+        _journalBook = await JournalBookHandler.Handle(new GetJournalBookQuery(from, to));
+        _loading = false;
+    }
+
+    async Task LoadBalanceSheet()
+    {
+        _loading = true;
+        var to = _bsTo.HasValue ? DateOnly.FromDateTime(_bsTo.Value) : (DateOnly?)null;
+        _balanceSheet = await BalanceSheetHandler.Handle(new GetBalanceSheetQuery(to));
+        _loading = false;
+    }
+
+    static string AccountTypeLabel(AccountType t) => t switch
+    {
+        AccountType.Asset => "Activo",
+        AccountType.Liability => "Pasivo",
+        AccountType.Equity => "Patrimonio",
+        AccountType.Revenue => "Ingreso",
+        AccountType.Expense => "Gasto",
+        _ => t.ToString()
+    };
+}
