@@ -1,28 +1,163 @@
 @page "/inventario"
 @rendermode InteractiveServer
 @attribute [Authorize]
+@inject GetWarehousesHandler GetWarehouses
+@inject GetStockBalanceHandler GetStockBalance
+@inject GetStockMovementsHandler GetMovements
+@inject NavigationManager Nav
 
 <PageTitle>Inventario — Debales</PageTitle>
 
-<ModulePlaceholder
-    Title="Inventario"
-    Subtitle="Control de stock, almacenes, movimientos de existencias y ajustes de inventario"
-    Phase="ERP-4"
-    IconSvg="<svg width='36' height='36' fill='currentColor' viewBox='0 0 16 16'><path d='M1.5 1a.5.5 0 0 0-.5.5v3a.5.5 0 0 1-1 0v-3A1.5 1.5 0 0 1 1.5 0h3a.5.5 0 0 1 0 1zM11 .5a.5.5 0 0 1 .5-.5h3A1.5 1.5 0 0 1 16 1.5v3a.5.5 0 0 1-1 0v-3a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 1-.5-.5M.5 11a.5.5 0 0 1 .5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 1 0 1h-3A1.5 1.5 0 0 1 0 14.5v-3a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v3a1.5 1.5 0 0 1-1.5 1.5h-3a.5.5 0 0 1 0-1h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 1 .5-.5M3 4.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0zm2.5 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0zm2.5 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0zm2.5 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0zm2.5 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0z'/></svg>"
-    Features="@_features" />
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h4 fw-bold mb-0">Inventario</h1>
+        <small class="text-muted">Almacenes, stock y movimientos de existencias</small>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 cursor-pointer" @onclick='() => Nav.NavigateTo("/inventario/almacenes")'>
+                <div class="card-body p-3">
+                    <div class="rounded-2 p-2 bg-primary bg-opacity-10 text-primary d-inline-block mb-2">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v3a.5.5 0 0 1-1 0v-3A1.5 1.5 0 0 1 1.5 0h3a.5.5 0 0 1 0 1zM11 .5a.5.5 0 0 1 .5-.5h3A1.5 1.5 0 0 1 16 1.5v3a.5.5 0 0 1-1 0v-3a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 1-.5-.5M.5 11a.5.5 0 0 1 .5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 1 0 1h-3A1.5 1.5 0 0 1 0 14.5v-3a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v3a1.5 1.5 0 0 1-1.5 1.5h-3a.5.5 0 0 1 0-1h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 1 .5-.5"/></svg>
+                    </div>
+                    <div class="h4 fw-bold mb-0">@_warehouseCount</div>
+                    <div class="small text-muted">Almacenes activos</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="rounded-2 p-2 bg-success bg-opacity-10 text-success d-inline-block mb-2">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M3 4.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0zm2.5 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0zm2.5 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0zm2.5 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0zm2.5 0a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0z"/></svg>
+                    </div>
+                    <div class="h4 fw-bold mb-0">@_itemsWithStock</div>
+                    <div class="small text-muted">Artículos con stock</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 @(_itemsNoStock > 0 ? "border border-danger border-opacity-50" : "")">
+                <div class="card-body p-3">
+                    <div class="rounded-2 p-2 @(_itemsNoStock > 0 ? "bg-danger bg-opacity-10 text-danger" : "bg-secondary bg-opacity-10 text-secondary") d-inline-block mb-2">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/></svg>
+                    </div>
+                    <div class="h4 fw-bold mb-0 @(_itemsNoStock > 0 ? "text-danger" : "")">@_itemsNoStock</div>
+                    <div class="small text-muted">Sin stock</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 cursor-pointer" @onclick='() => Nav.NavigateTo("/inventario/movimientos")'>
+                <div class="card-body p-3">
+                    <div class="rounded-2 p-2 bg-info bg-opacity-10 text-info d-inline-block mb-2">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M11.534 7h3.932l-1.perspective 1.5-1.5-1.5H11.5a.5.5 0 0 1 0-1zm-3.032 3.5H4.516L3 11.999l1.5 1.5 1.5-1.5h3.002a.5.5 0 0 0 0-1zM8 3.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zM7 8a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h5A.5.5 0 0 0 7 8z"/></svg>
+                    </div>
+                    <div class="h4 fw-bold mb-0">@_movementCount</div>
+                    <div class="small text-muted">Movimientos</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de saldos -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+            <span class="fw-semibold">Stock actual por artículo</span>
+            <a href="/inventario/saldos" class="btn btn-sm btn-outline-primary" style="font-size:.8rem">Ver completo</a>
+        </div>
+        @if (_balances.Count == 0)
+        {
+            <div class="card-body text-center text-muted py-4">Sin datos de stock.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Código</th>
+                            <th>Artículo</th>
+                            <th>Almacén</th>
+                            <th class="text-end pe-3">Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in _balances.Take(15))
+                        {
+                            <tr>
+                                <td class="ps-3 font-monospace small">@b.ItemCode</td>
+                                <td class="small">@b.ItemName</td>
+                                <td class="small text-muted">@b.WarehouseName</td>
+                                <td class="text-end pe-3">
+                                    @if (b.Quantity <= 0)
+                                    {
+                                        <span class="badge bg-danger">Sin stock</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="fw-semibold">@b.Quantity.ToString("N2")</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <!-- Accesos rápidos -->
+    <div class="row g-2">
+        <div class="col-6 col-md-3">
+            <a href="/inventario/almacenes" class="card border-0 shadow-sm text-decoration-none text-dark p-3 d-flex flex-row align-items-center gap-2">
+                <svg width="16" height="16" fill="currentColor" class="text-primary" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v3a.5.5 0 0 1-1 0v-3A1.5 1.5 0 0 1 1.5 0h3a.5.5 0 0 1 0 1z"/></svg>
+                <span class="small fw-semibold">Almacenes</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/inventario/movimientos" class="card border-0 shadow-sm text-decoration-none text-dark p-3 d-flex flex-row align-items-center gap-2">
+                <svg width="16" height="16" fill="currentColor" class="text-success" viewBox="0 0 16 16"><path d="M3 4.5a.5.5 0 0 1 1 0v7a.5.5 0 0 1-1 0z"/></svg>
+                <span class="small fw-semibold">Movimientos</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/inventario/saldos" class="card border-0 shadow-sm text-decoration-none text-dark p-3 d-flex flex-row align-items-center gap-2">
+                <svg width="16" height="16" fill="currentColor" class="text-info" viewBox="0 0 16 16"><path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592z"/></svg>
+                <span class="small fw-semibold">Saldos de stock</span>
+            </a>
+        </div>
+    </div>
+}
 
 @code {
-    private readonly string[] _features =
-    [
-        "Almacenes y ubicaciones",
-        "Stock por artículo",
-        "Movimientos de entrada y salida",
-        "Stock mínimo y máximo",
-        "Alertas de rotura de stock",
-        "Ajustes de inventario",
-        "Recuento de inventario",
-        "Valoración de existencias",
-        "Trazabilidad de lotes",
-        "Informe de rotación"
-    ];
+    bool _loading = true;
+    int _warehouseCount, _itemsWithStock, _itemsNoStock, _movementCount;
+    List<StockBalanceDto> _balances = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var t1 = GetWarehouses.Handle(new GetWarehousesQuery());
+        var t2 = GetStockBalance.Handle(new GetStockBalanceQuery(null, null));
+        var t3 = GetMovements.Handle(new GetStockMovementsQuery(null, null, null, null, 1, 500));
+
+        await Task.WhenAll(t1, t2, t3);
+
+        _warehouseCount = t1.Result.Count;
+        _balances = t2.Result.OrderBy(b => b.ItemCode).ToList();
+        _itemsWithStock = _balances.Count(b => b.Quantity > 0);
+        _itemsNoStock = _balances.Count(b => b.Quantity <= 0);
+        _movementCount = t3.Result.Items.Count;
+
+        _loading = false;
+    }
 }

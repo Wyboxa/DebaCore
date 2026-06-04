@@ -1,28 +1,228 @@
 @page "/analitica"
 @rendermode InteractiveServer
 @attribute [Authorize]
+@inject GetCustomersHandler GetCustomers
+@inject GetSalesOrdersHandler GetSalesOrders
+@inject GetSalesInvoicesHandler GetSalesInvoices
+@inject GetReceivablesHandler GetReceivables
+@inject NavigationManager Nav
 
 <PageTitle>Analítica — Debales</PageTitle>
 
-<ModulePlaceholder
-    Title="Analítica"
-    Subtitle="Informes, métricas de negocio, cuadros de mando y análisis por período"
-    Phase="Fase 8"
-    IconSvg="<svg width='36' height='36' fill='currentColor' viewBox='0 0 16 16'><path d='M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z'/></svg>"
-    Features="@_features" />
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h4 fw-bold mb-0">Analítica</h1>
+        <small class="text-muted">Resumen ejecutivo y métricas clave del negocio</small>
+    </div>
+    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3">
+        Datos en tiempo real
+    </span>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <!-- KPIs ejecutivos -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="h3 fw-bold mb-0">@_activeCustomers</div>
+                            <div class="small text-muted">Clientes activos</div>
+                        </div>
+                        <div class="rounded-circle p-2 bg-success bg-opacity-10 text-success">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="h3 fw-bold mb-0">@_totalOrders</div>
+                            <div class="small text-muted">Pedidos en total</div>
+                            <div class="small text-primary mt-1">@_pendingOrders pendientes</div>
+                        </div>
+                        <div class="rounded-circle p-2 bg-primary bg-opacity-10 text-primary">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="h3 fw-bold mb-0">@_invoiceRevenue.ToString("N0") €</div>
+                            <div class="small text-muted">Facturado (contabilizado)</div>
+                            <div class="small text-muted mt-1">@_postedInvoices facturas</div>
+                        </div>
+                        <div class="rounded-circle p-2 bg-warning bg-opacity-10 text-warning">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M1 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 @(_overdueAmount > 0 ? "border border-danger border-opacity-25" : "")">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="h3 fw-bold mb-0 @(_overdueAmount > 0 ? "text-danger" : "")">@_pendingReceivables.ToString("N0") €</div>
+                            <div class="small text-muted">Pendiente de cobro</div>
+                            @if (_overdueAmount > 0)
+                            {
+                                <div class="small text-danger mt-1">@_overdueAmount.ToString("N0") € vencido</div>
+                            }
+                        </div>
+                        <div class="rounded-circle p-2 @(_overdueAmount > 0 ? "bg-danger bg-opacity-10 text-danger" : "bg-info bg-opacity-10 text-info")">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 10.781c.148 1.667 1.513 2.85 3.591 3.003V15h1.043v-1.216c2.27-.179 3.678-1.438 3.678-3.3 0-1.59-.947-2.51-2.956-3.028l-.722-.187V3.467c1.122.11 1.879.714 2.07 1.616h1.47c-.166-1.6-1.54-2.748-3.54-2.875V1H7.591v1.233c-1.939.23-3.27 1.472-3.27 3.156 0 1.454.966 2.483 2.661 2.917l.61.162v4.031c-1.149-.17-1.94-.8-2.131-1.718z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <!-- Top clientes por volumen -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3 fw-semibold">
+                    Top clientes por volumen de pedidos
+                </div>
+                @if (_topCustomers.Count == 0)
+                {
+                    <div class="card-body text-center text-muted py-4">Sin datos suficientes.</div>
+                }
+                else
+                {
+                    <div class="card-body p-0">
+                        @{
+                            var maxTotal = _topCustomers.Max(c => c.Total);
+                        }
+                        @foreach (var (name, count, total) in _topCustomers)
+                        {
+                            var pct = maxTotal > 0 ? (int)(total / maxTotal * 100) : 0;
+                            <div class="px-3 py-2 border-bottom">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="small fw-semibold">@name</span>
+                                    <span class="small text-muted">@count ped. · @total.ToString("N0") €</span>
+                                </div>
+                                <div class="progress" style="height:4px">
+                                    <div class="progress-bar" style="width:@pct%;background:#6B9CA9"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Evolución de facturas recientes -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                    <span class="fw-semibold">Últimas facturas emitidas</span>
+                    <a href="/facturacion/ventas" class="btn btn-sm btn-outline-primary" style="font-size:.8rem">Ver todas</a>
+                </div>
+                @if (_recentInvoices.Count == 0)
+                {
+                    <div class="card-body text-center text-muted py-4">Sin facturas registradas.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Número</th>
+                                    <th>Cliente</th>
+                                    <th>Fecha</th>
+                                    <th class="text-end pe-3">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var inv in _recentInvoices)
+                                {
+                                    <tr style="cursor:pointer" @onclick="() => GoToInvoice(inv.Id)">
+                                        <td class="ps-3 font-monospace small">@inv.Number</td>
+                                        <td class="small">@inv.CustomerName</td>
+                                        <td class="small text-muted">@inv.Date.ToString("dd/MM/yyyy")</td>
+                                        <td class="text-end pe-3 small fw-semibold">@inv.Total.ToString("N2") €</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-light border text-muted small">
+        <svg width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/></svg>
+        Visualizaciones avanzadas, gráficas de evolución y exportación a Excel/PDF — próxima fase de analítica.
+    </div>
+}
 
 @code {
-    private readonly string[] _features =
-    [
-        "Dashboard ejecutivo",
-        "Evolución de ventas",
-        "Pipeline de oportunidades",
-        "Análisis por cliente y sector",
-        "Rentabilidad por producto",
-        "Comparativas por período",
-        "Previsiones de ventas",
-        "KPIs personalizables",
-        "Exportación a Excel/PDF",
-        "Informes automáticos por email"
-    ];
+    bool _loading = true;
+
+    int _activeCustomers, _totalOrders, _pendingOrders, _postedInvoices;
+    decimal _invoiceRevenue, _pendingReceivables, _overdueAmount;
+    List<(string Name, int Count, decimal Total)> _topCustomers = [];
+    List<SalesInvoiceSummaryDto> _recentInvoices = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var t1 = GetCustomers.Handle(new GetCustomersQuery(null, 1, 500));
+        var t2 = GetSalesOrders.Handle(new GetSalesOrdersQuery(null, null, null, 1, 500));
+        var t3 = GetSalesInvoices.Handle(new GetSalesInvoicesQuery(null, null, null, 1, 500));
+        var t4 = GetReceivables.Handle(new GetReceivablesQuery(null, null, null, 1, 500));
+
+        await Task.WhenAll(t1, t2, t3, t4);
+
+        _activeCustomers = t1.Result.Items.Count(c => c.IsActive);
+
+        var orders = t2.Result.Items;
+        _totalOrders = orders.Count;
+        _pendingOrders = orders.Count(o =>
+            o.Status == SalesOrderStatus.Confirmed || o.Status == SalesOrderStatus.PartiallyDelivered);
+
+        _topCustomers = orders
+            .GroupBy(o => o.CustomerName)
+            .Select(g => (Name: g.Key, Count: g.Count(), Total: g.Sum(o => o.Total)))
+            .OrderByDescending(x => x.Total)
+            .Take(5)
+            .ToList();
+
+        var invoices = t3.Result.Items;
+        var posted = invoices.Where(i => i.Status == SalesInvoiceStatus.Posted).ToList();
+        _postedInvoices = posted.Count;
+        _invoiceRevenue = posted.Sum(i => i.Total);
+        _recentInvoices = invoices.OrderByDescending(i => i.Date).Take(10).ToList();
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var receivables = t4.Result.Items
+            .Where(r => r.Status == ReceivableStatus.Pending || r.Status == ReceivableStatus.Partial)
+            .ToList();
+        _pendingReceivables = receivables.Sum(r => r.PendingAmount);
+        _overdueAmount = receivables.Where(r => r.DueDate < today).Sum(r => r.PendingAmount);
+
+        _loading = false;
+    }
+
+    void GoToInvoice(Guid id) => Nav.NavigateTo($"/facturacion/ventas/{id}");
 }

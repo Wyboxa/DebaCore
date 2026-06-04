@@ -1,12 +1,21 @@
 @page "/"
 @rendermode InteractiveServer
 @attribute [Authorize]
-@inject GetDashboardStatsHandler StatsHandler
-@inject GetDashboardBriefingHandler BriefingHandler
-@using Debales.Application.CRM.Dashboard
-@using Debales.Application.AI.Briefing
+@inject GetCustomersHandler GetCustomers
+@inject GetSalesOrdersHandler GetSalesOrders
+@inject GetSalesInvoicesHandler GetSalesInvoices
+@inject GetReceivablesHandler GetReceivables
+@inject GetPurchaseOrdersHandler GetPurchaseOrders
+@inject GetPayablesHandler GetPayables
+@inject NavigationManager Nav
+@using Debales.Application.CRM.Customers.Queries.GetCustomers
+@using Debales.Application.Sales.Queries.GetSalesOrders
+@using Debales.Application.Sales.Queries.GetSalesInvoices
+@using Debales.Application.Sales.Queries.GetReceivables
+@using Debales.Application.Purchasing.Queries.GetPurchaseOrders
+@using Debales.Application.Purchasing.Queries.GetPayables
 
-<PageTitle>Dashboard — Debales CRM</PageTitle>
+<PageTitle>Dashboard — Debales</PageTitle>
 
 @if (_loading)
 {
@@ -17,7 +26,7 @@
         </div>
     </div>
 }
-else if (_stats is not null)
+else
 {
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -27,263 +36,340 @@ else if (_stats is not null)
         <a href="/crm/customers" class="btn btn-primary btn-sm">+ Nuevo cliente</a>
     </div>
 
-    <!-- KPI Cards -->
+    <!-- Fila 1: KPI Cards -->
     <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100 kpi-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="icon-wrap icon-emerald">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="rounded-2 p-2 bg-success bg-opacity-10 text-success">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
                             </svg>
                         </div>
-                        <div>
-                            <div class="h3 fw-bold mb-0">@_stats.ActiveCustomers</div>
-                            <div class="small text-muted">Clientes activos</div>
-                            <div class="small text-muted">de @_stats.TotalCustomers totales</div>
-                        </div>
                     </div>
+                    <div class="h4 fw-bold mb-0">@_activeCustomers</div>
+                    <div class="small text-muted">Clientes activos</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100 kpi-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="icon-wrap icon-emerald">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5"/>
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="rounded-2 p-2 bg-primary bg-opacity-10 text-primary">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4m-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
                             </svg>
                         </div>
-                        <div>
-                            <div class="h3 fw-bold mb-0">@_stats.PipelineValue.ToString("N0") €</div>
-                            <div class="small text-muted">Valor pipeline</div>
-                            <div class="small text-muted">@_stats.OpenOpportunities oport. abiertas</div>
-                        </div>
                     </div>
+                    <div class="h4 fw-bold mb-0">@_pendingSalesOrders</div>
+                    <div class="small text-muted">Pedidos venta</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100 kpi-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="icon-wrap icon-amber">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="rounded-2 p-2 bg-warning bg-opacity-10 text-warning">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M1 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm-1 8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2a2 2 0 0 0-2 2zm3.5-6a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zm0 2a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1zm0 2a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="h4 fw-bold mb-0">@_invoicesPendingCollection</div>
+                    <div class="small text-muted">Fact. sin cobrar</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="rounded-2 p-2 bg-danger bg-opacity-10 text-danger">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
                             </svg>
                         </div>
-                        <div>
-                            <div class="h3 fw-bold mb-0">@_stats.PendingActivities</div>
-                            <div class="small text-muted">Actividades pendientes</div>
-                            <div class="small @(_stats.OverdueActivities > 0 ? "text-danger fw-semibold" : "text-muted")">
-                                @(_stats.OverdueActivities > 0 ? $"{_stats.OverdueActivities} vencidas" : "Al día")
-                            </div>
-                        </div>
                     </div>
+                    <div class="h4 fw-bold mb-0">@_receivablesThisWeek</div>
+                    <div class="small text-muted">Vence esta semana</div>
                 </div>
             </div>
         </div>
 
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100 kpi-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="icon-wrap icon-violet">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/>
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="rounded-2 p-2 bg-info bg-opacity-10 text-info">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5z"/>
                             </svg>
                         </div>
-                        <div>
-                            @{
-                                var wonCount = _stats.Pipeline.FirstOrDefault(p => p.Stage == "Won")?.Count ?? 0;
-                                var lostCount = _stats.Pipeline.FirstOrDefault(p => p.Stage == "Lost")?.Count ?? 0;
-                                var total = _stats.Pipeline.Sum(p => p.Count);
-                                var winRate = total > 0 ? (int)Math.Round((double)wonCount / total * 100) : 0;
-                            }
-                            <div class="h3 fw-bold mb-0">@winRate%</div>
-                            <div class="small text-muted">Tasa de conversión</div>
-                            <div class="small text-muted">@wonCount ganadas · @lostCount perdidas</div>
+                    </div>
+                    <div class="h4 fw-bold mb-0">@_pendingPurchaseOrders</div>
+                    <div class="small text-muted">Pedidos compra</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="rounded-2 p-2 bg-secondary bg-opacity-10 text-secondary">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M4 10.781c.148 1.667 1.513 2.85 3.591 3.003V15h1.043v-1.216c2.27-.179 3.678-1.438 3.678-3.3 0-1.59-.947-2.51-2.956-3.028l-.722-.187V3.467c1.122.11 1.879.714 2.07 1.616h1.47c-.166-1.6-1.54-2.748-3.54-2.875V1H7.591v1.233c-1.939.23-3.27 1.472-3.27 3.156 0 1.454.966 2.483 2.661 2.917l.61.162v4.031c-1.149-.17-1.94-.8-2.131-1.718zm3.391-3.836c-1.043-.263-1.6-.825-1.6-1.616 0-.944.704-1.641 1.8-1.828v3.495l-.2-.051zm1.591 1.872c1.287.323 1.852.859 1.852 1.769 0 1.097-.826 1.828-2.2 1.939V8.73z"/>
+                            </svg>
                         </div>
                     </div>
+                    <div class="h4 fw-bold mb-0">@_pendingPayables</div>
+                    <div class="small text-muted">Fact. compra pendientes</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Briefing IA + Pipeline -->
+    <!-- Fila 2: Alertas activas -->
     <div class="row g-3 mb-4">
-        <div class="col-lg-7">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge-ia">IA</span>
-                        <span class="fw-semibold">Briefing del día</span>
-                    </div>
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshBriefing" disabled="@_briefingLoading">
-                        @(_briefingLoading ? "Generando…" : "↺ Actualizar")
-                    </button>
-                </div>
-                <div class="card-body">
-                    @if (_briefingLoading)
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3 d-flex align-items-center gap-2">
+                    <svg width="16" height="16" fill="currentColor" class="text-danger" viewBox="0 0 16 16">
+                        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+                    </svg>
+                    <span class="fw-semibold">Alertas activas</span>
+                    @if (_alerts.Count > 0)
                     {
-                        <div class="d-flex align-items-center gap-2 text-muted">
-                            <div class="spinner-border spinner-border-sm"></div>
-                            <span>Claude está analizando el pipeline…</span>
+                        <span class="badge bg-danger ms-1">@_alerts.Count</span>
+                    }
+                </div>
+                <div class="card-body p-0">
+                    @if (_alerts.Count == 0)
+                    {
+                        <div class="text-center text-muted py-4">
+                            <svg width="20" height="20" fill="currentColor" class="me-1 text-success" viewBox="0 0 16 16">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                            Sin alertas — todo en orden
                         </div>
                     }
-                    else if (_briefing is not null)
-                    {
-                        <p class="mb-0" style="white-space:pre-wrap;line-height:1.7">@_briefing</p>
-                    }
                     else
                     {
-                        <p class="text-muted mb-0">Pulsa "Actualizar" para obtener el briefing del día.</p>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-bottom py-3">
-                    <span class="fw-semibold">Pipeline de oportunidades</span>
-                </div>
-                <div class="card-body">
-                    @if (!_stats.Pipeline.Any())
-                    {
-                        <p class="text-muted mb-0">Sin oportunidades registradas.</p>
-                    }
-                    else
-                    {
-                        @foreach (var stage in _stats.Pipeline.OrderBy(p => StageOrder(p.Stage)))
-                        {
-                            var pct = _stats.Pipeline.Sum(x => x.Count) > 0
-                                ? (int)Math.Round((double)stage.Count / _stats.Pipeline.Sum(x => x.Count) * 100)
-                                : 0;
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span class="small fw-semibold">@StageLabel(stage.Stage)</span>
-                                    <span class="small text-muted">@stage.Count · @stage.Value.ToString("N0") €</span>
-                                </div>
-                                <div class="progress" style="height:8px">
-                                    <div class="progress-bar @StageBgClass(stage.Stage)" style="width:@pct%"></div>
-                                </div>
-                            </div>
-                        }
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-3">Tipo</th>
+                                        <th>Número</th>
+                                        <th>Cliente/Proveedor</th>
+                                        <th>Vencimiento</th>
+                                        <th class="text-end pe-3">Pendiente</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var a in _alerts)
+                                    {
+                                        <tr>
+                                            <td class="ps-3"><span class="badge bg-danger">@a.Type</span></td>
+                                            <td class="font-monospace small">@a.Number</td>
+                                            <td>@a.Party</td>
+                                            <td class="text-danger small">@a.DueDate.ToString("dd/MM/yyyy")</td>
+                                            <td class="text-end pe-3 fw-semibold">@a.Amount.ToString("N2") €</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     }
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Últimos clientes + Próximas actividades -->
+    <!-- Fila 3: Actividad reciente -->
     <div class="row g-3">
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
-                    <span class="fw-semibold">Últimos clientes</span>
-                    <a href="/crm/customers" class="btn btn-sm btn-outline-primary" style="font-size:0.8rem">Ver todos</a>
+                    <span class="fw-semibold">Últimos pedidos de venta</span>
+                    <a href="/ventas/pedidos" class="btn btn-sm btn-outline-primary" style="font-size:0.8rem">Ver todos</a>
                 </div>
-                <div class="list-group list-group-flush">
-                    @if (!_stats.RecentCustomers.Any())
-                    {
-                        <div class="list-group-item text-muted text-center py-4">Sin clientes registrados.</div>
-                    }
-                    @foreach (var c in _stats.RecentCustomers)
-                    {
-                        <a href="/crm/customers/@c.Id" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-                            <div>
-                                <div class="fw-semibold">@c.Name</div>
-                                <small class="text-muted">@(c.Sector ?? "Sin sector")</small>
-                            </div>
-                            <small class="text-muted">@c.CreatedAt.ToString("dd/MM/yyyy")</small>
-                        </a>
-                    }
-                </div>
+                @if (_recentSalesOrders.Count == 0)
+                {
+                    <div class="card-body text-muted text-center py-4">Sin pedidos registrados.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Número</th>
+                                    <th>Cliente</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end pe-3">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var o in _recentSalesOrders)
+                                {
+                                    <tr style="cursor:pointer" @onclick="() => GoToOrder(o.Id)">
+                                        <td class="ps-3 font-monospace small">@o.Number</td>
+                                        <td class="small">@o.CustomerName</td>
+                                        <td class="text-end small">@o.Total.ToString("N2") €</td>
+                                        <td class="text-end pe-3">
+                                            <span class="badge @SalesOrderBadge(o.Status)">@o.StatusLabel</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
             </div>
         </div>
 
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom py-3">
-                    <span class="fw-semibold">Actividades próximas</span>
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                    <span class="fw-semibold">Últimas facturas de venta</span>
+                    <a href="/facturacion/ventas" class="btn btn-sm btn-outline-primary" style="font-size:0.8rem">Ver todas</a>
                 </div>
-                <div class="list-group list-group-flush">
-                    @if (!_stats.UpcomingActivities.Any())
-                    {
-                        <div class="list-group-item text-muted text-center py-4">Sin actividades programadas.</div>
-                    }
-                    @foreach (var a in _stats.UpcomingActivities)
-                    {
-                        <a href="/crm/customers/@a.CustomerId" class="list-group-item list-group-item-action py-3">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        @if (a.IsOverdue)
-                                        {
-                                            <span class="badge bg-danger">Vencida</span>
-                                        }
-                                        <span class="badge bg-secondary">@a.Type</span>
-                                        <span class="fw-semibold small">@a.Subject</span>
-                                    </div>
-                                    <small class="text-muted">@a.CustomerName</small>
-                                </div>
-                                <small class="@(a.IsOverdue ? "text-danger" : "text-muted") text-nowrap ms-2">
-                                    @a.ScheduledAt.ToString("dd/MM HH:mm")
-                                </small>
-                            </div>
-                        </a>
-                    }
-                </div>
+                @if (_recentSalesInvoices.Count == 0)
+                {
+                    <div class="card-body text-muted text-center py-4">Sin facturas registradas.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Número</th>
+                                    <th>Cliente</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end pe-3">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var inv in _recentSalesInvoices)
+                                {
+                                    <tr style="cursor:pointer" @onclick="() => GoToInvoice(inv.Id)">
+                                        <td class="ps-3 font-monospace small">@inv.Number</td>
+                                        <td class="small">@inv.CustomerName</td>
+                                        <td class="text-end small">@inv.Total.ToString("N2") €</td>
+                                        <td class="text-end pe-3">
+                                            <span class="badge @SalesInvoiceBadge(inv.Status)">@inv.StatusLabel</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
             </div>
         </div>
     </div>
 }
 
 @code {
-    private DashboardStatsDto? _stats;
-    private string? _briefing;
-    private bool _loading = true;
-    private bool _briefingLoading;
+    bool _loading = true;
+
+    int _activeCustomers;
+    int _pendingSalesOrders;
+    int _invoicesPendingCollection;
+    int _receivablesThisWeek;
+    int _pendingPurchaseOrders;
+    int _pendingPayables;
+
+    List<SalesOrderSummaryDto> _recentSalesOrders = [];
+    List<SalesInvoiceSummaryDto> _recentSalesInvoices = [];
+    List<AlertRow> _alerts = [];
+
+    sealed record AlertRow(string Type, string Number, string Party, DateOnly DueDate, decimal Amount);
 
     protected override async Task OnInitializedAsync()
     {
-        _stats = await StatsHandler.Handle(new GetDashboardStatsQuery());
+        var customersTask = GetCustomers.Handle(new GetCustomersQuery(null, 1, 200));
+        var salesOrdersTask = GetSalesOrders.Handle(new GetSalesOrdersQuery(null, null, null, 1, 100));
+        var invoicesTask = GetSalesInvoices.Handle(new GetSalesInvoicesQuery(null, null, SalesInvoiceStatus.Posted, 1, 100));
+        var receivablesTask = GetReceivables.Handle(new GetReceivablesQuery(null, null, null, 1, 200));
+        var purchaseOrdersTask = GetPurchaseOrders.Handle(new GetPurchaseOrdersQuery(null, null, null, 1, 100));
+        var payablesTask = GetPayables.Handle(new GetPayablesQuery(null, null, null, 1, 200));
+
+        await Task.WhenAll(customersTask, salesOrdersTask, invoicesTask, receivablesTask, purchaseOrdersTask, payablesTask);
+
+        var customers = customersTask.Result;
+        var salesOrders = salesOrdersTask.Result;
+        var invoices = invoicesTask.Result;
+        var receivables = receivablesTask.Result;
+        var purchaseOrders = purchaseOrdersTask.Result;
+        var payables = payablesTask.Result;
+
+        _activeCustomers = customers.Items.Count(c => c.IsActive);
+
+        _pendingSalesOrders = salesOrders.Items.Count(o =>
+            o.Status == SalesOrderStatus.Confirmed || o.Status == SalesOrderStatus.PartiallyDelivered);
+
+        _invoicesPendingCollection = invoices.Items.Count(i => i.Status == SalesInvoiceStatus.Posted);
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var week = today.AddDays(7);
+        _receivablesThisWeek = receivables.Items.Count(r =>
+            r.DueDate <= week &&
+            (r.Status == ReceivableStatus.Pending || r.Status == ReceivableStatus.Partial));
+
+        _pendingPurchaseOrders = purchaseOrders.Items.Count(o => o.Status == PurchaseOrderStatus.Confirmed);
+
+        _pendingPayables = payables.Items.Count(p =>
+            p.Status == PayableStatus.Pending || p.Status == PayableStatus.Partial);
+
+        _recentSalesOrders = salesOrders.Items
+            .OrderByDescending(o => o.Date)
+            .Take(5)
+            .ToList();
+
+        _recentSalesInvoices = invoices.Items
+            .OrderByDescending(i => i.Date)
+            .Take(5)
+            .ToList();
+
+        var overdueReceivables = receivables.Items
+            .Where(r => r.Status == ReceivableStatus.Defaulted ||
+                        (r.DueDate < today && (r.Status == ReceivableStatus.Pending || r.Status == ReceivableStatus.Partial)))
+            .Select(r => new AlertRow("Cobro", r.Number, r.CustomerName, r.DueDate, r.PendingAmount));
+
+        _alerts = overdueReceivables
+            .OrderBy(a => a.DueDate)
+            .Take(20)
+            .ToList();
+
         _loading = false;
-        _ = RefreshBriefing();
     }
 
-    private async Task RefreshBriefing()
-    {
-        if (_stats is null) return;
-        _briefingLoading = true;
-        _briefing = null;
-        StateHasChanged();
-        try
-        {
-            _briefing = await BriefingHandler.Handle(new GetDashboardBriefingQuery(_stats));
-        }
-        catch (Exception ex) { _briefing = $"No se pudo generar el briefing: {ex.Message}"; }
-        finally { _briefingLoading = false; StateHasChanged(); }
-    }
+    void GoToOrder(Guid id) => Nav.NavigateTo($"/ventas/pedidos/{id}");
+    void GoToInvoice(Guid id) => Nav.NavigateTo($"/facturacion/ventas/{id}");
 
-    private static int StageOrder(string stage) => stage switch
+    static string SalesOrderBadge(SalesOrderStatus s) => s switch
     {
-        "New" => 1, "InProgress" => 2, "Won" => 3, "Lost" => 4, _ => 5
+        SalesOrderStatus.Confirmed => "bg-primary",
+        SalesOrderStatus.PartiallyDelivered => "bg-warning text-dark",
+        SalesOrderStatus.Delivered => "bg-success",
+        SalesOrderStatus.Cancelled => "bg-secondary",
+        _ => "bg-secondary"
     };
 
-    private static string StageLabel(string stage) => stage switch
+    static string SalesInvoiceBadge(SalesInvoiceStatus s) => s switch
     {
-        "New" => "Nuevo", "InProgress" => "En curso", "Won" => "Ganado", "Lost" => "Perdido", _ => stage
-    };
-
-    private static string StageBgClass(string stage) => stage switch
-    {
-        "Won" => "bg-success", "Lost" => "bg-danger", "InProgress" => "bg-warning", _ => "bg-primary"
+        SalesInvoiceStatus.Posted => "bg-success",
+        SalesInvoiceStatus.Draft => "bg-warning text-dark",
+        SalesInvoiceStatus.Cancelled => "bg-secondary",
+        _ => "bg-secondary"
     };
 }
