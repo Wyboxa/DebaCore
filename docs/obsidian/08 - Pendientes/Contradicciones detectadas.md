@@ -2,7 +2,7 @@
 type: audit
 module: cross
 layer: cross
-status: not_confirmed
+status: resolved
 related:
   - 00 - Inicio
   - Licenciamiento
@@ -12,85 +12,40 @@ related:
 
 # Contradicciones detectadas entre CLAUDE.md y código real
 
-## Contradicción 1 — Licenciamiento (CRÍTICA)
+> **Última revisión: 2026-06-05** — Todas las contradicciones originales resueltas. CLAUDE.md sincronizado.
 
-**CLAUDE.md dice** (§30, §46, §49.3):
-> "Fase 6 — Licenciamiento — SIGUIENTE"  
-> "Licensing | Pendiente — Fase 6 | —"
+## Estado global
 
-**Código real confirma**:
-- `src/Debales.Domain/Licensing/License.cs` — entidad completa con lógica de dominio
-- `src/Debales.Domain/Licensing/LicenseModule.cs` — entidad completa
-- `src/Debales.Domain/Licensing/SubscriptionPlan.cs` — entidad completa
-- `src/Debales.Application/Licensing/` — handlers: `GetCurrentLicenseHandler`, `GetSubscriptionPlansHandler`, `ActivateLicenseHandler`
-- `src/Debales.Infrastructure/Persistence/Repositories/Licensing/` — repositorios
-- `src/Debales.Infrastructure/Services/LicenseService.cs` — servicio
-- `src/Debales.Infrastructure/Persistence/Migrations/20260604121322_AddLicensingModule.cs` — migración aplicada
-- `src/Debales.Api/Controllers/LicensesController.cs` — controller con endpoints
-- `src/Debales.Api/Controllers/SubscriptionPlansController.cs` — controller
-- `src/Debales.Web/Components/Pages/Licencia/Licencia.razor` — UI completa con activación
-- `src/Debales.Infrastructure/DependencyInjection.cs` — registros de DI: `ILicenseRepository`, `ISubscriptionPlanRepository`, `ILicenseService`
-
-**Conclusión**: Licensing está completamente implementado (Dominio + Application + Infrastructure + API + UI). CLAUDE.md lo marca como pendiente.
-
-**Acción recomendada**: Actualizar CLAUDE.md §46 y §49.3 para mover Licensing a "completo".
+| Contradicción | Severidad original | Estado | Fecha resolución |
+|---|---|---|---|
+| Licensing marcado como pendiente | Alta | ✓ Resuelto | 2026-06-04 |
+| Docker no documentado | Alta | ✓ Resuelto | 2026-06-04 |
+| "9 migraciones" incorrecto | Media | ✓ Resuelto | 2026-06-04 |
+| §18 "facturación fuera de alcance" | Baja | ✓ Clarificado | 2026-06-04 |
+| "31 tests" y "10 migraciones" desfasados | Media | ✓ Resuelto | 2026-06-05 |
+| SalesQuote, informes, paridad Compras/Ventas no en §49.3 | Alta | ✓ Resuelto | 2026-06-05 |
+| Vault Obsidian no sincronizado con código | Alta | ✓ Resuelto — protocolo activo | 2026-06-05 |
 
 ---
 
-## Contradicción 2 — Docker Compose / Despliegue (CRÍTICA)
+## Protocolo activo desde 2026-06-05
 
-**CLAUDE.md dice** (§30):
-> "Fase 7 — Despliegue local — [objetivo futuro]"
-
-**Código real confirma**:
-- `d:/Debales/docker-compose.yml` — compose con 3 servicios: `sqlserver`, `api`, `web`
-- `d:/Debales/Dockerfile.api` — Dockerfile de la API
-- `d:/Debales/Dockerfile.web` — Dockerfile de la UI
-- El compose incluye healthcheck de SQL Server, dependencias entre servicios, volúmenes persistentes, variables de entorno por env
-
-**Conclusión**: La infraestructura de Docker Compose está implementada. CLAUDE.md no lo refleja.
-
-**Acción recomendada**: Actualizar CLAUDE.md §30 y §6 para reflejar que Fase 7 (Docker) está implementada.
+**Al finalizar cada sesión de desarrollo**, actualizar:
+1. `CLAUDE.md` §6 (estado real), §46 (roadmap), §47.1 (conflictos), §49.3 (módulos)
+2. `00 - Inicio.md` (tests, migraciones, módulos)
+3. `08 - Pendientes/Pendientes priorizados.md` (marcar resueltos, añadir nuevos)
+4. `08 - Pendientes/Huecos funcionales.md` (marcar implementados)
+5. `10 - Auditoría/Inventario técnico.md` (nuevos artefactos)
+6. `07 - UI Blazor/Rutas Blazor.md` (nuevas rutas)
+7. `09 - Ideas y decisiones.md` (ideas surgidas en la sesión)
 
 ---
 
-## Contradicción 3 — Estado de migraciones
+## Contradicciones potenciales a vigilar
 
-**CLAUDE.md dice** (§6):
-> "9 migraciones aplicadas"
-
-**Código real confirma**:
-- 10 migraciones: la 10ª es `20260604121322_AddLicensingModule` (correspondiente a Licensing)
-
-**Acción recomendada**: Actualizar §6 de CLAUDE.md de "9 migraciones" a "10 migraciones".
-
----
-
-## Contradicción 4 — Estado de módulo AI en §49.3
-
-**CLAUDE.md dice** (§49.3):
-> "AI supervisada ERP (chat, anomalías, resúmenes) | Completo — ERP-6 | sin migración propia"
-
-**Código real confirma**: Correcto. No hay contradicción aquí — esta parte está bien documentada.
-
----
-
-## Contradicción 5 — §18 Fuera de alcance "Facturación legal completa"
-
-**CLAUDE.md dice** (§18):
-> "Facturación legal completa — Fuera de alcance inicial"
-
-**Código real**: Hay un módulo de facturación completo con facturas, rectificativas, vencimientos, cobros y pagos. Aunque no llega al nivel de "facturación legal completa" (sin PDF, sin firma, sin SII), el alcance real supera significativamente lo descrito en §18.
-
-**Conclusión**: Ambigüedad de definición, no contradicción crítica. §18 usa el término "completa" para referirse a funcionalidad avanzada (firma digital, SII, etc.).
-
----
-
-## Resumen
-
-| Contradicción | Severidad | Acción |
-|---------------|-----------|--------|
-| Licensing marcado como pendiente | Alta | Actualizar CLAUDE.md §46 y §49.3 |
-| Docker no documentado | Alta | Actualizar CLAUDE.md §30 y §6 |
-| "9 migraciones" incorrecto | Media | Actualizar CLAUDE.md §6 |
-| §18 "facturación fuera de alcance" | Baja | Clarificar qué se entiende por "completa" |
+| Tema | Riesgo | Cómo vigilar |
+|---|---|---|
+| Tests nuevos no reflejados | Bajo — se actualiza por sesión | Comprobar `dotnet test` al inicio |
+| Migraciones nuevas no en §6 | Medio — después de cada migración | Actualizar §6 inmediatamente |
+| Nuevas rutas Blazor no en vault | Medio — olvidar actualizar vault | Protocolo fin de sesión |
+| §47.2 decisiones pendientes | Alto — afectan arquitectura | Revisar antes de implementar multi-tenant o cuentas individuales |

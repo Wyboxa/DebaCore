@@ -91,7 +91,9 @@ CLAUDE.md actualizado el 2026-06-04 — refleja correctamente el estado implemen
 | [[Índice API]] | Controllers y endpoints |
 | [[Índice UI Blazor]] | Páginas Razor y rutas |
 | [[Pendientes priorizados]] | Lo que falta y su prioridad |
-| [[Contradicciones detectadas]] | CLAUDE.md vs código real |
+| [[Contradicciones detectadas]] | CLAUDE.md vs código real — protocolo activo |
+| [[Huecos funcionales]] | Entidades e integraciones pendientes con estado |
+| [[09 - Ideas y decisiones]] | Registro de todas las ideas surgidas en desarrollo |
 | [[Inventario técnico]] | Tabla completa de todos los artefactos |
 | [[Índice de diagramas]] | Todos los diagramas Mermaid |
 

@@ -110,6 +110,14 @@
         },
         {
           "type": "file",
+          "path": "08 - Pendientes/Huecos funcionales.md"
+        },
+        {
+          "type": "file",
+          "path": "09 - Ideas y decisiones.md"
+        },
+        {
+          "type": "file",
           "path": "08 - Pendientes/Decisiones arquitectónicas pendientes.md"
         }
       ]

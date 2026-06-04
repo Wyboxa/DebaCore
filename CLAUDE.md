@@ -224,8 +224,8 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-06-04:** Fases 0–3 técnicas, ERP-1 a ERP-6, Licenciamiento (Fase 6) y Despliegue Docker (Fase 7) completadas.
-> 10 migraciones aplicadas. 31 tests pasando. Vault Obsidian generado en `docs/obsidian/`.
+> **Actualización 2026-06-05:** Fases 0–3 técnicas, ERP-1 a ERP-6, Licenciamiento (Fase 6), Despliegue Docker (Fase 7), Presupuestos (ERP-Quote), Informes contables y correcciones de paridad Compras/Ventas completadas.
+> 11 migraciones aplicadas. 52 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
 El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada sobre ERP.
@@ -233,29 +233,30 @@ El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada so
 Lo que ya existe (no asumir como propuesta):
 
 - Solución .NET 8 (`Debales.slnx`) con 10 proyectos.
-- Base de datos SQL Server LocalDB con 10 migraciones aplicadas.
-- Módulo Core: usuarios, roles, permisos, auditoría.
+- Base de datos SQL Server LocalDB con **11 migraciones aplicadas**.
+- Módulo Core: usuarios, roles, permisos, auditoría. **UI de gestión de usuarios** (`/configuracion/usuarios`).
 - Módulo CRM: clientes, contactos, actividades, notas, oportunidades.
 - Módulo Suppliers: proveedores con búsqueda, paginación, dirección embebida, soft-delete.
 - Módulo Catalog: artículos, familias, unidades de medida, tipos de IVA.
-- Módulo Sales: pedidos cliente, albaranes, facturas, rectificativas, vencimientos, cobros. `AddERP2Module` + `AddERP3Module`.
-- Módulo Purchasing: pedidos proveedor, albaranes, facturas, rectificativas, vencimientos, pagos. `AddERP2Module` + `AddERP3Module`.
-- Módulo Inventory: almacenes, ubicaciones, movimientos de stock, saldos. `AddERP4Module`.
-- Módulo Accounting: plan contable, cuentas, diarios, ejercicios, períodos, asientos (manuales y automáticos desde facturas/cobros). `AddAccountingModule`.
+- Módulo Sales: presupuestos (`AddSalesQuoteModule`), pedidos, albaranes, facturas, rectificativas, vencimientos, cobros. Flujo completo: **Presupuesto → Pedido → Albarán → Factura**. `AddERP2Module` + `AddERP3Module` + `AddSalesQuoteModule`.
+- Módulo Purchasing: pedidos, albaranes (con actualización de estado de pedido), facturas, rectificativas, vencimientos, pagos. Flujo espejo implementado. `AddERP2Module` + `AddERP3Module`.
+- Módulo Inventory: almacenes, ubicaciones, movimientos de stock (generados automáticamente desde albaranes), saldos. `AddERP4Module`.
+- Módulo Accounting: plan contable, cuentas, diarios, ejercicios, períodos, asientos. **Informes**: balance de comprobación, libro diario, balance de situación. `AddAccountingModule`.
 - Módulo AI (ERP-6): chat financiero con contexto ERP, detección de anomalías, resúmenes cliente/proveedor, aprobación humana.
-- Módulo Licensing: entidades `License`, `LicenseModule`, `SubscriptionPlan`, controller, UI, migración `AddLicensingModule`. `AddLicensingModule`.
+- Módulo Licensing: entidades `License`, `LicenseModule`, `SubscriptionPlan`, controller, UI. `ModuleRequired` (guard en hubs de UI). `AddLicensingModule`.
 - Despliegue Docker: `docker-compose.yml`, `Dockerfile.api`, `Dockerfile.web` en raíz del repositorio.
-- Flujo Ventas completo: Pedido → Albarán → Factura con trazabilidad, navegación y automatización batch.
+- PDF export de facturas venta y compra (QuestPDF Community). Endpoints en `Debales.Web/Program.cs`.
 - API REST (`Debales.Api`) con controllers para todos los módulos.
-- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, proveedores, ventas, compras, inventario, contabilidad, licencias y IA.
+- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, proveedores, ventas, presupuestos, compras, inventario, contabilidad, informes, licencias, gestión de usuarios e IA.
 - UI con paleta teal `#6B9CA9`, sidebar oscuro.
-- 31 tests automatizados pasando.
-- Vault Obsidian en `docs/obsidian/` con 63 notas, marcadores, graph view y plantillas.
+- **52 tests automatizados pasando** (Domain: 31, Application: 20, Integration: 1).
+- Vault Obsidian en `docs/obsidian/` — actualizado en cada sesión de desarrollo.
 
 Lo que aún no existe y debe tratarse como propuesta:
 
-- Middleware de validación de licencia (el módulo existe pero no bloquea acceso por módulo contratado).
-- Flujo Compras espejo: botones Generar albarán / Generar factura en UI de Compras.
+- `ModuleRequired` en páginas de lista/detalle individuales (solo en hubs por ahora).
+- AuditLog UI (la tabla existe y se escribe, pero no hay página de consulta).
+- Asientos contables automáticos desde cobros/pagos (`CustomerPayment` → `AccountingEntry`).
 - Multi-tenant (`TenantId` en tablas).
 
 ---
@@ -2358,7 +2359,7 @@ Debales.Modules.Manufacturing.Windows  ← módulo vertical de mamparas
 
 # 46. Roadmap ERP ampliado
 
-> **Actualización 2026-06-04:** ERP-1 a ERP-6, Fase 6 (Licenciamiento) y Fase 7 (Docker) completadas.
+> **Actualización 2026-06-05:** ERP-1 a ERP-6, Fase 6 (Licenciamiento), Fase 7 (Docker), ERP-Quote (Presupuestos), ERP-Reports (Informes contables) y paridad Compras/Ventas completadas.
 > El roadmap original (§30) describe la progresión técnica base. Este roadmap describe la expansión funcional ERP.
 
 ## Fase ERP-1 — Proveedores y catálogo base ✓ COMPLETA
@@ -2397,21 +2398,44 @@ Pendiente funcional: middleware que restrinja acceso por módulo contratado (el 
 
 Archivos: `docker-compose.yml`, `Dockerfile.api`, `Dockerfile.web` en raíz del repositorio.
 
+## Fase ERP-Quote — Presupuestos de venta ✓ COMPLETA
+
+Commit: `feat(erp-quote)` | Migración: `20260604230558_AddSalesQuoteModule`.
+
+Implementado: `SalesQuote`, `SalesQuoteLine`, estados Draft→Sent→Accepted→Convertido. Handler `ConvertQuoteToOrderHandler`. UI: `/ventas/presupuestos` + detalle. Ciclo completo: Presupuesto → Pedido → Albarán → Factura.
+
+## Fase ERP-Reports — Informes contables ✓ COMPLETA
+
+Commit: `feat(accounting)` | Sin migración propia (lee de datos existentes).
+
+Implementado: `GetTrialBalanceHandler`, `GetJournalBookHandler`, `GetBalanceSheetHandler`. UI: `/contabilidad/informes` con 3 tabs (balance de comprobación, libro diario, balance de situación).
+
+## Correcciones de paridad Compras/Ventas ✓ COMPLETA
+
+Commit: `fix(purchasing)`.
+
+`PostPurchaseDeliveryNoteHandler` ahora actualiza `PurchaseOrder.Status` al confirmar albarán (igual que ventas). `PurchaseOrderLine.RecordReceipt` y `PurchaseOrder.UpdateReceiptStatus` son `public`.
+
 ---
 
 # 47. Decisiones pendientes
 
 Esta sección registra conflictos detectados y decisiones aún no tomadas.
 
-## 47.1 Conflictos resueltos en esta revisión
+## 47.1 Conflictos resueltos
 
-| Conflicto | Resolución |
-|---|---|
-| §6 decía que nada existe | Actualizado con estado real (Fases 0-3 completadas) |
-| §8.1 usaba `ModularAIERP.*` | Actualizado para reflejar nombre real `Debales.*` |
-| §18 ponía contabilidad como fuera de alcance | Clarificado: "completa" sigue fuera, "mínima" está en Fase ERP-5 |
-| §35 nombre provisional | Actualizado: "Debales" es el nombre definitivo |
-| ADR numeración colisión | Nuevos ADRs numerados desde 0004 para no solapar existentes |
+| Conflicto | Resolución | Fecha |
+|---|---|---|
+| §6 decía que nada existe | Actualizado con estado real (Fases 0-3 completadas) | 2026-06-04 |
+| §8.1 usaba `ModularAIERP.*` | Actualizado para reflejar nombre real `Debales.*` | 2026-06-04 |
+| §18 ponía contabilidad como fuera de alcance | Clarificado: "completa" sigue fuera, "mínima" está en Fase ERP-5 | 2026-06-04 |
+| §35 nombre provisional | Actualizado: "Debales" es el nombre definitivo | 2026-06-04 |
+| ADR numeración colisión | Nuevos ADRs numerados desde 0004 para no solapar existentes | 2026-06-04 |
+| §6 — "31 tests" y "10 migraciones" desfasados | Actualizado a 52 tests y 11 migraciones | 2026-06-05 |
+| §6 — Flujo Compras espejo marcado como "no existe" | Implementado: albarán→factura desde UI de Compras | 2026-06-05 |
+| §6 — ModuleRequired marcado como "no existe" | Implementado en hubs de UI | 2026-06-05 |
+| §49.3 — SalesQuote no estaba en tabla de módulos | Añadido | 2026-06-05 |
+| Obsidian vault desactualizado respecto al código | Vault sincronizado en cada sesión desde 2026-06-05 | 2026-06-05 |
 
 ## 47.2 Pendiente de decidir
 
@@ -2512,3 +2536,6 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 | AI supervisada ERP (chat, anomalías, resúmenes) | Completo — ERP-6 | sin migración propia |
 | Licensing | Completo — Fase 6 | `20260604121322_AddLicensingModule` |
 | Docker Compose | Completo — Fase 7 | sin migración |
+| SalesQuote (Presupuestos) | Completo — ERP-Quote | `20260604230558_AddSalesQuoteModule` |
+| Informes contables (Balance, Libro diario, Situación) | Completo — ERP-Reports | sin migración |
+| Paridad Compras/Ventas (estado pedido en albarán) | Completo — fix | sin migración |

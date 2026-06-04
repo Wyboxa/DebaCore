@@ -2,7 +2,7 @@
 type: audit
 module: cross
 layer: cross
-status: pending
+status: partial
 related:
   - Pendientes priorizados
   - Índice de módulos
@@ -10,51 +10,81 @@ related:
 
 # Huecos funcionales
 
-Funcionalidades previstas en CLAUDE.md §42 que no están implementadas en el dominio.
+Funcionalidades previstas en CLAUDE.md §42 y su estado real en el código.
 
-## Entidades de CLAUDE.md §42 no encontradas en código
+> Última revisión: 2026-06-05
+
+## Integración entre módulos
+
+| Integración | Estado | Fecha |
+|-------------|--------|-------|
+| Albarán venta → StockMovement (salida automática) | ✓ Implementado | 2026-06-05 |
+| Albarán compra → StockMovement (entrada automática) | ✓ Implementado | 2026-06-05 |
+| Albarán compra → actualiza estado PurchaseOrder | ✓ Implementado | 2026-06-05 |
+| SalesInvoice → AccountingEntry automático | ✓ Implementado (AccountingTemplate) | 2026-06-02 |
+| PurchaseInvoice → AccountingEntry automático | ✓ Implementado (AccountingTemplate) | 2026-06-02 |
+| CustomerPayment → AccountingEntry (asiento de cobro) | Pendiente — sin plantilla en seeds | — |
+| SupplierPayment → AccountingEntry (asiento de pago) | Pendiente — sin plantilla en seeds | — |
+| Licencia → guard en hubs de UI (ModuleRequired) | ✓ Implementado | 2026-06-05 |
+| Licencia → guard en páginas de lista/detalle | Pendiente | — |
+
+## Entidades de CLAUDE.md §42 — estado
 
 ### Ventas
-- `SalesQuote` / `SalesQuoteLine` — Presupuesto de venta
+| Entidad | Estado |
+|---------|--------|
+| `SalesQuote` / `SalesQuoteLine` | ✓ Implementado — `AddSalesQuoteModule` |
+| `SalesOrder` / `SalesOrderLine` | ✓ Implementado |
+| `SalesDeliveryNote` / Lines | ✓ Implementado |
+| `SalesInvoice` / Lines | ✓ Implementado |
+| `SalesCreditNote` / Lines | ✓ Implementado |
+| `Receivable` | ✓ Implementado |
+| `CustomerPayment` | ✓ Implementado |
 
 ### Catálogo
-- `PriceList` / `ItemPrice` — Tarifas de precio por cliente
-- `SupplierItemCode` — Código del artículo para el proveedor
-- `CustomerItemCode` — Código del artículo para el cliente
-- `Service` — Entidad separada de servicio (en código, los servicios son `Item` con `IsService=true`)
+| Entidad | Estado |
+|---------|--------|
+| `Item` | ✓ Implementado |
+| `ItemFamily` | ✓ Implementado |
+| `UnitOfMeasure` | ✓ Implementado |
+| `TaxType` | ✓ Implementado |
+| `PriceList` / `ItemPrice` | Pendiente — tarifas por cliente |
+| `SupplierItemCode` | Pendiente |
+| `CustomerItemCode` | Pendiente |
+| `Service` | Los servicios son `Item` con flag — no entidad separada (decisión deliberada) |
 
 ### Contabilidad
-- `BankAccount` — Cuenta bancaria
-- `CashAccount` — Cuenta de caja
-- `Remittance` — Remesa bancaria
+| Entidad | Estado |
+|---------|--------|
+| `Account`, `FiscalYear`, `FiscalPeriod` | ✓ Implementado |
+| `AccountingJournal`, `AccountingEntry`, `AccountingEntryLine` | ✓ Implementado |
+| `AccountingTemplate` / `AccountingTemplateLine` | ✓ Implementado |
+| `BankAccount` | Pendiente |
+| `CashAccount` | Pendiente |
+| `Remittance` | Pendiente — fuera de MVP |
 
 ### Inventario
-- `StockAdjustment` — Ajuste de inventario
-- `InventoryCount` — Recuento físico de inventario
+| Entidad | Estado |
+|---------|--------|
+| `Warehouse`, `WarehouseLocation` | ✓ Implementado |
+| `StockMovement`, `StockBalance` | ✓ Implementado |
+| `StockAdjustment` | Pendiente |
+| `InventoryCount` | Pendiente — recuento físico |
 
 ### IA supervisada
-- `AIContext` — No implementado como entidad persistente
-- `AIKnowledgeBase` — No implementado
-- `AIRule` — No implementado
-- `AIActionProposal` — No implementado (solo handlers en memoria)
-- `AIActionApproval` — No implementado
-- `AIExecutionLog` — No implementado
+| Entidad | Estado |
+|---------|--------|
+| `AIContext` (en memoria) | Implementado como contexto ERP efímero |
+| `AIKnowledgeBase` | Pendiente — no persistente |
+| `AIRule` | Pendiente |
+| `AIActionProposal` / `AIActionApproval` / `AIExecutionLog` | Pendiente — flujo supervisado no persistido |
 
 ### Facturación
-- `InvoiceSeries` — Series de facturación
-- `PaymentTerm` — Condiciones de pago
-- `PaymentMethod` — Formas de pago
-
-## Integración entre módulos no implementada
-
-| Integración | Estado |
-|-------------|--------|
-| Albarán venta → MovimientoStock (salida automática) | No confirmado |
-| Albarán compra → MovimientoStock (entrada automática) | No confirmado |
-| CustomerPayment → AccountingEntry (asiento de cobro) | No confirmado |
-| SupplierPayment → AccountingEntry (asiento de pago) | No confirmado |
-| Licencia → Middleware de validación de acceso | No confirmado |
+| Entidad | Estado |
+|---------|--------|
+| `InvoiceSeries` | Pendiente — se usa numeración automática sin series configurables |
+| `PaymentTerm` | Pendiente |
+| `PaymentMethod` | Pendiente |
 
 ## Multi-tenant
-
-Ninguna entidad tiene campo `TenantId`. La plataforma es mono-tenant en su estado actual. CLAUDE.md §47.2 lo registra como decisión pendiente.
+Ninguna entidad tiene campo `TenantId`. La plataforma es mono-tenant en su estado actual. Decisión pendiente en CLAUDE.md §47.2.
