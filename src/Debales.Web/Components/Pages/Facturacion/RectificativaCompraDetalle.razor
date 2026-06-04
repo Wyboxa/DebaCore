@@ -1,0 +1,167 @@
+@page "/facturacion/rectificativas-compra/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetPurchaseCreditNoteByIdHandler GetNote
+@inject PostPurchaseCreditNoteHandler PostHandler
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Rectificativa compra — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_note is null)
+{
+    <div class="alert alert-warning">Rectificativa no encontrada.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <button class="btn btn-sm btn-outline-secondary me-2" @onclick="GoBack">← Volver</button>
+            <h1 class="h3 d-inline mb-0"><code>@_note.Number</code></h1>
+            <span class="badge @StatusBadge(_note.Status) ms-2">@_note.StatusLabel</span>
+        </div>
+        @if (_note.Status == PurchaseCreditNoteStatus.Draft)
+        {
+            <button class="btn btn-success" disabled="@_busy" @onclick="PostNote">Contabilizar</button>
+        }
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Proveedor</div>
+                <div class="fw-semibold">@_note.SupplierName</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Factura original</div>
+                <div class="fw-semibold">
+                    <a href="/facturacion/compras/@_note.OriginalInvoiceId" class="text-decoration-none">
+                        <code>@_note.OriginalInvoiceNumber</code>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Fecha</div>
+                <div class="fw-semibold">@_note.Date.ToString("dd/MM/yyyy")</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Base imponible</div>
+                <div class="fw-semibold">@_note.Subtotal.ToString("N2") €</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Total</div>
+                <div class="fw-semibold fs-5">@_note.Total.ToString("N2") €</div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_note.Reason))
+    {
+        <div class="alert alert-light border mb-3">
+            <strong>Motivo:</strong> @_note.Reason
+        </div>
+    }
+
+    <h5 class="mb-2">Líneas</h5>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">P. unitario</th>
+                        <th class="text-end">IVA %</th>
+                        <th class="text-end">Subtotal</th>
+                        <th class="text-end">IVA</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in _note.Lines)
+                    {
+                        <tr>
+                            <td class="text-muted">@l.SortOrder</td>
+                            <td><code>@l.ItemCode</code></td>
+                            <td>@(l.Description ?? l.ItemName)</td>
+                            <td class="text-end">@l.Quantity.ToString("N2")</td>
+                            <td class="text-end">@l.UnitPrice.ToString("N4") €</td>
+                            <td class="text-end">@l.TaxRate.ToString("N0")%</td>
+                            <td class="text-end">@l.LineSubtotal.ToString("N2") €</td>
+                            <td class="text-end">@l.LineTaxAmount.ToString("N2") €</td>
+                            <td class="text-end fw-semibold">@l.LineTotal.ToString("N2") €</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light fw-semibold">
+                    <tr>
+                        <td colspan="6" class="text-end">Base / IVA / Total:</td>
+                        <td class="text-end">@_note.Subtotal.ToString("N2") €</td>
+                        <td class="text-end">@_note.TaxAmount.ToString("N2") €</td>
+                        <td class="text-end">@_note.Total.ToString("N2") €</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger py-2">@_error</div>
+    }
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    bool _loading = true;
+    bool _busy;
+    string? _error;
+    PurchaseCreditNoteDetailDto? _note;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _note = await GetNote.Handle(new GetPurchaseCreditNoteByIdQuery(Id));
+        _loading = false;
+    }
+
+    async Task PostNote()
+    {
+        _error = null; _busy = true;
+        try
+        {
+            await PostHandler.Handle(new PostPurchaseCreditNoteCommand(Id, "web"));
+            Toast.Show("Rectificativa de compra contabilizada.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    void GoBack() => Nav.NavigateTo("/facturacion/rectificativas-compra");
+
+    static string StatusBadge(PurchaseCreditNoteStatus s) => s switch
+    {
+        PurchaseCreditNoteStatus.Draft => "bg-secondary",
+        PurchaseCreditNoteStatus.Posted => "bg-success",
+        PurchaseCreditNoteStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}

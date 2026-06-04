@@ -1,0 +1,285 @@
+@page "/ventas/albaranes"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetSalesDeliveryNotesHandler GetNotes
+@inject CreateSalesDeliveryNoteHandler CreateHandler
+@inject GetCustomersHandler GetCustomers
+@inject GetItemsHandler GetItems
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Albaranes de venta — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Albaranes de venta</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nuevo albarán</button>
+</div>
+
+<div class="mb-3 d-flex gap-2 flex-wrap">
+    <div class="input-group" style="max-width:340px">
+        <input class="form-control" placeholder="Nº albarán o cliente…"
+               @bind="_search" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+        <button class="btn btn-outline-secondary" @onclick="Search">Buscar</button>
+    </div>
+    <select class="form-select" style="max-width:180px" @onchange="OnStatusChanged">
+        <option value="">Todos los estados</option>
+        <option value="0">Borrador</option>
+        <option value="1">Emitido</option>
+        <option value="2">Cancelado</option>
+    </select>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_result is not null)
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Número</th>
+                        <th>Cliente</th>
+                        <th>Pedido origen</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var n in _result.Items)
+                    {
+                        <tr style="cursor:pointer" @onclick="() => GoToNote(n.Id)">
+                            <td><code>@n.Number</code></td>
+                            <td>@n.CustomerName</td>
+                            <td>
+                                @if (n.SalesOrderNumber is not null)
+                                { <code class="text-muted">@n.SalesOrderNumber</code> }
+                                else
+                                { <span class="text-muted">—</span> }
+                            </td>
+                            <td>@n.Date.ToString("dd/MM/yyyy")</td>
+                            <td><span class="badge @StatusBadge(n.Status)">@n.StatusLabel</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" @onclick:stopPropagation="true"
+                                        @onclick="() => GoToNote(n.Id)">Ver</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (_result.TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <small class="text-muted">@_result.TotalCount resultados</small>
+            <div class="d-flex gap-1">
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(!_result.HasPreviousPage)" @onclick="PrevPage">‹</button>
+                <span class="btn btn-sm btn-outline-secondary disabled">@_page / @_result.TotalPages</span>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(!_result.HasNextPage)" @onclick="NextPage">›</button>
+            </div>
+        </div>
+    }
+}
+
+@if (_showCreate)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo albarán de venta</h5>
+                    <button class="btn-close" @onclick="CloseCreate"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Cliente *</label>
+                            <select class="form-select" @bind="_form.CustomerIdStr">
+                                <option value="">— Seleccionar —</option>
+                                @foreach (var c in _customers)
+                                {
+                                    <option value="@c.Id">@c.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha *</label>
+                            <input type="date" class="form-control" @bind="_form.Date" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea class="form-control" rows="2" @bind="_form.Notes"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-semibold mb-0">Líneas</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="AddLine">+ Línea</button>
+                    </div>
+
+                    @if (_formLines.Count > 0)
+                    {
+                        <div class="table-responsive mb-2">
+                            <table class="table table-sm align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Artículo</th>
+                                        <th>Descripción</th>
+                                        <th class="text-end" style="width:100px">Cantidad</th>
+                                        <th style="width:40px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < _formLines.Count; i++)
+                                    {
+                                        var idx = i;
+                                        var ln = _formLines[idx];
+                                        <tr>
+                                            <td>
+                                                <select class="form-select form-select-sm" style="min-width:200px"
+                                                        @bind="ln.ItemIdStr">
+                                                    <option value="">— Artículo —</option>
+                                                    @foreach (var it in _catalogItems)
+                                                    {
+                                                        <option value="@it.Id">@it.Code – @it.Name</option>
+                                                    }
+                                                </select>
+                                            </td>
+                                            <td><input class="form-control form-control-sm" @bind="ln.Description" /></td>
+                                            <td><input class="form-control form-control-sm text-end" type="number" step="0.01" min="0.01" @bind="ln.Quantity" /></td>
+                                            <td><button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveLine(idx)">✕</button></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="alert alert-danger py-2">@_error</div>
+                    }
+
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseCreate">Cancelar</button>
+                        <button type="button" class="btn btn-primary" disabled="@_saving" @onclick="Save">
+                            @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                            Crear albarán
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    bool _loading = true;
+    bool _showCreate;
+    bool _saving;
+    string? _error;
+    string? _search;
+    SalesDeliveryNoteStatus? _statusFilter;
+    int _page = 1;
+    PagedResult<SalesDeliveryNoteSummaryDto>? _result;
+    List<CustomerSummaryDto> _customers = [];
+    List<ItemSummaryDto> _catalogItems = [];
+    CreateForm _form = new();
+    List<FormLine> _formLines = [];
+
+    sealed class CreateForm
+    {
+        public string CustomerIdStr { get; set; } = "";
+        public DateTime Date { get; set; } = DateTime.Today;
+        public string? Notes { get; set; }
+    }
+
+    sealed class FormLine
+    {
+        public string ItemIdStr { get; set; } = "";
+        public string? Description { get; set; }
+        public decimal Quantity { get; set; } = 1;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var customersResult = await GetCustomers.Handle(new GetCustomersQuery(null, 1, 200));
+        _customers = customersResult.Items.ToList();
+        var itemsResult = await GetItems.Handle(new GetItemsQuery(null, null, null, 1, 500));
+        _catalogItems = itemsResult.Items.ToList();
+        await LoadAsync();
+    }
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _result = await GetNotes.Handle(new GetSalesDeliveryNotesQuery(_search, null, _statusFilter, _page, 20));
+        _loading = false;
+    }
+
+    async Task OpenCreate()
+    {
+        _form = new CreateForm();
+        _formLines = [];
+        _error = null;
+        _showCreate = true;
+    }
+
+    void CloseCreate() => _showCreate = false;
+    void AddLine() => _formLines.Add(new FormLine());
+    void RemoveLine(int idx) => _formLines.RemoveAt(idx);
+
+    async Task Save()
+    {
+        _error = null;
+        if (!Guid.TryParse(_form.CustomerIdStr, out var customerId))
+        { _error = "Selecciona un cliente."; return; }
+        if (_formLines.Count == 0)
+        { _error = "Añade al menos una línea."; return; }
+        if (_formLines.Any(l => !Guid.TryParse(l.ItemIdStr, out _)))
+        { _error = "Todas las líneas deben tener un artículo seleccionado."; return; }
+
+        _saving = true;
+        try
+        {
+            var lines = _formLines.Select(l => new CreateSalesDeliveryNoteLineRequest(
+                null, null, Guid.Parse(l.ItemIdStr), l.Description, l.Quantity)).ToList();
+
+            await CreateHandler.Handle(new CreateSalesDeliveryNoteCommand(
+                customerId, null,
+                DateOnly.FromDateTime(_form.Date),
+                _form.Notes, lines, "web"));
+
+            Toast.Show("Albarán creado correctamente.");
+            _showCreate = false;
+            _page = 1;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    async Task Search() { _page = 1; await LoadAsync(); }
+    async Task OnSearchKeyUp(KeyboardEventArgs e) { if (e.Key == "Enter") await Search(); }
+    async Task OnStatusChanged(ChangeEventArgs e)
+    {
+        _statusFilter = int.TryParse(e.Value?.ToString(), out var v) ? (SalesDeliveryNoteStatus)v : null;
+        _page = 1; await LoadAsync();
+    }
+    async Task PrevPage() { _page--; await LoadAsync(); }
+    async Task NextPage() { _page++; await LoadAsync(); }
+    void GoToNote(Guid id) => Nav.NavigateTo($"/ventas/albaranes/{id}");
+
+    static string StatusBadge(SalesDeliveryNoteStatus s) => s switch
+    {
+        SalesDeliveryNoteStatus.Draft => "bg-secondary",
+        SalesDeliveryNoteStatus.Posted => "bg-success",
+        SalesDeliveryNoteStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
