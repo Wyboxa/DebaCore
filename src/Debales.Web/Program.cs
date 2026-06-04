@@ -3,6 +3,9 @@ using Debales.Application;
 using Microsoft.EntityFrameworkCore;
 using Debales.Application.Common;
 using Debales.Application.Core.Auth.Commands.Login;
+using Debales.Application.Documents;
+using Debales.Application.Sales.Queries.GetSalesInvoiceById;
+using Debales.Application.Purchasing.Queries.GetPurchaseInvoiceById;
 using Debales.Infrastructure;
 using Debales.Infrastructure.Persistence;
 using Debales.Infrastructure.Persistence.Seeders;
@@ -105,6 +108,31 @@ app.MapPost("/auth/logout", async (HttpContext ctx) =>
     await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     return Results.Redirect("/login");
 }).DisableAntiforgery();
+
+// Endpoints de descarga PDF (sin antiforgery — descarga directa del navegador)
+app.MapGet("/descargar/factura-venta/{id:guid}", async (
+    Guid id,
+    GetSalesInvoiceByIdHandler getInvoice,
+    IInvoicePdfGenerator pdfGen,
+    CancellationToken ct) =>
+{
+    var invoice = await getInvoice.Handle(new GetSalesInvoiceByIdQuery(id), ct);
+    if (invoice is null) return Results.NotFound();
+    var bytes = pdfGen.GenerateSalesInvoice(invoice);
+    return Results.File(bytes, "application/pdf", $"Factura-{invoice.Number}.pdf");
+}).RequireAuthorization();
+
+app.MapGet("/descargar/factura-compra/{id:guid}", async (
+    Guid id,
+    GetPurchaseInvoiceByIdHandler getInvoice,
+    IInvoicePdfGenerator pdfGen,
+    CancellationToken ct) =>
+{
+    var invoice = await getInvoice.Handle(new GetPurchaseInvoiceByIdQuery(id), ct);
+    if (invoice is null) return Results.NotFound();
+    var bytes = pdfGen.GeneratePurchaseInvoice(invoice);
+    return Results.File(bytes, "application/pdf", $"Factura-compra-{invoice.Number}.pdf");
+}).RequireAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
