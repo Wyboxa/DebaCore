@@ -1,0 +1,48 @@
+---
+type: database
+module: cross
+layer: database
+status: implemented
+source:
+  - src/Debales.Infrastructure/Persistence/Migrations/
+related:
+  - DbContext
+  - Seeds
+---
+
+# Migraciones EF Core
+
+**Ensamblado de migraciones**: `Debales.Infrastructure`  
+**Startup project**: `Debales.Api`
+
+**Comando de aplicación:**
+```powershell
+dotnet ef database update `
+  --project src\Debales.Infrastructure\Debales.Infrastructure.csproj `
+  --startup-project src\Debales.Api\Debales.Api.csproj
+```
+
+La API aplica migraciones automáticamente al arrancar mediante `context.Database.MigrateAsync()`.
+
+## Migraciones
+
+| Orden | Nombre | Fecha | Módulo |
+|-------|--------|-------|--------|
+| 1 | `InitialCreate` | 2026-05-27 | Core: Users, Roles, Permissions, SystemModules, AuditEntries |
+| 2 | `AddCrmModule` | 2026-05-27 | CRM: Customers, Contacts, Activities, Notes, Opportunities |
+| 3 | `AddCustomerEmail` | 2026-05-28 | CRM: columna Email en Customers |
+| 4 | `AddSuppliersModule` | 2026-05-28 | Suppliers: Suppliers con SupplierAddress embebida |
+| 5 | `AddCatalogModule` | 2026-05-28 | Catalog: Items, ItemFamilies, UnitsOfMeasure, TaxTypes |
+| 6 | `AddERP2Module` | 2026-05-29 | Sales: SalesOrders + Lines + DeliveryNotes; Purchasing: PurchaseOrders + Lines + DeliveryNotes |
+| 7 | `AddERP3Module` | 2026-06-01 | Sales: Invoices, CreditNotes, Receivables, CustomerPayments; Purchasing: Invoices, CreditNotes, Payables, SupplierPayments |
+| 8 | `AddERP4Module` | 2026-06-01 | Inventory: Warehouses, Locations, StockMovements, StockBalances |
+| 9 | `AddAccountingModule` | 2026-06-02 | Accounting: Accounts, FiscalYears, Periods, Journals, Entries, Templates |
+| 10 | `AddLicensingModule` | 2026-06-04 | Licensing: SubscriptionPlans, Licenses, LicenseModules |
+
+## Nota sobre AddERP3Module
+
+Esta migración también añadió la tabla de `Receivables` y `Payables` (vencimientos), que conceptualmente son de facturación pero técnicamente forman parte del mismo paquete ERP-3.
+
+## Convención de nombres
+
+Las migraciones se nombran con el prefijo de fecha `YYYYMMDDHHMMSS_` seguido del nombre descriptivo en PascalCase.
