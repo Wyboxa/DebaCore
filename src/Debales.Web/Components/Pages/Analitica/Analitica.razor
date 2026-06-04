@@ -187,16 +187,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var t1 = GetCustomers.Handle(new GetCustomersQuery(null, 1, 500));
-        var t2 = GetSalesOrders.Handle(new GetSalesOrdersQuery(null, null, null, 1, 500));
-        var t3 = GetSalesInvoices.Handle(new GetSalesInvoicesQuery(null, null, null, 1, 500));
-        var t4 = GetReceivables.Handle(new GetReceivablesQuery(null, null, null, 1, 500));
+        _activeCustomers = (await GetCustomers.Handle(new GetCustomersQuery(null, 1, 500))).Items.Count(c => c.IsActive);
 
-        await Task.WhenAll(t1, t2, t3, t4);
-
-        _activeCustomers = t1.Result.Items.Count(c => c.IsActive);
-
-        var orders = t2.Result.Items;
+        var orders = (await GetSalesOrders.Handle(new GetSalesOrdersQuery(null, null, null, 1, 500))).Items;
         _totalOrders = orders.Count;
         _pendingOrders = orders.Count(o =>
             o.Status == SalesOrderStatus.Confirmed || o.Status == SalesOrderStatus.PartiallyDelivered);
@@ -208,14 +201,14 @@ else
             .Take(5)
             .ToList();
 
-        var invoices = t3.Result.Items;
+        var invoices = (await GetSalesInvoices.Handle(new GetSalesInvoicesQuery(null, null, null, 1, 500))).Items;
         var posted = invoices.Where(i => i.Status == SalesInvoiceStatus.Posted).ToList();
         _postedInvoices = posted.Count;
         _invoiceRevenue = posted.Sum(i => i.Total);
         _recentInvoices = invoices.OrderByDescending(i => i.Date).Take(10).ToList();
 
         var today = DateOnly.FromDateTime(DateTime.Today);
-        var receivables = t4.Result.Items
+        var receivables = (await GetReceivables.Handle(new GetReceivablesQuery(null, null, null, 1, 500))).Items
             .Where(r => r.Status == ReceivableStatus.Pending || r.Status == ReceivableStatus.Partial)
             .ToList();
         _pendingReceivables = receivables.Sum(r => r.PendingAmount);

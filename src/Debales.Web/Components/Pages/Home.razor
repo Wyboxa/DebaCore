@@ -296,21 +296,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var customersTask = GetCustomers.Handle(new GetCustomersQuery(null, 1, 200));
-        var salesOrdersTask = GetSalesOrders.Handle(new GetSalesOrdersQuery(null, null, null, 1, 100));
-        var invoicesTask = GetSalesInvoices.Handle(new GetSalesInvoicesQuery(null, null, SalesInvoiceStatus.Posted, 1, 100));
-        var receivablesTask = GetReceivables.Handle(new GetReceivablesQuery(null, null, null, 1, 200));
-        var purchaseOrdersTask = GetPurchaseOrders.Handle(new GetPurchaseOrdersQuery(null, null, null, 1, 100));
-        var payablesTask = GetPayables.Handle(new GetPayablesQuery(null, null, null, 1, 200));
-
-        await Task.WhenAll(customersTask, salesOrdersTask, invoicesTask, receivablesTask, purchaseOrdersTask, payablesTask);
-
-        var customers = customersTask.Result;
-        var salesOrders = salesOrdersTask.Result;
-        var invoices = invoicesTask.Result;
-        var receivables = receivablesTask.Result;
-        var purchaseOrders = purchaseOrdersTask.Result;
-        var payables = payablesTask.Result;
+        var customers = await GetCustomers.Handle(new GetCustomersQuery(null, 1, 200));
+        var salesOrders = await GetSalesOrders.Handle(new GetSalesOrdersQuery(null, null, null, 1, 100));
+        var invoices = await GetSalesInvoices.Handle(new GetSalesInvoicesQuery(null, null, SalesInvoiceStatus.Posted, 1, 100));
+        var receivables = await GetReceivables.Handle(new GetReceivablesQuery(null, null, null, 1, 200));
+        var purchaseOrders = await GetPurchaseOrders.Handle(new GetPurchaseOrdersQuery(null, null, null, 1, 100));
+        var payables = await GetPayables.Handle(new GetPayablesQuery(null, null, null, 1, 200));
 
         _activeCustomers = customers.Items.Count(c => c.IsActive);
 

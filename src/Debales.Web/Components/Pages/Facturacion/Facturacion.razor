@@ -200,29 +200,27 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var t1 = GetSalesInvoices.Handle(new GetSalesInvoicesQuery(null, null, null, 1, 500));
-        var t2 = GetPurchaseInvoices.Handle(new GetPurchaseInvoicesQuery(null, null, null, 1, 500));
-        var t3 = GetReceivables.Handle(new GetReceivablesQuery(null, null, null, 1, 200));
-        var t4 = GetPayables.Handle(new GetPayablesQuery(null, null, null, 1, 200));
+        var t1 = await GetSalesInvoices.Handle(new GetSalesInvoicesQuery(null, null, null, 1, 500));
+        var t2 = await GetPurchaseInvoices.Handle(new GetPurchaseInvoicesQuery(null, null, null, 1, 500));
+        var t3 = await GetReceivables.Handle(new GetReceivablesQuery(null, null, null, 1, 200));
+        var t4 = await GetPayables.Handle(new GetPayablesQuery(null, null, null, 1, 200));
 
-        await Task.WhenAll(t1, t2, t3, t4);
-
-        var si = t1.Result.Items;
+        var si = t1.Items;
         _salesInvoiceCount = si.Count;
         _salesInvoicePosted = si.Count(i => i.Status == SalesInvoiceStatus.Posted);
 
-        var pi = t2.Result.Items;
+        var pi = t2.Items;
         _purchaseInvoiceCount = pi.Count;
         _purchaseInvoicePosted = pi.Count(i => i.Status == PurchaseInvoiceStatus.Posted);
 
-        var rec = t3.Result.Items
+        var rec = t3.Items
             .Where(r => r.Status == ReceivableStatus.Pending || r.Status == ReceivableStatus.Partial)
             .ToList();
         _receivableCount = rec.Count;
         _pendingReceivables = rec.Sum(r => r.PendingAmount);
         _topReceivables = rec.OrderBy(r => r.DueDate).Take(8).ToList();
 
-        var pay = t4.Result.Items
+        var pay = t4.Items
             .Where(p => p.Status == PayableStatus.Pending || p.Status == PayableStatus.Partial)
             .ToList();
         _payableCount = pay.Count;

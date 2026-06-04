@@ -146,17 +146,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var t1 = GetWarehouses.Handle(new GetWarehousesQuery());
-        var t2 = GetStockBalance.Handle(new GetStockBalanceQuery(null, null));
-        var t3 = GetMovements.Handle(new GetStockMovementsQuery(null, null, null, null, 1, 500));
-
-        await Task.WhenAll(t1, t2, t3);
-
-        _warehouseCount = t1.Result.Count;
-        _balances = t2.Result.OrderBy(b => b.ItemCode).ToList();
+        _warehouseCount = (await GetWarehouses.Handle(new GetWarehousesQuery())).Count;
+        _balances = (await GetStockBalance.Handle(new GetStockBalanceQuery(null, null))).OrderBy(b => b.ItemCode).ToList();
         _itemsWithStock = _balances.Count(b => b.Quantity > 0);
         _itemsNoStock = _balances.Count(b => b.Quantity <= 0);
-        _movementCount = t3.Result.Items.Count;
+        _movementCount = (await GetMovements.Handle(new GetStockMovementsQuery(null, null, null, null, 1, 500))).Items.Count;
 
         _loading = false;
     }

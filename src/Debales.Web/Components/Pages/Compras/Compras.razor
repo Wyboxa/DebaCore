@@ -183,20 +183,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var t1 = GetPurchaseOrders.Handle(new GetPurchaseOrdersQuery(null, null, null, 1, 200));
-        var t2 = GetDeliveryNotes.Handle(new GetPurchaseDeliveryNotesQuery(null, null, null, 1, 500));
-        var t3 = GetPayables.Handle(new GetPayablesQuery(null, null, null, 1, 200));
-
-        await Task.WhenAll(t1, t2, t3);
-
-        var orders = t1.Result.Items;
+        var orders = (await GetPurchaseOrders.Handle(new GetPurchaseOrdersQuery(null, null, null, 1, 200))).Items;
         _totalOrders = orders.Count;
         _pendingOrders = orders.Count(o => o.Status == PurchaseOrderStatus.Confirmed);
         _recentOrders = orders.OrderByDescending(o => o.Date).Take(7).ToList();
 
-        _totalNotes = t2.Result.Items.Count;
+        _totalNotes = (await GetDeliveryNotes.Handle(new GetPurchaseDeliveryNotesQuery(null, null, null, 1, 500))).Items.Count;
 
-        var pay = t3.Result.Items
+        var pay = (await GetPayables.Handle(new GetPayablesQuery(null, null, null, 1, 200))).Items
             .Where(p => p.Status == PayableStatus.Pending || p.Status == PayableStatus.Partial)
             .ToList();
         _payableCount = pay.Count;
