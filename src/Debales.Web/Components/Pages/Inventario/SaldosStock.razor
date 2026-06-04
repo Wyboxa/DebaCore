@@ -10,7 +10,12 @@
     <h1 class="h3 mb-0">Saldos de stock</h1>
 </div>
 
-<div class="mb-3 d-flex gap-2">
+<div class="mb-3 d-flex gap-2 flex-wrap">
+    <div class="input-group" style="max-width:280px">
+        <input class="form-control" placeholder="Código o nombre de artículo…"
+               @bind="_search" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+        <button class="btn btn-outline-secondary" @onclick="ApplySearch">Buscar</button>
+    </div>
     <select class="form-select" style="max-width:220px" @onchange="OnWarehouseChanged">
         <option value="">Todos los almacenes</option>
         @foreach (var w in _warehouses)
@@ -30,8 +35,15 @@ else
     {
         <div class="alert alert-light border">Sin movimientos de stock registrados todavía.</div>
     }
+    else if (_filtered.Count == 0)
+    {
+        <div class="alert alert-light border">Sin resultados para la búsqueda.</div>
+    }
     else
     {
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <small class="text-muted">@_filtered.Count artículo(s)</small>
+        </div>
         <div class="card border-0 shadow-sm">
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
@@ -45,7 +57,7 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var b in _balances)
+                        @foreach (var b in _filtered)
                         {
                             <tr>
                                 <td>@b.WarehouseName</td>
@@ -59,6 +71,10 @@ else
                                     {
                                         <span class="badge bg-danger">Stock negativo</span>
                                     }
+                                    else if (b.Quantity == 0)
+                                    {
+                                        <span class="badge bg-secondary">Sin stock</span>
+                                    }
                                 </td>
                             </tr>
                         }
@@ -71,7 +87,9 @@ else
 
 @code {
     bool _loading = true;
+    string? _search;
     List<StockBalanceDto> _balances = [];
+    List<StockBalanceDto> _filtered = [];
     List<WarehouseSummaryDto> _warehouses = [];
     Guid? _warehouseFilter;
 
@@ -85,8 +103,22 @@ else
     {
         _loading = true;
         _balances = (await GetBalance.Handle(new GetStockBalanceQuery(null, _warehouseFilter))).ToList();
+        ApplyFilter();
         _loading = false;
     }
+
+    void ApplyFilter()
+    {
+        _filtered = string.IsNullOrWhiteSpace(_search)
+            ? _balances
+            : _balances.Where(b =>
+                b.ItemCode.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                b.ItemName.Contains(_search, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    async Task ApplySearch() => ApplyFilter();
+
+    async Task OnSearchKeyUp(KeyboardEventArgs e) { if (e.Key == "Enter") ApplyFilter(); }
 
     async Task OnWarehouseChanged(ChangeEventArgs e)
     {

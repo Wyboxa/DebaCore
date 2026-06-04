@@ -71,6 +71,8 @@ using Debales.Application.Sales.Queries.GetSalesCreditNoteById;
 using Debales.Application.Sales.Queries.GetReceivables;
 using Debales.Application.Sales.Queries.GetCustomerPayments;
 using Debales.Application.AI.ERP;
+using Debales.Application.Accounting.Commands.CloseFiscalPeriod;
+using Debales.Application.Accounting.Commands.CloseFiscalYear;
 using Debales.Application.Accounting.Commands.CreateAccount;
 using Debales.Application.Accounting.Commands.CreateAccountingEntry;
 using Debales.Application.Accounting.Commands.CreateAccountingJournal;
@@ -226,6 +228,8 @@ public static class DependencyInjection
         services.AddScoped<GetSupplierERPSummaryHandler>();
 
         // Accounting — ERP-5
+        services.AddScoped<CloseFiscalPeriodHandler>();
+        services.AddScoped<CloseFiscalYearHandler>();
         services.AddScoped<IAccountingEntryService, AccountingEntryService>();
         services.AddScoped<CreateAccountHandler>();
         services.AddScoped<GetAccountsHandler>();

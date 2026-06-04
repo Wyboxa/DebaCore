@@ -3,6 +3,8 @@
 @attribute [Authorize]
 @inject GetFiscalYearsHandler GetYears
 @inject CreateFiscalYearHandler CreateHandler
+@inject CloseFiscalPeriodHandler ClosePeriodHandler
+@inject CloseFiscalYearHandler CloseYearHandler
 @inject ToastService Toast
 
 <PageTitle>Ejercicios Fiscales — Debales</PageTitle>
@@ -26,6 +28,13 @@ else if (_years is not null)
                 <div class="d-flex gap-2 align-items-center">
                     <small class="text-muted">@y.StartDate.ToString("dd/MM/yyyy") — @y.EndDate.ToString("dd/MM/yyyy")</small>
                     <span class="badge @(y.Status == FiscalYearStatus.Open ? "bg-success" : "bg-secondary")">@y.StatusLabel</span>
+                    @if (y.Status == FiscalYearStatus.Open)
+                    {
+                        <button class="btn btn-sm btn-outline-danger" disabled="@_busy"
+                                @onclick="() => ConfirmCloseYear(y.Id, y.Name)">
+                            Cerrar ejercicio
+                        </button>
+                    }
                 </div>
             </div>
             <div class="card-body p-0">
@@ -37,6 +46,7 @@ else if (_years is not null)
                                 <th>Inicio</th>
                                 <th>Fin</th>
                                 <th>Estado</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -50,6 +60,16 @@ else if (_years is not null)
                                         <span class="badge @(p.Status == FiscalPeriodStatus.Open ? "bg-success" : "bg-secondary")">
                                             @p.StatusLabel
                                         </span>
+                                    </td>
+                                    <td>
+                                        @if (p.Status == FiscalPeriodStatus.Open && y.Status == FiscalYearStatus.Open)
+                                        {
+                                            <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                                    style="font-size:0.75rem" disabled="@_busy"
+                                                    @onclick="() => ClosePeriod(p.Id, p.Name)">
+                                                Cerrar
+                                            </button>
+                                        }
                                     </td>
                                 </tr>
                             }
@@ -110,13 +130,44 @@ else if (_years is not null)
     </div>
 }
 
+@if (_confirmClose is not null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar cierre</h5>
+                    <button class="btn-close" @onclick="CancelClose"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Cerrar <strong>@_confirmClose.Name</strong>?</p>
+                    <p class="text-muted small mb-0">
+                        @if (_confirmClose.IsYear)
+                        { <span>El ejercicio quedará cerrado definitivamente. No se podrán contabilizar asientos en sus períodos.</span> }
+                        else
+                        { <span>El período quedará cerrado. No se podrán contabilizar asientos en este período.</span> }
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CancelClose">Cancelar</button>
+                    <button class="btn btn-danger" disabled="@_busy" @onclick="ExecuteClose">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private IReadOnlyList<FiscalYearDetailDto>? _years;
     private bool _loading;
     private bool _showCreate;
     private bool _saving;
+    private bool _busy;
     private string? _createError;
     private YearForm _form = new();
+    private CloseConfirm? _confirmClose;
+
+    private sealed record CloseConfirm(Guid Id, string Name, bool IsYear);
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -157,6 +208,37 @@ else if (_years is not null)
         catch (InvalidOperationException ex) { _createError = ex.Message; }
         catch (ArgumentException ex) { _createError = ex.Message; }
         finally { _saving = false; }
+    }
+
+    private void ClosePeriod(Guid periodId, string name) =>
+        _confirmClose = new CloseConfirm(periodId, name, IsYear: false);
+
+    private void ConfirmCloseYear(Guid yearId, string name) =>
+        _confirmClose = new CloseConfirm(yearId, name, IsYear: true);
+
+    private void CancelClose() => _confirmClose = null;
+
+    private async Task ExecuteClose()
+    {
+        if (_confirmClose is null) return;
+        _busy = true;
+        try
+        {
+            if (_confirmClose.IsYear)
+            {
+                await CloseYearHandler.Handle(new CloseFiscalYearCommand(_confirmClose.Id, "web"));
+                Toast.Show("Ejercicio cerrado correctamente.");
+            }
+            else
+            {
+                await ClosePeriodHandler.Handle(new CloseFiscalPeriodCommand(_confirmClose.Id, "web"));
+                Toast.Show("Período cerrado correctamente.");
+            }
+            _confirmClose = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { Toast.Show($"Error: {ex.Message}"); _confirmClose = null; }
+        finally { _busy = false; }
     }
 
     private sealed class YearForm
