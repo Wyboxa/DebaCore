@@ -1,74 +1,153 @@
 @page "/configuracion"
 @rendermode InteractiveServer
 @attribute [Authorize]
+@inject GetCurrentLicenseHandler GetLicense
+@inject GetUsersHandler GetUsers
+@inject GetRolesHandler GetRoles
+@inject NavigationManager Nav
 
 <PageTitle>Configuración — Debales</PageTitle>
 
-<div class="d-flex justify-content-between align-items-start mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h4 fw-bold mb-0">Configuración</h1>
-        <small class="text-muted">Parámetros generales, usuarios, módulos y preferencias de la plataforma</small>
+        <small class="text-muted">Sistema, usuarios y parámetros de la plataforma</small>
     </div>
 </div>
 
-<div class="row g-3">
-    @foreach (var section in _sections)
-    {
+@if (_loading)
+{
+    <div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Versión</div>
+                <div class="fw-semibold font-monospace">v1.0.0</div>
+                <div class="text-muted small">.NET 8 · Blazor Server</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Usuarios activos</div>
+                <div class="fw-semibold h4 mb-0">@_activeUsers</div>
+                <div class="text-muted small">de @_totalUsers en total</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small mb-1">Roles</div>
+                <div class="fw-semibold h4 mb-0">@_roleCount</div>
+                <div class="text-muted small">configurados en el sistema</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 @(_license is null ? "" : _license.IsValid ? "border border-success border-opacity-25" : "border border-danger border-opacity-25")">
+                <div class="text-muted small mb-1">Licencia</div>
+                @if (_license is null)
+                {
+                    <span class="badge bg-warning text-dark">Sin activar</span>
+                    <div class="mt-1"><a href="/licencia" class="small">Activar ahora</a></div>
+                }
+                else
+                {
+                    <span class="badge @(_license.IsValid ? "bg-success" : "bg-danger")">@_license.Status</span>
+                    <div class="text-muted small mt-1">@_license.Plan.Name · vence @_license.ExpiresAt.ToString("dd/MM/yyyy")</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
         <div class="col-md-6 col-lg-4">
-            <div class="card border-0 shadow-sm h-100" style="opacity: @(section.Available ? "1" : "0.6")">
+            <div class="card border-0 shadow-sm h-100" style="cursor:pointer" @onclick='() => Nav.NavigateTo("/configuracion/usuarios")'>
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="icon-wrap @section.IconClass" style="width:40px;height:40px;border-radius:10px;">
-                            @((MarkupString)section.IconSvg)
+                        <div class="rounded-2 p-2 bg-primary bg-opacity-10 text-primary">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/></svg>
                         </div>
                         <div class="flex-grow-1">
-                            <div class="fw-semibold small">@section.Title</div>
-                            @if (!section.Available)
-                            {
-                                <span class="badge bg-light text-secondary border" style="font-size:0.62rem">Próximamente</span>
-                            }
+                            <div class="fw-semibold">Usuarios y roles</div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:.65rem">Disponible</span>
                         </div>
+                        <svg width="14" height="14" fill="currentColor" class="text-muted" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg>
                     </div>
-                    <p class="small text-muted mb-0">@section.Description</p>
+                    <p class="small text-muted mb-2">Crear, editar y desactivar usuarios. Asignar roles y cambiar contraseñas.</p>
+                    <div class="text-muted small"><span class="fw-semibold text-dark">@_activeUsers</span> activos · <span class="fw-semibold text-dark">@_roleCount</span> roles</div>
                 </div>
             </div>
         </div>
-    }
-</div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100" style="cursor:pointer" @onclick='() => Nav.NavigateTo("/licencia")'>
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-2 p-2 bg-warning bg-opacity-10 text-warning">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/></svg>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">Licencia</div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:.65rem">Disponible</span>
+                        </div>
+                        <svg width="14" height="14" fill="currentColor" class="text-muted" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg>
+                    </div>
+                    <p class="small text-muted mb-2">Plan contratado, módulos activos y fechas de vencimiento.</p>
+                    @if (_license is not null)
+                    {
+                        <div class="text-muted small"><span class="fw-semibold text-dark">@_license.Plan.Name</span> · @_license.Modules.Count módulos · @_license.DaysRemaining días restantes</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @foreach (var s in _proximos)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100" style="opacity:.6">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-2 p-2 bg-secondary bg-opacity-10 text-secondary">@((MarkupString)s.Icon)</div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">@s.Title</div>
+                                <span class="badge bg-light text-secondary border" style="font-size:.65rem">Próximamente</span>
+                            </div>
+                        </div>
+                        <p class="small text-muted mb-0">@s.Description</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
 
 @code {
-    private record ConfigSection(string Title, string Description, string IconClass, string IconSvg, bool Available);
+    bool _loading = true;
+    int _activeUsers, _totalUsers, _roleCount;
+    LicenseSummaryDto? _license;
 
-    private readonly ConfigSection[] _sections =
+    record ProximoSection(string Title, string Description, string Icon);
+
+    readonly ProximoSection[] _proximos =
     [
-        new("Empresa", "Nombre, logo, CIF, dirección fiscal y datos de contacto de la empresa",
-            "icon-teal",
-            "<svg width='18' height='18' fill='currentColor' viewBox='0 0 16 16'><path d='M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm8 0A1.5 1.5 0 0 1 10.5 9h3A1.5 1.5 0 0 1 15 10.5v3A1.5 1.5 0 0 1 13.5 15h-3A1.5 1.5 0 0 1 9 13.5z'/></svg>",
-            false),
-
-        new("Usuarios y roles", "Gestión de usuarios del sistema, roles y permisos de acceso",
-            "icon-violet",
-            "<svg width='18' height='18' fill='currentColor' viewBox='0 0 16 16'><path d='M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5'/></svg>",
-            false),
-
-        new("Módulos activos", "Activar o desactivar módulos de la plataforma según la licencia contratada",
-            "icon-teal",
-            "<svg width='18' height='18' fill='currentColor' viewBox='0 0 16 16'><path d='M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2zm3.564 1.426L5.596 5 8 5.961 14.154 3.5zm3.25 1.7-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923z'/></svg>",
-            false),
-
-        new("Series documentales", "Configuración de series para facturas, pedidos, albaranes y presupuestos",
-            "icon-amber",
-            "<svg width='18' height='18' fill='currentColor' viewBox='0 0 16 16'><path d='M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5'/><path d='M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z'/></svg>",
-            false),
-
-        new("Tipos de IVA", "Definición de tipos impositivos aplicables en ventas, compras y facturación",
-            "icon-rose",
-            "<svg width='18' height='18' fill='currentColor' viewBox='0 0 16 16'><path d='M8.53 1.544c-.168-.226-.456-.226-.624 0L4.45 6.243C4.29 6.47 4.355 6.8 4.58 6.954a.594.594 0 0 0 .768-.22l2.635-3.79 2.632 3.79c.172.247.5.301.747.13a.596.596 0 0 0 .2-.73z'/><path d='M4.023 9.02h-.001c-1.127.052-2.022 1.003-2.022 2.15C2 12.24 2.89 13.198 4 13.198c.98 0 1.809-.726 1.968-1.667h.003C6.155 12.502 6.968 13.2 7.98 13.2c.942 0 1.74-.647 1.946-1.53h.003c.207.883.955 1.53 1.87 1.53 1.051 0 1.9-.845 1.9-1.87 0-1.044-.85-1.888-1.9-1.888h-7.78z'/></svg>",
-            false),
-
-        new("Asistente IA", "Configuración del proveedor IA, prompts, permisos y límites de uso",
-            "icon-teal",
-            "<svg width='18' height='18' fill='currentColor' viewBox='0 0 16 16'><path d='M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828z'/></svg>",
-            false),
+        new("Datos de empresa", "Nombre, CIF, dirección fiscal y datos de contacto.",
+            "<svg width='20' height='20' fill='currentColor' viewBox='0 0 16 16'><path d='M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm8 0A1.5 1.5 0 0 1 10.5 9h3A1.5 1.5 0 0 1 15 10.5v3A1.5 1.5 0 0 1 13.5 15h-3A1.5 1.5 0 0 1 9 13.5z'/></svg>"),
+        new("Series documentales", "Series para facturas, pedidos, albaranes y presupuestos.",
+            "<svg width='20' height='20' fill='currentColor' viewBox='0 0 16 16'><path d='M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z'/></svg>"),
+        new("Parámetros del sistema", "Moneda, idioma, formato de fechas y configuración general.",
+            "<svg width='20' height='20' fill='currentColor' viewBox='0 0 16 16'><path d='M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0'/></svg>"),
+        new("Asistente IA", "Proveedor, límites de uso, prompts y configuración de agentes.",
+            "<svg width='20' height='20' fill='currentColor' viewBox='0 0 16 16'><path d='M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828z'/></svg>"),
     ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _license = await GetLicense.Handle();
+        var users = await GetUsers.Handle(new GetUsersQuery());
+        _totalUsers = users.Count;
+        _activeUsers = users.Count(u => u.IsActive);
+        _roleCount = (await GetRoles.Handle()).Count;
+        _loading = false;
+    }
 }
