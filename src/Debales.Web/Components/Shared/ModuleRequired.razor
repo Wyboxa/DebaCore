@@ -1,0 +1,50 @@
+@inject ILicenseService LicenseService
+
+@if (_checking)
+{
+    @ChildContent
+}
+else if (_allowed)
+{
+    @ChildContent
+}
+else
+{
+    <div class="d-flex align-items-center justify-content-center" style="min-height:40vh">
+        <div class="text-center">
+            <div class="mb-3 text-warning">
+                <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
+                </svg>
+            </div>
+            <h5 class="fw-bold">Módulo no disponible</h5>
+            <p class="text-muted mb-3">
+                El módulo <strong>@Module</strong> no está incluido en tu licencia actual.
+            </p>
+            <a href="/licencia" class="btn btn-primary btn-sm">Ver licencia</a>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Module { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    bool _checking = true;
+    bool _allowed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Si no hay licencia activa, se permite todo (instalación nueva)
+        var isValid = await LicenseService.IsValidAsync();
+        if (!isValid)
+        {
+            _allowed = true;
+            _checking = false;
+            return;
+        }
+
+        _allowed = await LicenseService.IsModuleActiveAsync(Module);
+        _checking = false;
+    }
+}

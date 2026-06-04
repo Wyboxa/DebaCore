@@ -5,6 +5,8 @@ using Debales.Application.Common;
 using Debales.Application.Core.Auth;
 using Debales.Application.Core.Roles;
 using Debales.Application.Core.Users;
+using Debales.Application.Documents;
+using Debales.Infrastructure.Documents;
 using Debales.Application.CRM.Activities;
 using Debales.Application.CRM.Contacts;
 using Debales.Application.CRM.Customers;
@@ -42,6 +44,9 @@ public static class DependencyInjection
                 sql => sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // Documents
+        services.AddSingleton<IInvoicePdfGenerator, InvoicePdfGenerator>();
 
         // Core
         services.AddScoped<IUserRepository, UserRepository>();

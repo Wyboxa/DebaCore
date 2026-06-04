@@ -1,3 +1,4 @@
+using Debales.Application.Documents;
 using Debales.Application.Purchasing.Commands.CancelPurchaseInvoice;
 using Debales.Application.Purchasing.Commands.CreatePurchaseInvoice;
 using Debales.Application.Purchasing.Commands.PostPurchaseInvoice;
@@ -19,14 +20,16 @@ public sealed class PurchaseInvoicesController : ControllerBase
     private readonly CancelPurchaseInvoiceHandler _cancel;
     private readonly GetPurchaseInvoicesHandler _getAll;
     private readonly GetPurchaseInvoiceByIdHandler _getById;
+    private readonly IInvoicePdfGenerator _pdf;
 
     public PurchaseInvoicesController(
         CreatePurchaseInvoiceHandler create, PostPurchaseInvoiceHandler post,
         CancelPurchaseInvoiceHandler cancel,
-        GetPurchaseInvoicesHandler getAll, GetPurchaseInvoiceByIdHandler getById)
+        GetPurchaseInvoicesHandler getAll, GetPurchaseInvoiceByIdHandler getById,
+        IInvoicePdfGenerator pdf)
     {
         _create = create; _post = post; _cancel = cancel;
-        _getAll = getAll; _getById = getById;
+        _getAll = getAll; _getById = getById; _pdf = pdf;
     }
 
     [HttpGet]
@@ -75,6 +78,16 @@ public sealed class PurchaseInvoicesController : ControllerBase
     {
         await _cancel.Handle(new CancelPurchaseInvoiceCommand(id, "api"), ct);
         return NoContent();
+    }
+
+    [HttpGet("{id:guid}/pdf")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPdf(Guid id, CancellationToken ct = default)
+    {
+        var invoice = await _getById.Handle(new GetPurchaseInvoiceByIdQuery(id), ct);
+        if (invoice is null) return NotFound();
+        var bytes = _pdf.GeneratePurchaseInvoice(invoice);
+        return File(bytes, "application/pdf", $"Factura-compra-{invoice.Number}.pdf");
     }
 
     public sealed record PurchaseInvoiceLineBody(Guid ItemId, string? Description, decimal Quantity, decimal UnitPrice, decimal TaxRate);

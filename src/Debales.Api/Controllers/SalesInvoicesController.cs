@@ -1,3 +1,4 @@
+using Debales.Application.Documents;
 using Debales.Application.Sales.Commands.CancelSalesInvoice;
 using Debales.Application.Sales.Commands.CreateSalesInvoice;
 using Debales.Application.Sales.Commands.PostSalesInvoice;
@@ -19,14 +20,16 @@ public sealed class SalesInvoicesController : ControllerBase
     private readonly CancelSalesInvoiceHandler _cancel;
     private readonly GetSalesInvoicesHandler _getAll;
     private readonly GetSalesInvoiceByIdHandler _getById;
+    private readonly IInvoicePdfGenerator _pdf;
 
     public SalesInvoicesController(
         CreateSalesInvoiceHandler create, PostSalesInvoiceHandler post,
         CancelSalesInvoiceHandler cancel,
-        GetSalesInvoicesHandler getAll, GetSalesInvoiceByIdHandler getById)
+        GetSalesInvoicesHandler getAll, GetSalesInvoiceByIdHandler getById,
+        IInvoicePdfGenerator pdf)
     {
         _create = create; _post = post; _cancel = cancel;
-        _getAll = getAll; _getById = getById;
+        _getAll = getAll; _getById = getById; _pdf = pdf;
     }
 
     [HttpGet]
@@ -74,6 +77,16 @@ public sealed class SalesInvoicesController : ControllerBase
     {
         await _cancel.Handle(new CancelSalesInvoiceCommand(id, "api"), ct);
         return NoContent();
+    }
+
+    [HttpGet("{id:guid}/pdf")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPdf(Guid id, CancellationToken ct = default)
+    {
+        var invoice = await _getById.Handle(new GetSalesInvoiceByIdQuery(id), ct);
+        if (invoice is null) return NotFound();
+        var bytes = _pdf.GenerateSalesInvoice(invoice);
+        return File(bytes, "application/pdf", $"Factura-{invoice.Number}.pdf");
     }
 
     public sealed record SalesInvoiceLineBody(Guid ItemId, string? Description, decimal Quantity, decimal UnitPrice, decimal TaxRate);
