@@ -1,0 +1,86 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:\"02 - Módulos\"",
+      "color": {
+        "a": 1,
+        "rgb": 4473924
+      }
+    },
+    {
+      "query": "path:\"03 - Entidades\"",
+      "color": {
+        "a": 1,
+        "rgb": 11953664
+      }
+    },
+    {
+      "query": "path:\"04 - Flujos\"",
+      "color": {
+        "a": 1,
+        "rgb": 16753920
+      }
+    },
+    {
+      "query": "path:\"05 - Base de datos\"",
+      "color": {
+        "a": 1,
+        "rgb": 7077375
+      }
+    },
+    {
+      "query": "path:\"06 - API\"",
+      "color": {
+        "a": 1,
+        "rgb": 16744272
+      }
+    },
+    {
+      "query": "path:\"07 - UI Blazor\"",
+      "color": {
+        "a": 1,
+        "rgb": 10027264
+      }
+    },
+    {
+      "query": "path:\"08 - Pendientes\"",
+      "color": {
+        "a": 1,
+        "rgb": 16733525
+      }
+    },
+    {
+      "query": "path:\"09 - Diagramas\"",
+      "color": {
+        "a": 1,
+        "rgb": 10053324
+      }
+    },
+    {
+      "query": "path:\"10 - Auditoría\"",
+      "color": {
+        "a": 1,
+        "rgb": 8947848
+      }
+    }
+  ],
+  "collapse-display": false,
+  "showArrow": true,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": false,
+  "centerStrength": 0.518713248970312,
+  "repelStrength": 10,
+  "linkStrength": 1,
+  "linkDistance": 30,
+  "scale": 0.7132754626224415,
+  "close": false
+}

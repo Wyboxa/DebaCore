@@ -1,0 +1,132 @@
+{
+  "items": [
+    {
+      "type": "heading",
+      "title": "Inicio",
+      "items": [
+        {
+          "type": "file",
+          "path": "00 - Inicio.md"
+        },
+        {
+          "type": "file",
+          "path": "01 - Arquitectura.md"
+        },
+        {
+          "type": "file",
+          "path": "Obsidian - Cómo usar este vault.md"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "title": "Módulos",
+      "items": [
+        {
+          "type": "file",
+          "path": "02 - Módulos/Índice de módulos.md"
+        },
+        {
+          "type": "file",
+          "path": "02 - Módulos/Ventas.md"
+        },
+        {
+          "type": "file",
+          "path": "02 - Módulos/Compras.md"
+        },
+        {
+          "type": "file",
+          "path": "02 - Módulos/Contabilidad.md"
+        },
+        {
+          "type": "file",
+          "path": "02 - Módulos/IA.md"
+        },
+        {
+          "type": "file",
+          "path": "02 - Módulos/Licenciamiento.md"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "title": "Entidades clave",
+      "items": [
+        {
+          "type": "file",
+          "path": "03 - Entidades/Índice de entidades.md"
+        },
+        {
+          "type": "file",
+          "path": "03 - Entidades/SalesOrder.md"
+        },
+        {
+          "type": "file",
+          "path": "03 - Entidades/SalesInvoice.md"
+        },
+        {
+          "type": "file",
+          "path": "03 - Entidades/Customer.md"
+        },
+        {
+          "type": "file",
+          "path": "03 - Entidades/AccountingEntry.md"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "title": "Flujos",
+      "items": [
+        {
+          "type": "file",
+          "path": "04 - Flujos/Índice de flujos.md"
+        },
+        {
+          "type": "file",
+          "path": "04 - Flujos/Flujo Pedido Venta a Factura.md"
+        },
+        {
+          "type": "file",
+          "path": "04 - Flujos/Flujo Pedido Compra a Factura.md"
+        },
+        {
+          "type": "file",
+          "path": "04 - Flujos/Flujo Factura a Contabilidad.md"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "title": "Pendientes y deuda",
+      "items": [
+        {
+          "type": "file",
+          "path": "08 - Pendientes/Pendientes priorizados.md"
+        },
+        {
+          "type": "file",
+          "path": "08 - Pendientes/Contradicciones detectadas.md"
+        },
+        {
+          "type": "file",
+          "path": "08 - Pendientes/Decisiones arquitectónicas pendientes.md"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "title": "Auditoría",
+      "items": [
+        {
+          "type": "file",
+          "path": "10 - Auditoría/Inventario técnico.md"
+        },
+        {
+          "type": "file",
+          "path": "10 - Auditoría/Cobertura de documentación.md"
+        }
+      ]
+    }
+  ]
+}

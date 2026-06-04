@@ -1,0 +1,33 @@
+{
+  "legacyEditor": false,
+  "livePreview": true,
+  "defaultViewMode": "preview",
+  "foldHeading": false,
+  "foldIndent": true,
+  "showLineNumber": false,
+  "spellcheck": false,
+  "strictLineBreaks": false,
+  "trailingNewline": true,
+  "useTab": false,
+  "tabSize": 2,
+  "newFileLocation": "current",
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "pdfExportSettings": {
+    "printBackground": true,
+    "scale": 1,
+    "marginTop": 0,
+    "marginBottom": 0,
+    "marginLeft": 0,
+    "marginRight": 0,
+    "downscaleEmbeds": false,
+    "landscape": false,
+    "pageSize": "letter",
+    "showBacklinks": true,
+    "showForwardLinks": true,
+    "showTags": true,
+    "showProperties": true
+  },
+  "promptDelete": true,
+  "alwaysUpdateLinks": true
+}
