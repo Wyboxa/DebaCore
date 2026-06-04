@@ -33,6 +33,10 @@ using Debales.Application.Sales.Commands.ConfirmSalesOrder;
 using Debales.Application.Sales.Commands.CancelSalesOrder;
 using Debales.Application.Sales.Commands.CreateSalesDeliveryNote;
 using Debales.Application.Sales.Commands.PostSalesDeliveryNote;
+using Debales.Application.Sales.Commands.GenerateDeliveryNoteFromOrder;
+using Debales.Application.Sales.Commands.GenerateInvoiceFromDeliveryNote;
+using Debales.Application.Sales.Commands.BatchGenerateDocuments;
+using Debales.Application.Sales.Queries.GetAutomationPreview;
 using Debales.Application.Sales.Queries.GetSalesOrders;
 using Debales.Application.Sales.Queries.GetSalesOrderById;
 using Debales.Application.Sales.Queries.GetSalesDeliveryNotes;
@@ -161,6 +165,10 @@ public static class DependencyInjection
         services.AddScoped<PostSalesDeliveryNoteHandler>();
         services.AddScoped<GetSalesDeliveryNotesHandler>();
         services.AddScoped<GetSalesDeliveryNoteByIdHandler>();
+        services.AddScoped<GenerateDeliveryNoteFromOrderHandler>();
+        services.AddScoped<GenerateInvoiceFromDeliveryNoteHandler>();
+        services.AddScoped<BatchGenerateDocumentsHandler>();
+        services.AddScoped<GetAutomationPreviewHandler>();
 
         // Purchasing — Orders
         services.AddScoped<CreatePurchaseOrderHandler>();

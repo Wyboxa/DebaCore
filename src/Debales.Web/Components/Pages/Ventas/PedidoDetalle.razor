@@ -4,6 +4,9 @@
 @inject GetSalesOrderByIdHandler GetById
 @inject ConfirmSalesOrderHandler ConfirmHandler
 @inject CancelSalesOrderHandler CancelHandler
+@inject GetSalesDeliveryNotesHandler GetNotes
+@inject GetSalesInvoicesHandler GetInvoices
+@inject GenerateDeliveryNoteFromOrderHandler GenerateNoteHandler
 @inject NavigationManager Nav
 @inject ToastService Toast
 
@@ -23,18 +26,23 @@ else
         <div>
             <a href="/ventas/pedidos" class="text-decoration-none text-muted small">← Pedidos de venta</a>
             <h1 class="h3 mb-0 mt-1"><code>@_order.Number</code></h1>
+            <small class="text-muted">@_order.CustomerName</small>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap justify-content-end">
             @if (_order.Status == SalesOrderStatus.Draft)
             {
                 <button class="btn btn-success" @onclick="Confirm" disabled="@_acting">
                     @if (_acting) { <span class="spinner-border spinner-border-sm me-1"></span> }
-                    Confirmar
+                    Confirmar pedido
                 </button>
                 <button class="btn btn-outline-danger" @onclick="Cancel" disabled="@_acting">Cancelar</button>
             }
             else if (_order.Status == SalesOrderStatus.Confirmed || _order.Status == SalesOrderStatus.PartiallyDelivered)
             {
+                <button class="btn btn-primary" @onclick="GenerateNote" disabled="@_acting">
+                    @if (_acting) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Generar albarán
+                </button>
                 <button class="btn btn-outline-danger" @onclick="Cancel" disabled="@_acting">Cancelar pedido</button>
             }
         </div>
@@ -85,7 +93,7 @@ else
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    <div class="card border-0 shadow-sm mb-3">
         <div class="card-body">
             <h6 class="card-subtitle text-muted mb-3">Líneas del pedido</h6>
             <div class="table-responsive">
@@ -98,7 +106,6 @@ else
                             <th class="text-end">P. unitario</th>
                             <th class="text-end">IVA %</th>
                             <th class="text-end">Base</th>
-                            <th class="text-end">IVA</th>
                             <th class="text-end">Total</th>
                             <th class="text-end">Entregado</th>
                             <th class="text-end">Pendiente</th>
@@ -114,7 +121,6 @@ else
                                 <td class="text-end">@l.UnitPrice.ToString("N2") €</td>
                                 <td class="text-end">@l.TaxRate.ToString("N1") %</td>
                                 <td class="text-end">@l.LineSubtotal.ToString("N2") €</td>
-                                <td class="text-end">@l.LineTaxAmount.ToString("N2") €</td>
                                 <td class="text-end fw-semibold">@l.LineTotal.ToString("N2") €</td>
                                 <td class="text-end @(l.DeliveredQuantity > 0 ? "text-success" : "")">@l.DeliveredQuantity.ToString("N2")</td>
                                 <td class="text-end @(l.PendingQuantity > 0 ? "text-warning" : "text-success")">@l.PendingQuantity.ToString("N2")</td>
@@ -126,7 +132,89 @@ else
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm mt-3">
+    @* Albaranes relacionados *@
+    @if (_notes is not null && _notes.Items.Count > 0)
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Albaranes de venta</span>
+                <span class="badge bg-secondary">@_notes.TotalCount</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Número</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var n in _notes.Items)
+                        {
+                            <tr>
+                                <td><code>@n.Number</code></td>
+                                <td>@n.Date.ToString("dd/MM/yyyy")</td>
+                                <td><span class="badge @NoteBadge(n.Status)">@n.StatusLabel</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary py-0"
+                                            @onclick="() => GoToDeliveryNote(n.Id)">
+                                        Ver albarán
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @* Facturas relacionadas (vía albaranes de este pedido) *@
+    @if (_relatedInvoices.Count > 0)
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Facturas de venta</span>
+                <span class="badge bg-secondary">@_relatedInvoices.Count</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Número</th>
+                            <th>Fecha</th>
+                            <th>Vencimiento</th>
+                            <th>Estado</th>
+                            <th class="text-end">Total</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var f in _relatedInvoices)
+                        {
+                            <tr>
+                                <td><code>@f.Number</code></td>
+                                <td>@f.Date.ToString("dd/MM/yyyy")</td>
+                                <td>@f.DueDate.ToString("dd/MM/yyyy")</td>
+                                <td><span class="badge @InvoiceBadge(f.Status)">@f.StatusLabel</span></td>
+                                <td class="text-end fw-semibold">@f.Total.ToString("N2") €</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary py-0"
+                                            @onclick="() => GoToInvoice(f.Id)">
+                                        Ver factura
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
         <div class="card-body">
             <h6 class="card-subtitle text-muted mb-2">Auditoría</h6>
             <dl class="row mb-0 small text-muted">
@@ -148,6 +236,8 @@ else
     bool _acting;
     string? _error;
     SalesOrderDetailDto? _order;
+    PagedResult<SalesDeliveryNoteSummaryDto>? _notes;
+    List<SalesInvoiceSummaryDto> _relatedInvoices = [];
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -155,6 +245,24 @@ else
     {
         _loading = true;
         _order = await GetById.Handle(new GetSalesOrderByIdQuery(Id));
+
+        // Albaranes ligados a este pedido
+        _notes = await GetNotes.Handle(new GetSalesDeliveryNotesQuery(null, _order?.CustomerId, null, 1, 50));
+        var allNotes = _notes?.Items.ToList() ?? [];
+        var orderNoteIds = allNotes.Where(n => n.SalesOrderId == Id).Select(n => n.Id).ToHashSet();
+        _notes = _notes is null ? null : new PagedResult<SalesDeliveryNoteSummaryDto>(
+            allNotes.Where(n => n.SalesOrderId == Id).ToList(),
+            allNotes.Count(n => n.SalesOrderId == Id), 1, 50);
+
+        // Facturas ligadas vía albaranes de este pedido
+        if (orderNoteIds.Count > 0)
+        {
+            var allInvoices = await GetInvoices.Handle(new GetSalesInvoicesQuery(null, _order?.CustomerId, null, 1, 100));
+            _relatedInvoices = allInvoices.Items
+                .Where(i => i.SalesDeliveryNoteId.HasValue && orderNoteIds.Contains(i.SalesDeliveryNoteId.Value))
+                .ToList();
+        }
+
         _loading = false;
     }
 
@@ -183,6 +291,19 @@ else
         finally { _acting = false; }
     }
 
+    async Task GenerateNote()
+    {
+        _acting = true; _error = null;
+        try
+        {
+            var note = await GenerateNoteHandler.Handle(new GenerateDeliveryNoteFromOrderCommand(Id, "web"));
+            Toast.Show($"Albarán {note.Number} generado. Revísalo antes de emitir.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _acting = false; }
+    }
+
     static string StatusBadge(SalesOrderStatus s) => s switch
     {
         SalesOrderStatus.Draft => "bg-secondary",
@@ -190,6 +311,25 @@ else
         SalesOrderStatus.PartiallyDelivered => "bg-warning text-dark",
         SalesOrderStatus.Delivered => "bg-success",
         SalesOrderStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    static string NoteBadge(SalesDeliveryNoteStatus s) => s switch
+    {
+        SalesDeliveryNoteStatus.Draft => "bg-secondary",
+        SalesDeliveryNoteStatus.Posted => "bg-success",
+        SalesDeliveryNoteStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    void GoToDeliveryNote(Guid id) => Nav.NavigateTo($"/ventas/albaranes/{id}");
+    void GoToInvoice(Guid id) => Nav.NavigateTo($"/facturacion/ventas/{id}");
+
+    static string InvoiceBadge(SalesInvoiceStatus s) => s switch
+    {
+        SalesInvoiceStatus.Draft => "bg-secondary",
+        SalesInvoiceStatus.Posted => "bg-success",
+        SalesInvoiceStatus.Cancelled => "bg-danger",
         _ => "bg-secondary"
     };
 }

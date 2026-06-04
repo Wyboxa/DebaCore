@@ -50,6 +50,7 @@ using (var scope = app.Services.CreateScope())
     var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
     await DbSeeder.SeedAsync(context, hasher);
     await CatalogSeeder.SeedAsync(context);
+    await DemoDataSeeder.SeedAsync(context);
 }
 
 if (!app.Environment.IsDevelopment())

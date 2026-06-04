@@ -21,6 +21,7 @@ internal sealed class SalesOrderRepository : BaseRepository<SalesOrder>, ISalesO
     {
         var query = DbSet
             .Include(o => o.Customer)
+            .Include(o => o.Lines)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -61,4 +62,12 @@ internal sealed class SalesOrderRepository : BaseRepository<SalesOrder>, ISalesO
             .CountAsync(o => o.Number.StartsWith(prefix), cancellationToken);
         return $"{prefix}{(count + 1):D4}";
     }
+
+    public async Task<IReadOnlyList<SalesOrder>> GetConfirmedPendingDeliveryAsync(CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(o => o.Customer)
+            .Include(o => o.Lines)
+            .Where(o => o.Status == SalesOrderStatus.Confirmed || o.Status == SalesOrderStatus.PartiallyDelivered)
+            .OrderBy(o => o.Date)
+            .ToListAsync(cancellationToken);
 }

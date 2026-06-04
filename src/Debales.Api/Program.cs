@@ -74,6 +74,7 @@ using (var scope = app.Services.CreateScope())
     await context.Database.MigrateAsync();
     var hasher = scope.ServiceProvider.GetRequiredService<Debales.Application.Common.IPasswordHasher>();
     await DbSeeder.SeedAsync(context, hasher);
+    await DemoDataSeeder.SeedAsync(context);
 }
 
 app.UseExceptionHandler(pipeline =>

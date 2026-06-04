@@ -3,6 +3,8 @@
 @attribute [Authorize]
 @inject GetSalesDeliveryNoteByIdHandler GetNote
 @inject PostSalesDeliveryNoteHandler PostHandler
+@inject GetSalesInvoicesHandler GetInvoices
+@inject GenerateInvoiceFromDeliveryNoteHandler GenerateInvoiceHandler
 @inject NavigationManager Nav
 @inject ToastService Toast
 
@@ -20,15 +22,32 @@ else
 {
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <button class="btn btn-sm btn-outline-secondary me-2" @onclick="GoBack">← Volver</button>
-            <h1 class="h3 d-inline mb-0"><code>@_note.Number</code></h1>
-            <span class="badge @StatusBadge(_note.Status) ms-2">@_note.StatusLabel</span>
+            <a href="/ventas/albaranes" class="text-decoration-none text-muted small">← Albaranes de venta</a>
+            <h1 class="h3 mb-0 mt-1"><code>@_note.Number</code></h1>
+            <span class="badge @StatusBadge(_note.Status) mt-1">@_note.StatusLabel</span>
         </div>
-        @if (_note.Status == SalesDeliveryNoteStatus.Draft)
-        {
-            <button class="btn btn-success" disabled="@_busy" @onclick="PostNote">Emitir albarán</button>
-        }
+        <div class="d-flex gap-2 flex-wrap justify-content-end">
+            @if (_note.Status == SalesDeliveryNoteStatus.Draft)
+            {
+                <button class="btn btn-success" disabled="@_busy" @onclick="PostNote">
+                    @if (_busy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Emitir albarán
+                </button>
+            }
+            else if (_note.Status == SalesDeliveryNoteStatus.Posted && _linkedInvoice is null)
+            {
+                <button class="btn btn-primary" disabled="@_busy" @onclick="GenerateInvoice">
+                    @if (_busy) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Generar factura
+                </button>
+            }
+        </div>
     </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
 
     <div class="row g-3 mb-4">
         <div class="col-md-4">
@@ -43,12 +62,34 @@ else
                 <div class="fw-semibold">@_note.Date.ToString("dd/MM/yyyy")</div>
             </div>
         </div>
-        @if (_note.SalesOrderNumber is not null)
+        @if (_note.SalesOrderId.HasValue)
         {
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm p-3">
+                <div class="card border-0 shadow-sm p-3 border-start border-primary border-3">
                     <div class="text-muted small mb-1">Pedido origen</div>
-                    <div class="fw-semibold"><code>@_note.SalesOrderNumber</code></div>
+                    <div class="fw-semibold">
+                        <code>@_note.SalesOrderNumber</code>
+                        <button class="btn btn-link btn-sm p-0 ms-2"
+                                @onclick="GoToOrder">
+                            Ver pedido
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (_linkedInvoice is not null)
+        {
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 border-start border-success border-3">
+                    <div class="text-muted small mb-1">Factura generada</div>
+                    <div class="fw-semibold">
+                        <code>@_linkedInvoice.Number</code>
+                        <span class="badge @InvoiceBadge(_linkedInvoice.Status) ms-1">@_linkedInvoice.StatusLabel</span>
+                        <button class="btn btn-link btn-sm p-0 ms-2"
+                                @onclick="GoToInvoice">
+                            Ver factura
+                        </button>
+                    </div>
                 </div>
             </div>
         }
@@ -95,11 +136,6 @@ else
             <span class="ms-3">Modificado: @_note.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
         }
     </div>
-
-    @if (!string.IsNullOrEmpty(_error))
-    {
-        <div class="alert alert-danger py-2 mt-3">@_error</div>
-    }
 }
 
 @code {
@@ -109,6 +145,7 @@ else
     bool _busy;
     string? _error;
     SalesDeliveryNoteDetailDto? _note;
+    SalesInvoiceSummaryDto? _linkedInvoice;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -116,6 +153,11 @@ else
     {
         _loading = true;
         _note = await GetNote.Handle(new GetSalesDeliveryNoteByIdQuery(Id));
+        if (_note is not null)
+        {
+            var invoices = await GetInvoices.Handle(new GetSalesInvoicesQuery(null, _note.CustomerId, null, 1, 50));
+            _linkedInvoice = invoices.Items.FirstOrDefault(i => i.SalesDeliveryNoteId == Id);
+        }
         _loading = false;
     }
 
@@ -132,13 +174,37 @@ else
         finally { _busy = false; }
     }
 
-    void GoBack() => Nav.NavigateTo("/ventas/albaranes");
+    async Task GenerateInvoice()
+    {
+        _error = null; _busy = true;
+        try
+        {
+            var dueDate = DateOnly.FromDateTime(DateTime.Today.AddDays(30));
+            var invoice = await GenerateInvoiceHandler.Handle(
+                new GenerateInvoiceFromDeliveryNoteCommand(Id, dueDate, "web"));
+            Toast.Show($"Factura {invoice.Number} generada. Revísala antes de contabilizar.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _busy = false; }
+    }
+
+    void GoToOrder() => Nav.NavigateTo($"/ventas/pedidos/{_note!.SalesOrderId}");
+    void GoToInvoice() => Nav.NavigateTo($"/facturacion/ventas/{_linkedInvoice!.Id}");
 
     static string StatusBadge(SalesDeliveryNoteStatus s) => s switch
     {
         SalesDeliveryNoteStatus.Draft => "bg-secondary",
         SalesDeliveryNoteStatus.Posted => "bg-success",
         SalesDeliveryNoteStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    static string InvoiceBadge(SalesInvoiceStatus s) => s switch
+    {
+        SalesInvoiceStatus.Draft => "bg-secondary",
+        SalesInvoiceStatus.Posted => "bg-success",
+        SalesInvoiceStatus.Cancelled => "bg-danger",
         _ => "bg-secondary"
     };
 }

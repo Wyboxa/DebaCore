@@ -9,4 +9,5 @@ public interface ISalesOrderRepository : IRepository<SalesOrder>
     Task<PagedResult<SalesOrder>> SearchAsync(string? search, Guid? customerId, SalesOrderStatus? status, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<bool> ExistsByNumberAsync(string number, CancellationToken cancellationToken = default);
     Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SalesOrder>> GetConfirmedPendingDeliveryAsync(CancellationToken cancellationToken = default);
 }

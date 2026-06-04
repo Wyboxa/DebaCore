@@ -6,8 +6,7 @@
 @inject CancelSalesInvoiceHandler CancelHandler
 @inject GetReceivablesHandler GetReceivables
 @inject CreateCustomerPaymentHandler CreatePayment
-@inject GetItemsHandler GetItems
-@inject GetCustomersHandler GetCustomers
+@inject GetSalesDeliveryNoteByIdHandler GetNote
 @inject NavigationManager Nav
 @inject ToastService Toast
 
@@ -25,9 +24,9 @@ else
 {
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <button class="btn btn-sm btn-outline-secondary me-2" @onclick="GoBack">← Volver</button>
-            <h1 class="h3 d-inline mb-0"><code>@_invoice.Number</code></h1>
-            <span class="badge @StatusBadge(_invoice.Status) ms-2">@_invoice.StatusLabel</span>
+            <a href="/facturacion/ventas" class="text-decoration-none text-muted small">← Facturas de venta</a>
+            <h1 class="h3 mb-0 mt-1"><code>@_invoice.Number</code></h1>
+            <span class="badge @StatusBadge(_invoice.Status) mt-1">@_invoice.StatusLabel</span>
         </div>
         <div class="d-flex gap-2">
             @if (_invoice.Status == SalesInvoiceStatus.Draft)
@@ -69,6 +68,31 @@ else
                 <div class="fw-semibold fs-5">@_invoice.Total.ToString("N2") €</div>
             </div>
         </div>
+        @if (_invoice.SalesDeliveryNoteId.HasValue && _linkedNote is not null)
+        {
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 border-start border-primary border-3">
+                    <div class="text-muted small mb-1">Albarán origen</div>
+                    <div class="fw-semibold">
+                        <code>@_linkedNote.Number</code>
+                        <button class="btn btn-link btn-sm p-0 ms-2"
+                                @onclick="GoToNote">
+                            Ver albarán
+                        </button>
+                    </div>
+                    @if (_linkedNote.SalesOrderId.HasValue)
+                    {
+                        <div class="text-muted small mt-1">
+                            Pedido: <code>@_linkedNote.SalesOrderNumber</code>
+                            <button class="btn btn-link btn-sm p-0 ms-1"
+                                    @onclick="GoToOrder">
+                                Ver
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     </div>
 
     @if (!string.IsNullOrEmpty(_invoice.Notes))
@@ -216,6 +240,7 @@ else
     bool _busy;
     string? _actionError;
     SalesInvoiceDetailDto? _invoice;
+    SalesDeliveryNoteDetailDto? _linkedNote;
     List<ReceivableSummaryDto> _receivables = [];
 
     bool _showPaymentModal;
@@ -236,6 +261,8 @@ else
     {
         _loading = true;
         _invoice = await GetInvoice.Handle(new GetSalesInvoiceByIdQuery(Id));
+        if (_invoice?.SalesDeliveryNoteId.HasValue == true)
+            _linkedNote = await GetNote.Handle(new GetSalesDeliveryNoteByIdQuery(_invoice.SalesDeliveryNoteId.Value));
         if (_invoice?.Status == SalesInvoiceStatus.Posted)
         {
             var r = await GetReceivables.Handle(new GetReceivablesQuery(null, null, null, 1, 50));
@@ -298,7 +325,8 @@ else
         finally { _busy = false; }
     }
 
-    void GoBack() => Nav.NavigateTo("/facturacion/ventas");
+    void GoToNote() => Nav.NavigateTo($"/ventas/albaranes/{_linkedNote!.Id}");
+    void GoToOrder() => Nav.NavigateTo($"/ventas/pedidos/{_linkedNote!.SalesOrderId}");
 
     static string StatusBadge(SalesInvoiceStatus s) => s switch
     {

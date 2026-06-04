@@ -50,7 +50,7 @@ public sealed class SalesOrderLine : Entity
         };
     }
 
-    internal void RecordDelivery(decimal deliveredQty)
+    public void RecordDelivery(decimal deliveredQty)
     {
         if (deliveredQty <= 0) throw new ArgumentException("Delivered quantity must be positive.", nameof(deliveredQty));
         if (DeliveredQuantity + deliveredQty > Quantity)

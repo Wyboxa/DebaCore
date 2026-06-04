@@ -7,6 +7,7 @@ public sealed record SalesInvoiceSummaryDto(
     string Number,
     Guid CustomerId,
     string CustomerName,
+    Guid? SalesDeliveryNoteId,
     DateOnly Date,
     DateOnly DueDate,
     SalesInvoiceStatus Status,

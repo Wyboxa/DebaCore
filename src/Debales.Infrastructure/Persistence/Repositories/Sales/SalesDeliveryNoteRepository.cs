@@ -60,4 +60,26 @@ internal sealed class SalesDeliveryNoteRepository : BaseRepository<SalesDelivery
             .CountAsync(n => n.Number.StartsWith(prefix), cancellationToken);
         return $"{prefix}{(count + 1):D4}";
     }
+
+    public async Task<IReadOnlyList<SalesDeliveryNote>> GetBySalesOrderIdAsync(Guid salesOrderId, CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(n => n.Customer)
+            .Include(n => n.Lines)
+            .Where(n => n.SalesOrderId == salesOrderId)
+            .OrderByDescending(n => n.Date)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<SalesDeliveryNote>> GetPostedWithoutInvoiceAsync(CancellationToken cancellationToken = default)
+    {
+        var invoicedIds = Context.Set<SalesInvoice>()
+            .Where(i => i.SalesDeliveryNoteId.HasValue)
+            .Select(i => i.SalesDeliveryNoteId!.Value);
+
+        return await DbSet
+            .Include(n => n.Customer)
+            .Include(n => n.Lines)
+            .Where(n => n.Status == SalesDeliveryNoteStatus.Posted && !invoicedIds.Contains(n.Id))
+            .OrderBy(n => n.Date)
+            .ToListAsync(cancellationToken);
+    }
 }

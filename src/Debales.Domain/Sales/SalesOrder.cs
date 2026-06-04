@@ -79,7 +79,7 @@ public sealed class SalesOrder : AuditableEntity
         SetUpdated(updatedBy);
     }
 
-    internal void UpdateDeliveryStatus(string updatedBy)
+    public void UpdateDeliveryStatus(string updatedBy)
     {
         if (Status == SalesOrderStatus.Cancelled) return;
 

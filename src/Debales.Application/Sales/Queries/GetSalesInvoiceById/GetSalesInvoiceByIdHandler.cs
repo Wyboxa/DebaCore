@@ -40,6 +40,7 @@ public sealed class GetSalesInvoiceByIdHandler
         invoice.Number,
         invoice.CustomerId,
         invoice.Customer?.Name ?? string.Empty,
+        invoice.SalesDeliveryNoteId,
         invoice.Date,
         invoice.DueDate,
         invoice.Status,

@@ -1,0 +1,237 @@
+@page "/ventas/automatizacion"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetAutomationPreviewHandler GetPreview
+@inject BatchGenerateDocumentsHandler BatchHandler
+@inject ToastService Toast
+
+<PageTitle>Automatización masiva — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h4 fw-bold mb-0">Automatización masiva</h1>
+        <small class="text-muted">Genera albaranes y facturas pendientes en bloque</small>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="LoadPreview" disabled="@_loading">
+        Actualizar
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_preview is not null)
+{
+    <div class="row g-4">
+        @* ---- Columna izquierda: Pedidos pendientes de albarán ---- *@
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-semibold">Pedidos pendientes de albarán</span>
+                        <span class="badge bg-primary ms-2">@_preview.PendingOrdersForDelivery.Count</span>
+                    </div>
+                    <button class="btn btn-primary btn-sm"
+                            disabled="@(_running || _preview.PendingOrdersForDelivery.Count == 0)"
+                            @onclick="() => RunBatch(BatchMode.OrdersToDeliveryNotes)">
+                        @if (_running && _currentMode == BatchMode.OrdersToDeliveryNotes)
+                        { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Generar albaranes
+                    </button>
+                </div>
+                @if (_preview.PendingOrdersForDelivery.Count == 0)
+                {
+                    <div class="card-body text-muted text-center py-4">
+                        Sin pedidos pendientes de albarán.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var o in _preview.PendingOrdersForDelivery)
+                                {
+                                    <tr>
+                                        <td><code>@o.Number</code></td>
+                                        <td>@o.CustomerName</td>
+                                        <td>@o.Date.ToString("dd/MM/yyyy")</td>
+                                        <td><span class="badge bg-primary">@o.StatusLabel</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* ---- Columna derecha: Albaranes pendientes de factura ---- *@
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-semibold">Albaranes pendientes de factura</span>
+                        <span class="badge bg-success ms-2">@_preview.PostedNotesForInvoice.Count</span>
+                    </div>
+                    <button class="btn btn-success btn-sm"
+                            disabled="@(_running || _preview.PostedNotesForInvoice.Count == 0)"
+                            @onclick="() => RunBatch(BatchMode.DeliveryNotesToInvoices)">
+                        @if (_running && _currentMode == BatchMode.DeliveryNotesToInvoices)
+                        { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Generar facturas
+                    </button>
+                </div>
+                @if (_preview.PostedNotesForInvoice.Count == 0)
+                {
+                    <div class="card-body text-muted text-center py-4">
+                        Sin albaranes pendientes de facturar.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Albarán</th>
+                                    <th>Cliente</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var n in _preview.PostedNotesForInvoice)
+                                {
+                                    <tr>
+                                        <td><code>@n.Number</code></td>
+                                        <td>@n.CustomerName</td>
+                                        <td>@n.Date.ToString("dd/MM/yyyy")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ---- Resultado del último lote ---- *@
+    @if (_lastResult is not null)
+    {
+        <div class="mt-4">
+            <h5 class="mb-3">Resultado del proceso</h5>
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm p-3 text-center">
+                        <div class="fs-2 fw-bold">@_lastResult.TotalFound</div>
+                        <div class="text-muted small">Documentos encontrados</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm p-3 text-center border-success">
+                        <div class="fs-2 fw-bold text-success">@_lastResult.Succeeded</div>
+                        <div class="text-muted small">Generados correctamente</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm p-3 text-center @(_lastResult.Failed > 0 ? "border-danger" : "")">
+                        <div class="fs-2 fw-bold @(_lastResult.Failed > 0 ? "text-danger" : "text-muted")">@_lastResult.Failed</div>
+                        <div class="text-muted small">Errores</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm p-3 text-center">
+                        <div class="fs-2 fw-bold text-muted">@(_lastResult.TotalFound - _lastResult.Succeeded - _lastResult.Failed)</div>
+                        <div class="text-muted small">Omitidos</div>
+                    </div>
+                </div>
+            </div>
+
+            @if (_lastResult.Items.Count > 0)
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Origen</th>
+                                    <th>Generado</th>
+                                    <th>Resultado</th>
+                                    <th>Detalle</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in _lastResult.Items)
+                                {
+                                    <tr>
+                                        <td><code>@item.SourceNumber</code></td>
+                                        <td>
+                                            @if (item.GeneratedNumber is not null)
+                                            { <code class="text-success">@item.GeneratedNumber</code> }
+                                            else
+                                            { <span class="text-muted">—</span> }
+                                        </td>
+                                        <td>
+                                            @if (item.Success)
+                                            { <span class="badge bg-success">OK</span> }
+                                            else
+                                            { <span class="badge bg-danger">Error</span> }
+                                        </td>
+                                        <td class="text-muted small">@(item.Error ?? string.Empty)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    bool _loading = true;
+    bool _running;
+    BatchMode _currentMode;
+    AutomationPreviewResult? _preview;
+    BatchGenerateDocumentsResult? _lastResult;
+
+    protected override async Task OnInitializedAsync() => await LoadPreview();
+
+    async Task LoadPreview()
+    {
+        _loading = true;
+        _preview = await GetPreview.Handle();
+        _loading = false;
+    }
+
+    async Task RunBatch(BatchMode mode)
+    {
+        _running = true;
+        _currentMode = mode;
+        try
+        {
+            _lastResult = await BatchHandler.Handle(new BatchGenerateDocumentsCommand(mode, "web"));
+            var msg = mode == BatchMode.OrdersToDeliveryNotes
+                ? $"Albaranes generados: {_lastResult.Succeeded} de {_lastResult.TotalFound}"
+                : $"Facturas generadas: {_lastResult.Succeeded} de {_lastResult.TotalFound}";
+            Toast.Show(msg, _lastResult.Failed > 0 ? ToastKind.Warning : ToastKind.Success);
+            await LoadPreview();
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Error: {ex.Message}", ToastKind.Warning);
+        }
+        finally { _running = false; }
+    }
+}

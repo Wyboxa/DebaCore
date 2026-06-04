@@ -55,4 +55,10 @@ internal sealed class SalesInvoiceRepository : BaseRepository<SalesInvoice>, ISa
             .CountAsync(i => i.Number.StartsWith(prefix), cancellationToken);
         return $"{prefix}{(count + 1):D4}";
     }
+
+    public async Task<SalesInvoice?> GetBySalesDeliveryNoteIdAsync(Guid salesDeliveryNoteId, CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(i => i.Customer)
+            .Include(i => i.Lines)
+            .FirstOrDefaultAsync(i => i.SalesDeliveryNoteId == salesDeliveryNoteId, cancellationToken);
 }
