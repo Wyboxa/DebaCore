@@ -1,3 +1,4 @@
+using Debales.Application.Accounting.Services;
 using Debales.Application.Common;
 using Debales.Application.Purchasing.DTOs;
 using Debales.Domain.Purchasing;
@@ -8,12 +9,16 @@ public sealed class CreateSupplierPaymentHandler
 {
     private readonly ISupplierPaymentRepository _payments;
     private readonly IPayableRepository _payables;
+    private readonly IAccountingEntryService _accounting;
     private readonly IUnitOfWork _uow;
 
-    public CreateSupplierPaymentHandler(ISupplierPaymentRepository payments, IPayableRepository payables, IUnitOfWork uow)
+    public CreateSupplierPaymentHandler(
+        ISupplierPaymentRepository payments, IPayableRepository payables,
+        IAccountingEntryService accounting, IUnitOfWork uow)
     {
         _payments = payments;
         _payables = payables;
+        _accounting = accounting;
         _uow = uow;
     }
 
@@ -36,7 +41,16 @@ public sealed class CreateSupplierPaymentHandler
         await _uow.SaveChangesAsync(cancellationToken);
 
         var saved = await _payments.GetByIdAsync(payment.Id, cancellationToken);
-        return ToDetailDto(saved!);
+
+        // Asiento contable automático (no bloqueante — si faltan prereqs se omite)
+        await _accounting.GenerateFromSupplierPaymentAsync(
+            saved!.Id, saved.Number, saved.Date,
+            saved.SupplierId, saved.Supplier?.AccountCode,
+            saved.Amount, cancellationToken);
+
+        await _uow.SaveChangesAsync(cancellationToken);
+
+        return ToDetailDto(saved);
     }
 
     internal static SupplierPaymentDetailDto ToDetailDto(SupplierPayment p) => new(

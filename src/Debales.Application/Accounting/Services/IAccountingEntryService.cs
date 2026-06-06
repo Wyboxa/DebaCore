@@ -15,4 +15,16 @@ public interface IAccountingEntryService
         Guid supplierId, string? supplierAccountCode,
         decimal baseAmount, decimal taxAmount, decimal total,
         CancellationToken ct = default);
+
+    Task<AccountingEntry?> GenerateFromCustomerPaymentAsync(
+        Guid paymentId, string paymentNumber, DateOnly paymentDate,
+        Guid customerId, string? customerAccountCode,
+        decimal amount,
+        CancellationToken ct = default);
+
+    Task<AccountingEntry?> GenerateFromSupplierPaymentAsync(
+        Guid paymentId, string paymentNumber, DateOnly paymentDate,
+        Guid supplierId, string? supplierAccountCode,
+        decimal amount,
+        CancellationToken ct = default);
 }

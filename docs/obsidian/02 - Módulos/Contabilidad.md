@@ -84,7 +84,11 @@ Implementado — migración `AddAccountingModule` (2026-06-02).
 
 ## Servicios
 
-- `IAccountingEntryService` → `AccountingEntryService` — Generación automática de asientos desde eventos (SalesInvoicePosted, etc.)
+- `IAccountingEntryService` → `AccountingEntryService` — Generación automática de asientos desde eventos:
+  - `GenerateFromSalesInvoiceAsync` — evento `SalesInvoicePosted`
+  - `GenerateFromPurchaseInvoiceAsync` — evento `PurchaseInvoicePosted`
+  - `GenerateFromCustomerPaymentAsync` — evento `CustomerPaymentConfirmed`
+  - `GenerateFromSupplierPaymentAsync` — evento `SupplierPaymentConfirmed`
 
 ## Controllers
 
@@ -118,6 +122,7 @@ Implementado — migración `AddAccountingModule` (2026-06-02).
 - **Diarios**: VTA (Ventas), CPR (Compras), BCO (Banco), CAJ (Caja)
 - **Cuentas**: 300, 400, 430, 472, 475, 477, 570, 572, 600, 621, 628, 640, 700, 705
 - **Plantillas**: SalesInvoicePosted, PurchaseInvoicePosted
+- **Pendiente de seed**: CustomerPaymentConfirmed, SupplierPaymentConfirmed (el código los soporta, la plantilla debe configurarse manualmente en BD)
 
 ## Lo que está completo
 
@@ -130,7 +135,6 @@ Implementado — migración `AddAccountingModule` (2026-06-02).
 
 ## Lo que falta
 
-- Generación automática de asientos desde cobros/pagos (Receivable/Payable liquidados)
+- Seed de plantillas para `CustomerPaymentConfirmed` y `SupplierPaymentConfirmed` (el motor ya existe)
 - Cierre contable con asiento de regularización
-- Informes contables (balance, cuenta de pérdidas y ganancias)
 - Remesas bancarias

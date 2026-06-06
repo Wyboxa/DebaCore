@@ -46,6 +46,28 @@ public sealed class AccountingEntryService : IAccountingEntryService
             "{SUPPLIER}", supplierId, supplierAccountCode,
             baseAmount, taxAmount, total, "Supplier", ct);
 
+    public Task<AccountingEntry?> GenerateFromCustomerPaymentAsync(
+        Guid paymentId, string paymentNumber, DateOnly paymentDate,
+        Guid customerId, string? customerAccountCode,
+        decimal amount,
+        CancellationToken ct = default) =>
+        GenerateAsync(
+            "CustomerPaymentConfirmed", paymentId, paymentNumber, paymentDate,
+            $"Cobro {paymentNumber}",
+            "{CUSTOMER}", customerId, customerAccountCode,
+            0m, 0m, amount, "Customer", ct);
+
+    public Task<AccountingEntry?> GenerateFromSupplierPaymentAsync(
+        Guid paymentId, string paymentNumber, DateOnly paymentDate,
+        Guid supplierId, string? supplierAccountCode,
+        decimal amount,
+        CancellationToken ct = default) =>
+        GenerateAsync(
+            "SupplierPaymentConfirmed", paymentId, paymentNumber, paymentDate,
+            $"Pago {paymentNumber}",
+            "{SUPPLIER}", supplierId, supplierAccountCode,
+            0m, 0m, amount, "Supplier", ct);
+
     private async Task<AccountingEntry?> GenerateAsync(
         string eventType, Guid sourceId, string sourceNumber, DateOnly date,
         string description, string thirdPartyToken, Guid thirdPartyId,

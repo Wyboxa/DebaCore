@@ -224,8 +224,8 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-06-05:** Fases 0–3 técnicas, ERP-1 a ERP-6, Licenciamiento (Fase 6), Despliegue Docker (Fase 7), Presupuestos (ERP-Quote), Informes contables y correcciones de paridad Compras/Ventas completadas.
-> 11 migraciones aplicadas. 52 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
+> **Actualización 2026-06-06:** Asientos contables automáticos desde cobros/pagos implementados (`CustomerPaymentConfirmed`, `SupplierPaymentConfirmed`). Repositorio GitHub configurado: `https://github.com/Wyboxa/DebaCore` (rama `master`). README.md creado.
+> 11 migraciones aplicadas. 58 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
 El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada sobre ERP.
@@ -249,14 +249,14 @@ Lo que ya existe (no asumir como propuesta):
 - API REST (`Debales.Api`) con controllers para todos los módulos.
 - UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, proveedores, ventas, presupuestos, compras, inventario, contabilidad, informes, licencias, gestión de usuarios e IA.
 - UI con paleta teal `#6B9CA9`, sidebar oscuro.
-- **52 tests automatizados pasando** (Domain: 31, Application: 20, Integration: 1).
+- **58 tests automatizados pasando** (Domain: 31, Application: 26, Integration: 1).
 - Vault Obsidian en `docs/obsidian/` — actualizado en cada sesión de desarrollo.
 
 Lo que aún no existe y debe tratarse como propuesta:
 
 - `ModuleRequired` en páginas de lista/detalle individuales (solo en hubs por ahora).
 - AuditLog UI (la tabla existe y se escribe, pero no hay página de consulta).
-- Asientos contables automáticos desde cobros/pagos (`CustomerPayment` → `AccountingEntry`).
+- Seed de plantillas contables para `CustomerPaymentConfirmed` y `SupplierPaymentConfirmed` (el motor existe, falta la plantilla en BD).
 - Multi-tenant (`TenantId` en tablas).
 
 ---

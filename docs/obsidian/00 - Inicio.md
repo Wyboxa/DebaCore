@@ -39,6 +39,7 @@ Debales es una plataforma CRM/ERP modular con inteligencia artificial supervisad
 | 8 | AddERP4Module | 2026-06-01 |
 | 9 | AddAccountingModule | 2026-06-02 |
 | 10 | AddLicensingModule | 2026-06-04 |
+| 11 | AddSalesQuoteModule | 2026-06-04 |
 
 ### Módulos con código real
 
@@ -55,21 +56,25 @@ Debales es una plataforma CRM/ERP modular con inteligencia artificial supervisad
 | AI ERP-6 (Chat ERP, Anomalías, Resúmenes cliente/proveedor) | Implementado |
 | Licensing (Planes, Licencias, Módulos de licencia) | Implementado |
 | Despliegue Docker | Implementado (docker-compose.yml + Dockerfile.api + Dockerfile.web) |
+| SalesQuote (Presupuestos de venta) | Implementado — migración `AddSalesQuoteModule` — 2026-06-04 |
+| Informes contables (Balance comprobación, Libro diario, Balance situación) | Implementado — 2026-06-05 |
 | User management UI (`/configuracion/usuarios`) | Implementado — 2026-06-05 |
 | Stock auto-movimientos desde albaranes | Implementado — 2026-06-05 |
 | Flujo espejo Compras (albarán → factura) | Implementado — 2026-06-05 |
 | PDF export facturas (QuestPDF) | Implementado — 2026-06-05 |
 | ModuleRequired (enforcement de licencia en UI) | Implementado — 2026-06-05 |
+| Asientos automáticos desde cobros/pagos | Implementado — 2026-06-06 |
+| GitHub remoto configurado (Wyboxa/DebaCore) | Configurado — 2026-06-06 |
 
 ### Tests
 
-**Total: 49 tests — 0 errores**
+**Total: 58 tests — 0 errores**
 
 | Suite | Tests | Última actualización |
 |-------|-------|---------------------|
-| `Debales.Domain.Tests` | Dominio: Customer, Opportunity, Role, User, UserExtended, SalesDeliveryNote | 2026-06-05 |
-| `Debales.Application.Tests` | Handlers: CreateCustomer, CreateUser, ChangePassword, PostSalesDeliveryNote, GenerateInvoiceFromPurchaseDeliveryNote | 2026-06-05 |
-| `Debales.Integration.Tests` | Smoke tests de solución | 2026-06-04 |
+| `Debales.Domain.Tests` | 31 — Customer, Opportunity, Role, User, UserExtended, SalesDeliveryNote | 2026-06-05 |
+| `Debales.Application.Tests` | 26 — CreateCustomer, CreateUser, ChangePassword, PostSalesDeliveryNote, GenerateInvoiceFromPurchaseDeliveryNote, PostPurchaseDeliveryNote, **CreateCustomerPayment, CreateSupplierPayment** | 2026-06-06 |
+| `Debales.Integration.Tests` | 1 — Smoke tests de solución | 2026-06-04 |
 
 ---
 

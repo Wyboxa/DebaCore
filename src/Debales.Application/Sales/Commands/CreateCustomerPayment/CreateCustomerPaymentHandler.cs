@@ -1,3 +1,4 @@
+using Debales.Application.Accounting.Services;
 using Debales.Application.Common;
 using Debales.Application.Sales.DTOs;
 using Debales.Domain.Sales;
@@ -8,12 +9,16 @@ public sealed class CreateCustomerPaymentHandler
 {
     private readonly ICustomerPaymentRepository _payments;
     private readonly IReceivableRepository _receivables;
+    private readonly IAccountingEntryService _accounting;
     private readonly IUnitOfWork _uow;
 
-    public CreateCustomerPaymentHandler(ICustomerPaymentRepository payments, IReceivableRepository receivables, IUnitOfWork uow)
+    public CreateCustomerPaymentHandler(
+        ICustomerPaymentRepository payments, IReceivableRepository receivables,
+        IAccountingEntryService accounting, IUnitOfWork uow)
     {
         _payments = payments;
         _receivables = receivables;
+        _accounting = accounting;
         _uow = uow;
     }
 
@@ -37,7 +42,16 @@ public sealed class CreateCustomerPaymentHandler
         await _uow.SaveChangesAsync(cancellationToken);
 
         var saved = await _payments.GetByIdAsync(payment.Id, cancellationToken);
-        return ToDetailDto(saved!);
+
+        // Asiento contable automático (no bloqueante — si faltan prereqs se omite)
+        await _accounting.GenerateFromCustomerPaymentAsync(
+            saved!.Id, saved.Number, saved.Date,
+            saved.CustomerId, saved.Customer?.AccountCode,
+            saved.Amount, cancellationToken);
+
+        await _uow.SaveChangesAsync(cancellationToken);
+
+        return ToDetailDto(saved);
     }
 
     internal static CustomerPaymentDetailDto ToDetailDto(CustomerPayment p) => new(
