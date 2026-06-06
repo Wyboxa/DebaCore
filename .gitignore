@@ -8,9 +8,10 @@ obj/
 *.userprefs
 .vs/
 
-## ASP.NET Core
+## ASP.NET Core — todos los appsettings de entorno se excluyen
+## Usar appsettings.Development.example.json como plantilla local
 appsettings.*.json
-!appsettings.Development.json
+!appsettings.*.example.json
 secrets.json
 
 ## Entity Framework
@@ -45,14 +46,42 @@ publish/
 *.env
 !.env.example
 
-## OS
-.DS_Store
-Thumbs.db
-desktop.ini
+## Certificados y claves privadas
+*.pem
+*.pfx
+*.key
+*.crt
+*.p12
+*.cer
+
+## Bases de datos locales
+*.db
+*.sqlite
+*.sqlite3
 
 ## Logs
 logs/
 *.log
 
-## Claude Code local preferences
+## Temporales y backups
+*.tmp
+*.temp
+*.bak
+*.backup
+Backup/
+backup/
+
+## Node (por si se añade frontend JS)
+node_modules/
+
+## Docker overrides locales
+docker-compose.override.yml
+docker-compose.local.yml
+
+## OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## Claude Code preferencias locales
 CLAUDE.local.md
