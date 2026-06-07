@@ -4,11 +4,53 @@
 @inject GetTrialBalanceHandler TrialBalanceHandler
 @inject GetJournalBookHandler JournalBookHandler
 @inject GetBalanceSheetHandler BalanceSheetHandler
+@inject GetFiscalYearsHandler FiscalYearsHandler
 
 <PageTitle>Informes contables — Debales</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Informes contables</h1>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Ejercicio</label>
+                <select class="form-select" @onchange="OnYearChanged">
+                    <option value="">— Seleccionar ejercicio —</option>
+                    @foreach (var y in _years)
+                    {
+                        <option value="@y.Id" selected="@(_selectedYearId == y.Id)">@y.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Período</label>
+                <select class="form-select" @onchange="OnPeriodChanged" disabled="@(!_periods.Any())">
+                    <option value="">— Todo el ejercicio —</option>
+                    @foreach (var p in _periods)
+                    {
+                        <option value="@p.Id" selected="@(_selectedPeriodId == p.Id)">@p.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Desde</label>
+                <input type="date" class="form-control" @bind="_from" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Hasta</label>
+                <input type="date" class="form-control" @bind="_to" />
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" @onclick="LoadCurrentTab" disabled="@_loading">
+                    @if (_loading) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Generar
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <ul class="nav nav-tabs mb-4">
@@ -31,38 +73,16 @@
 
 @if (_tab == 0)
 {
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <div class="row g-2 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Desde</label>
-                    <input type="date" class="form-control" @bind="_tbFrom" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Hasta</label>
-                    <input type="date" class="form-control" @bind="_tbTo" />
-                </div>
-                <div class="col-auto">
-                    <button class="btn btn-primary" @onclick="LoadTrialBalance" disabled="@_loading">
-                        @if (_loading) { <span class="spinner-border spinner-border-sm me-1"></span> }
-                        Generar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @if (_trialBalance is not null)
+    @if (_trialBalance is null)
+    {
+        <div class="text-muted text-center py-5">Selecciona un período y pulsa Generar</div>
+    }
+    else
     {
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent d-flex justify-content-between">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                 <span class="fw-semibold">Balance de comprobación de sumas y saldos</span>
-                @if (_tbFrom.HasValue || _tbTo.HasValue)
-                {
-                    <small class="text-muted">
-                        @(_tbFrom?.ToString("dd/MM/yyyy") ?? "—") → @(_tbTo?.ToString("dd/MM/yyyy") ?? "hoy")
-                    </small>
-                }
+                <small class="text-muted">@PeriodLabel()</small>
             </div>
             <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
@@ -109,28 +129,11 @@
 
 @if (_tab == 1)
 {
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <div class="row g-2 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Desde</label>
-                    <input type="date" class="form-control" @bind="_jbFrom" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Hasta</label>
-                    <input type="date" class="form-control" @bind="_jbTo" />
-                </div>
-                <div class="col-auto">
-                    <button class="btn btn-primary" @onclick="LoadJournalBook" disabled="@_loading">
-                        @if (_loading) { <span class="spinner-border spinner-border-sm me-1"></span> }
-                        Generar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @if (_journalBook is not null)
+    @if (_journalBook is null)
+    {
+        <div class="text-muted text-center py-5">Selecciona un período y pulsa Generar</div>
+    }
+    else
     {
         <div class="text-muted small mb-2">@_journalBook.Count asientos encontrados</div>
         @foreach (var entry in _journalBook)
@@ -173,33 +176,18 @@
 
 @if (_tab == 2)
 {
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <div class="row g-2 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Fecha de corte</label>
-                    <input type="date" class="form-control" @bind="_bsTo" />
-                </div>
-                <div class="col-auto">
-                    <button class="btn btn-primary" @onclick="LoadBalanceSheet" disabled="@_loading">
-                        @if (_loading) { <span class="spinner-border spinner-border-sm me-1"></span> }
-                        Generar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @if (_balanceSheet is not null)
+    @if (_balanceSheet is null)
+    {
+        <div class="text-muted text-center py-5">Selecciona una fecha de corte y pulsa Generar</div>
+    }
+    else
     {
         <div class="row g-3">
             @foreach (var group in _balanceSheet.Groups)
             {
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-transparent fw-semibold">
-                            @group.TypeLabel
-                        </div>
+                        <div class="card-header bg-transparent fw-semibold">@group.TypeLabel</div>
                         <div class="table-responsive">
                             <table class="table table-sm mb-0">
                                 <tbody>
@@ -252,49 +240,121 @@
     int _tab;
     bool _loading;
 
-    // Trial balance
-    DateTime? _tbFrom;
-    DateTime? _tbTo;
+    // Ejercicios y períodos
+    IReadOnlyList<FiscalYearDetailDto> _years = [];
+    IReadOnlyList<FiscalPeriodDto> _periods = [];
+    Guid? _selectedYearId;
+    Guid? _selectedPeriodId;
+
+    // Filtro compartido
+    DateTime? _from;
+    DateTime? _to;
+
+    // Resultados por tab
     TrialBalanceDto? _trialBalance;
-
-    // Journal book
-    DateTime? _jbFrom;
-    DateTime? _jbTo;
     IReadOnlyList<JournalBookEntryDto>? _journalBook;
-
-    // Balance sheet
-    DateTime? _bsTo;
     BalanceSheetDto? _balanceSheet;
 
-    void SetTab(int tab)
+    protected override async Task OnInitializedAsync()
+    {
+        _years = await FiscalYearsHandler.Handle(new GetFiscalYearsQuery());
+
+        // Auto-seleccionar el ejercicio más reciente abierto
+        var current = _years.FirstOrDefault(y => y.Status == FiscalYearStatus.Open)
+                   ?? _years.OrderByDescending(y => y.StartDate).FirstOrDefault();
+        if (current is not null)
+        {
+            _selectedYearId = current.Id;
+            _periods = current.Periods;
+            _from = current.StartDate.ToDateTime(TimeOnly.MinValue);
+            _to = current.EndDate.ToDateTime(TimeOnly.MaxValue);
+        }
+    }
+
+    void OnYearChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedYearId = id;
+            var year = _years.FirstOrDefault(y => y.Id == id);
+            if (year is not null)
+            {
+                _periods = year.Periods;
+                _from = year.StartDate.ToDateTime(TimeOnly.MinValue);
+                _to = year.EndDate.ToDateTime(TimeOnly.MaxValue);
+            }
+        }
+        else
+        {
+            _selectedYearId = null;
+            _periods = [];
+            _from = null;
+            _to = null;
+        }
+        _selectedPeriodId = null;
+        ClearResults();
+    }
+
+    void OnPeriodChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            _selectedPeriodId = id;
+            var period = _periods.FirstOrDefault(p => p.Id == id);
+            if (period is not null)
+            {
+                _from = period.StartDate.ToDateTime(TimeOnly.MinValue);
+                _to = period.EndDate.ToDateTime(TimeOnly.MaxValue);
+            }
+        }
+        else
+        {
+            _selectedPeriodId = null;
+            var year = _years.FirstOrDefault(y => y.Id == _selectedYearId);
+            if (year is not null)
+            {
+                _from = year.StartDate.ToDateTime(TimeOnly.MinValue);
+                _to = year.EndDate.ToDateTime(TimeOnly.MaxValue);
+            }
+        }
+        ClearResults();
+    }
+
+    async Task SetTab(int tab)
     {
         _tab = tab;
+        if (_from.HasValue || _to.HasValue)
+            await LoadCurrentTab();
     }
 
-    async Task LoadTrialBalance()
+    async Task LoadCurrentTab()
     {
         _loading = true;
-        var from = _tbFrom.HasValue ? DateOnly.FromDateTime(_tbFrom.Value) : (DateOnly?)null;
-        var to = _tbTo.HasValue ? DateOnly.FromDateTime(_tbTo.Value) : (DateOnly?)null;
-        _trialBalance = await TrialBalanceHandler.Handle(new GetTrialBalanceQuery(from, to));
+        var from = _from.HasValue ? DateOnly.FromDateTime(_from.Value) : (DateOnly?)null;
+        var to = _to.HasValue ? DateOnly.FromDateTime(_to.Value) : (DateOnly?)null;
+
+        if (_tab == 0)
+            _trialBalance = await TrialBalanceHandler.Handle(new GetTrialBalanceQuery(from, to));
+        else if (_tab == 1)
+            _journalBook = await JournalBookHandler.Handle(new GetJournalBookQuery(from, to));
+        else
+            _balanceSheet = await BalanceSheetHandler.Handle(new GetBalanceSheetQuery(to));
+
         _loading = false;
     }
 
-    async Task LoadJournalBook()
+    void ClearResults()
     {
-        _loading = true;
-        var from = _jbFrom.HasValue ? DateOnly.FromDateTime(_jbFrom.Value) : (DateOnly?)null;
-        var to = _jbTo.HasValue ? DateOnly.FromDateTime(_jbTo.Value) : (DateOnly?)null;
-        _journalBook = await JournalBookHandler.Handle(new GetJournalBookQuery(from, to));
-        _loading = false;
+        _trialBalance = null;
+        _journalBook = null;
+        _balanceSheet = null;
     }
 
-    async Task LoadBalanceSheet()
+    string PeriodLabel()
     {
-        _loading = true;
-        var to = _bsTo.HasValue ? DateOnly.FromDateTime(_bsTo.Value) : (DateOnly?)null;
-        _balanceSheet = await BalanceSheetHandler.Handle(new GetBalanceSheetQuery(to));
-        _loading = false;
+        var from = _from?.ToString("dd/MM/yyyy") ?? "—";
+        var to = _to?.ToString("dd/MM/yyyy") ?? "hoy";
+        return $"{from} → {to}";
     }
 
     static string AccountTypeLabel(AccountType t) => t switch
