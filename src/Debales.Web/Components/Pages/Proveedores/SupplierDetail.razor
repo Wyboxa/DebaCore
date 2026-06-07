@@ -106,6 +106,9 @@ else
                                 else { <span>—</span> }
                             </dd>
 
+                            <dt class="small text-muted fw-semibold mb-1">Cuenta contable</dt>
+                            <dd class="mb-3">@(_supplier.AccountCode ?? "—")</dd>
+
                             <dt class="small text-muted fw-semibold mb-1">Alta</dt>
                             <dd class="mb-0">@_supplier.CreatedAt.ToString("dd/MM/yyyy")</dd>
                         </dl>
@@ -169,6 +172,10 @@ else
                                 <InputText class="form-control" @bind-Value="_editForm.Website" />
                             </div>
                         </div>
+                        <div class="col-md-6">
+                                <label class="form-label">Cuenta contable</label>
+                                <InputText class="form-control" @bind-Value="_editForm.AccountCode" placeholder="p.ej. 4000001" />
+                            </div>
                         <hr class="my-2" />
                         <div class="small text-muted fw-semibold mb-2">Dirección</div>
                         <div class="row g-2 mb-2">
@@ -245,7 +252,8 @@ else
             AddressStreet     = _supplier.Address?.Street,
             AddressCity       = _supplier.Address?.City,
             AddressPostalCode = _supplier.Address?.PostalCode,
-            AddressCountry    = _supplier.Address?.Country
+            AddressCountry    = _supplier.Address?.Country,
+            AccountCode       = _supplier.AccountCode
         };
         _showEdit = true;
     }
@@ -260,7 +268,8 @@ else
                 Id, _editForm.Name!, _editForm.TaxId, _editForm.Phone, _editForm.Email,
                 _editForm.Website, _editForm.ContactName, _editForm.Notes,
                 _editForm.AddressStreet, _editForm.AddressCity,
-                _editForm.AddressPostalCode, _editForm.AddressCountry, "web"));
+                _editForm.AddressPostalCode, _editForm.AddressCountry, "web",
+                AccountCode: _editForm.AccountCode));
             _showEdit = false;
             Toast.Show("Proveedor actualizado correctamente");
         }
@@ -282,5 +291,6 @@ else
         public string? AddressCity { get; set; }
         public string? AddressPostalCode { get; set; }
         public string? AddressCountry { get; set; }
+        public string? AccountCode { get; set; }
     }
 }

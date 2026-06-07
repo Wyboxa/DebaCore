@@ -122,6 +122,8 @@ else
                         }
                         else { <span>—</span> }
                     </dd>
+                    <dt class="col-sm-3">Cuenta contable</dt>
+                    <dd class="col-sm-9">@(_customer.AccountCode ?? "—")</dd>
                     <dt class="col-sm-3">Alta</dt>
                     <dd class="col-sm-9">@_customer.CreatedAt.ToString("dd/MM/yyyy")</dd>
                 </dl>
@@ -545,6 +547,10 @@ else
                                 <InputText class="form-control" @bind-Value="_editForm.Website" />
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Cuenta contable</label>
+                            <InputText class="form-control" @bind-Value="_editForm.AccountCode" placeholder="p.ej. 4300001" />
+                        </div>
                         <hr class="my-2" />
                         <div class="small text-muted fw-semibold mb-2">Dirección</div>
                         <div class="row g-2">
@@ -743,7 +749,8 @@ else
             AddressStreet     = _customer.Address?.Street,
             AddressCity       = _customer.Address?.City,
             AddressPostalCode = _customer.Address?.PostalCode,
-            AddressCountry    = _customer.Address?.Country
+            AddressCountry    = _customer.Address?.Country,
+            AccountCode       = _customer.AccountCode
         };
         _showEdit = true;
     }
@@ -758,7 +765,8 @@ else
                 Id, _editForm.Name!, _editForm.Sector, _editForm.TaxId, _editForm.Phone,
                 _editForm.Email, _editForm.Website,
                 _editForm.AddressStreet, _editForm.AddressCity,
-                _editForm.AddressPostalCode, _editForm.AddressCountry, "web"));
+                _editForm.AddressPostalCode, _editForm.AddressCountry, "web",
+                AccountCode: _editForm.AccountCode));
             _showEdit = false;
             Toast.Show("Cliente actualizado correctamente");
         }
@@ -899,6 +907,7 @@ else
         public string? AddressCity { get; set; }
         public string? AddressPostalCode { get; set; }
         public string? AddressCountry { get; set; }
+        public string? AccountCode { get; set; }
     }
 
     private sealed class ContactFormModel

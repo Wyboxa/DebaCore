@@ -12,4 +12,5 @@ public sealed record UpdateCustomerCommand(
     string? AddressCity,
     string? AddressPostalCode,
     string? AddressCountry,
-    string UpdatedBy);
+    string UpdatedBy,
+    string? AccountCode = null);

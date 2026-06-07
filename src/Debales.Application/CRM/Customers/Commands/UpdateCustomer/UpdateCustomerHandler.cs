@@ -38,6 +38,8 @@ public sealed class UpdateCustomerHandler
             customer.SetAddress(null, command.UpdatedBy);
         }
 
+        customer.SetAccountCode(command.AccountCode, command.UpdatedBy);
+
         _customers.Update(customer);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -50,5 +52,6 @@ public sealed class UpdateCustomerHandler
             customer.Address is null ? null : new AddressDto(
                 customer.Address.Street, customer.Address.City,
                 customer.Address.PostalCode, customer.Address.Country),
-            customer.CreatedAt, customer.CreatedBy, customer.UpdatedAt);
+            customer.CreatedAt, customer.CreatedBy, customer.UpdatedAt,
+            AccountCode: customer.AccountCode);
 }

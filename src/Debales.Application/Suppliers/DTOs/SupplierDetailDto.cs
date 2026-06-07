@@ -13,7 +13,8 @@ public sealed record SupplierDetailDto(
     SupplierAddressDto? Address,
     DateTime CreatedAt,
     string? CreatedBy,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    string? AccountCode = null);
 
 public sealed record SupplierAddressDto(
     string Street,

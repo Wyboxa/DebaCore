@@ -20,6 +20,7 @@ public sealed class GetCustomerByIdHandler
             customer.Address is null ? null : new AddressDto(
                 customer.Address.Street, customer.Address.City,
                 customer.Address.PostalCode, customer.Address.Country),
-            customer.CreatedAt, customer.CreatedBy, customer.UpdatedAt);
+            customer.CreatedAt, customer.CreatedBy, customer.UpdatedAt,
+            AccountCode: customer.AccountCode);
     }
 }

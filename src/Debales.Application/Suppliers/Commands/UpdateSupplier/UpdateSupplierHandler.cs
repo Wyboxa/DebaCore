@@ -38,6 +38,8 @@ public sealed class UpdateSupplierHandler
             supplier.SetAddress(null, command.UpdatedBy);
         }
 
+        supplier.SetAccountCode(command.AccountCode, command.UpdatedBy);
+
         _suppliers.Update(supplier);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -51,5 +53,6 @@ public sealed class UpdateSupplierHandler
             supplier.Address is null ? null : new SupplierAddressDto(
                 supplier.Address.Street, supplier.Address.City,
                 supplier.Address.PostalCode, supplier.Address.Country),
-            supplier.CreatedAt, supplier.CreatedBy, supplier.UpdatedAt);
+            supplier.CreatedAt, supplier.CreatedBy, supplier.UpdatedAt,
+            AccountCode: supplier.AccountCode);
 }

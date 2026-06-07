@@ -95,8 +95,8 @@ public sealed class AccountingEntryService : IAccountingEntryService
 
             if (accountCode == thirdPartyToken)
             {
-                if (thirdPartyAccountCode is null) return null;
-                accountCode = thirdPartyAccountCode;
+                // Usar cuenta individual si está asignada; si no, cuenta raíz del grupo (430/400)
+                accountCode = thirdPartyAccountCode ?? FallbackAccount(thirdPartyToken);
                 linkedThirdParty = thirdPartyId;
                 linkedThirdPartyType = thirdPartyType;
             }
@@ -123,4 +123,11 @@ public sealed class AccountingEntryService : IAccountingEntryService
         await _entries.AddAsync(entry, ct);
         return entry;
     }
+
+    private static string FallbackAccount(string token) => token switch
+    {
+        "{CUSTOMER}" => "430",
+        "{SUPPLIER}" => "400",
+        _ => throw new InvalidOperationException($"No hay cuenta raíz definida para el token '{token}'.")
+    };
 }

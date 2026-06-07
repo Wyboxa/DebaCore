@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Obsidian - Cómo usar este vault.md",
+                "file": "00 - Inicio.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Obsidian - Cómo usar este vault"
+              "title": "00 - Inicio"
             }
           }
         ]
@@ -185,21 +185,26 @@
   },
   "active": "0d32f538526805f4",
   "lastOpenFiles": [
+    "08 - Pendientes/Huecos funcionales.md",
+    "08 - Pendientes/Deuda técnica.md",
+    "08 - Pendientes/Decisiones arquitectónicas pendientes.md",
+    "08 - Pendientes/Contradicciones detectadas.md",
+    "Obsidian - Cómo usar este vault.md",
+    "03 - Entidades/Account.md",
+    "Sin título.canvas",
+    "Sin título.base",
+    "00 - Inicio.md",
+    "02 - Módulos/Contabilidad.md.tmp.26144.10e0f4442939",
+    "00 - Inicio.md.tmp.26144.1865016b609a",
+    "00 - Inicio.md.tmp.26144.2f5aa199e187",
+    "00 - Inicio.md.tmp.26144.cd427c20841d",
     "00 - Inicio.md.tmp.28624.e2908dd249cd",
     "09 - Ideas y decisiones.md",
     "09 - Ideas y decisiones.md.tmp.28624.96448311c8e8",
-    "08 - Pendientes/Decisiones arquitectónicas pendientes.md",
-    "08 - Pendientes/Contradicciones detectadas.md",
     "06 - API/PDF Export API.md",
     "06 - API/PDF Export API.md.tmp.28624.9784ab388a5f",
     "04 - Flujos/Flujo Pedido Compra a Factura.md.tmp.28624.c626604ffead",
     "04 - Flujos/Flujo Inventario.md.tmp.28624.a9d203e7500f",
-    "10 - Auditoría/Inventario técnico.md.tmp.28624.50ca0df492bb",
-    "10 - Auditoría/Inventario técnico.md.tmp.28624.aa33b07b21de",
-    "07 - UI Blazor/Rutas Blazor.md.tmp.28624.d4d6b3e104d0",
-    "07 - UI Blazor/Rutas Blazor.md.tmp.28624.f40b7d680fd0",
-    "07 - UI Blazor/Rutas Blazor.md.tmp.28624.44a1faa940e7",
-    "00 - Inicio.md.tmp.28624.9efebe466b4f",
     "03 - Entidades/Índice de entidades.md",
     "09 - Diagramas/Arquitectura general.md",
     "PurchaseCreditNoteLine.md",
@@ -213,7 +218,6 @@
     "09 - Diagramas/Relacion de modulos.md",
     "10 - Auditoría/Cobertura de documentación.md",
     "10 - Auditoría/Inventario técnico.md",
-    "00 - Inicio.md",
     "01 - Arquitectura.md"
   ]
 }
