@@ -12,7 +12,19 @@ related:
 
 # Pendientes priorizados
 
-> Última actualización: 2026-06-05
+> Última actualización: 2026-06-07
+
+## Resueltos en sesión 2026-06-07
+
+| Item | Estado |
+|------|--------|
+| AccountCode cascade Customer/Supplier | ✓ Resuelto — commit `fcd2c65` |
+| Sistema auditoría automática (AuditEntry + UI) | ✓ Resuelto — commit `130c24d` |
+| Informes contables con filtro ejercicio/período | ✓ Resuelto — commit `f239efe` |
+| Tutorial guiado (TutorialService + TutorialOverlay) | ✓ Resuelto — commit `d9ee4ae` |
+| Asientos desde cobros/pagos | ✓ Resuelto — commit `0f5cda3` |
+
+---
 
 ## Resueltos en sesión 2026-06-05
 
@@ -85,15 +97,7 @@ Las plantillas de asiento (`AccountingTemplate`) están definidas para `SalesInv
 
 ---
 
-## Prioridad 7 — AuditLog UI
-
-**Qué falta**: La tabla `AuditEntries` existe en la base de datos y se escribe, pero no hay página Blazor para consultarla.
-
-**Impacto**: La auditoría es invisible para el usuario.
-
----
-
-## Prioridad 8 — Tests para AssignRoleHandler y DeactivateUserHandler
+## Prioridad 7 — Tests para AssignRoleHandler y DeactivateUserHandler
 
 **Qué falta**: Los handlers `AssignRoleHandler` y `DeactivateUserHandler` no tienen tests unitarios todavía.
 

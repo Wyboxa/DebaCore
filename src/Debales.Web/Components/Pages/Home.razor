@@ -81,7 +81,8 @@ else
                         </div>
                     </div>
                     <div class="h4 fw-bold mb-0">@_invoicesPendingCollection</div>
-                    <div class="small text-muted">Fact. sin cobrar</div>
+                    <div class="small text-warning fw-semibold">@_pendingReceivableAmount.ToString("N0") €</div>
+                    <div class="small text-muted">Pendiente cobro</div>
                 </div>
             </div>
         </div>
@@ -97,6 +98,7 @@ else
                         </div>
                     </div>
                     <div class="h4 fw-bold mb-0">@_receivablesThisWeek</div>
+                    <div class="small text-danger fw-semibold">@_receivablesThisWeekAmount.ToString("N0") €</div>
                     <div class="small text-muted">Vence esta semana</div>
                 </div>
             </div>
@@ -129,7 +131,8 @@ else
                         </div>
                     </div>
                     <div class="h4 fw-bold mb-0">@_pendingPayables</div>
-                    <div class="small text-muted">Fact. compra pendientes</div>
+                    <div class="small text-secondary fw-semibold">@_pendingPayableAmount.ToString("N0") €</div>
+                    <div class="small text-muted">Pendiente pago</div>
                 </div>
             </div>
         </div>
@@ -143,10 +146,11 @@ else
                     <svg width="16" height="16" fill="currentColor" class="text-danger" viewBox="0 0 16 16">
                         <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
                     </svg>
-                    <span class="fw-semibold">Alertas activas</span>
+                    <span class="fw-semibold">Vencidos sin liquidar</span>
                     @if (_alerts.Count > 0)
                     {
                         <span class="badge bg-danger ms-1">@_alerts.Count</span>
+                        <span class="ms-auto small text-danger fw-semibold">@_alerts.Sum(a => a.Amount).ToString("N2") €</span>
                     }
                 </div>
                 <div class="card-body p-0">
@@ -156,7 +160,7 @@ else
                             <svg width="20" height="20" fill="currentColor" class="me-1 text-success" viewBox="0 0 16 16">
                                 <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
                             </svg>
-                            Sin alertas — todo en orden
+                            Sin vencidos — todo en orden
                         </div>
                     }
                     else
@@ -167,7 +171,7 @@ else
                                     <tr>
                                         <th class="ps-3">Tipo</th>
                                         <th>Número</th>
-                                        <th>Cliente/Proveedor</th>
+                                        <th>Cliente / Proveedor</th>
                                         <th>Vencimiento</th>
                                         <th class="text-end pe-3">Pendiente</th>
                                     </tr>
@@ -176,7 +180,9 @@ else
                                     @foreach (var a in _alerts)
                                     {
                                         <tr>
-                                            <td class="ps-3"><span class="badge bg-danger">@a.Type</span></td>
+                                            <td class="ps-3">
+                                                <span class="badge @(a.IsPayable ? "bg-secondary" : "bg-danger")">@a.Type</span>
+                                            </td>
                                             <td class="font-monospace small">@a.Number</td>
                                             <td>@a.Party</td>
                                             <td class="text-danger small">@a.DueDate.ToString("dd/MM/yyyy")</td>
@@ -284,15 +290,18 @@ else
     int _activeCustomers;
     int _pendingSalesOrders;
     int _invoicesPendingCollection;
+    decimal _pendingReceivableAmount;
     int _receivablesThisWeek;
+    decimal _receivablesThisWeekAmount;
     int _pendingPurchaseOrders;
     int _pendingPayables;
+    decimal _pendingPayableAmount;
 
     List<SalesOrderSummaryDto> _recentSalesOrders = [];
     List<SalesInvoiceSummaryDto> _recentSalesInvoices = [];
     List<AlertRow> _alerts = [];
 
-    sealed record AlertRow(string Type, string Number, string Party, DateOnly DueDate, decimal Amount);
+    sealed record AlertRow(string Type, string Number, string Party, DateOnly DueDate, decimal Amount, bool IsPayable = false);
 
     protected override async Task OnInitializedAsync()
     {
@@ -308,18 +317,27 @@ else
         _pendingSalesOrders = salesOrders.Items.Count(o =>
             o.Status == SalesOrderStatus.Confirmed || o.Status == SalesOrderStatus.PartiallyDelivered);
 
-        _invoicesPendingCollection = invoices.Items.Count(i => i.Status == SalesInvoiceStatus.Posted);
+        var pendingReceivableItems = receivables.Items
+            .Where(r => r.Status == ReceivableStatus.Pending || r.Status == ReceivableStatus.Partial)
+            .ToList();
+        _invoicesPendingCollection = pendingReceivableItems.Count;
+        _pendingReceivableAmount = pendingReceivableItems.Sum(r => r.PendingAmount);
 
         var today = DateOnly.FromDateTime(DateTime.Today);
         var week = today.AddDays(7);
-        _receivablesThisWeek = receivables.Items.Count(r =>
-            r.DueDate <= week &&
-            (r.Status == ReceivableStatus.Pending || r.Status == ReceivableStatus.Partial));
+        var thisWeekItems = pendingReceivableItems
+            .Where(r => r.DueDate <= week)
+            .ToList();
+        _receivablesThisWeek = thisWeekItems.Count;
+        _receivablesThisWeekAmount = thisWeekItems.Sum(r => r.PendingAmount);
 
         _pendingPurchaseOrders = purchaseOrders.Items.Count(o => o.Status == PurchaseOrderStatus.Confirmed);
 
-        _pendingPayables = payables.Items.Count(p =>
-            p.Status == PayableStatus.Pending || p.Status == PayableStatus.Partial);
+        var pendingPayableItems = payables.Items
+            .Where(p => p.Status == PayableStatus.Pending || p.Status == PayableStatus.Partial)
+            .ToList();
+        _pendingPayables = pendingPayableItems.Count;
+        _pendingPayableAmount = pendingPayableItems.Sum(p => p.PendingAmount);
 
         _recentSalesOrders = salesOrders.Items
             .OrderByDescending(o => o.Date)
@@ -334,11 +352,16 @@ else
         var overdueReceivables = receivables.Items
             .Where(r => r.Status == ReceivableStatus.Defaulted ||
                         (r.DueDate < today && (r.Status == ReceivableStatus.Pending || r.Status == ReceivableStatus.Partial)))
-            .Select(r => new AlertRow("Cobro", r.Number, r.CustomerName, r.DueDate, r.PendingAmount));
+            .Select(r => new AlertRow("Cobro vencido", r.Number, r.CustomerName, r.DueDate, r.PendingAmount, IsPayable: false));
+
+        var overduePayables = payables.Items
+            .Where(p => p.DueDate < today && (p.Status == PayableStatus.Pending || p.Status == PayableStatus.Partial))
+            .Select(p => new AlertRow("Pago vencido", p.Number, p.SupplierName, p.DueDate, p.PendingAmount, IsPayable: true));
 
         _alerts = overdueReceivables
+            .Concat(overduePayables)
             .OrderBy(a => a.DueDate)
-            .Take(20)
+            .Take(25)
             .ToList();
 
         _loading = false;

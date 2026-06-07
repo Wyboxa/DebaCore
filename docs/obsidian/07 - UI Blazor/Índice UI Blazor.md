@@ -107,13 +107,14 @@ related:
 
 | Página | Ruta | Estado |
 |--------|------|--------|
-| Home.razor | `/` | Implementada — dashboard |
+| Home.razor | `/` | Implementada — 6 KPIs + alertas cobros vencidos + últimos pedidos/facturas |
 | Login.razor | `/login` | Implementada |
-| Analitica.razor | `/analitica` | Estado no confirmado |
-| Configuracion.razor | `/configuracion` | Implementada — usuarios, licencia, tutorial |
+| Analitica.razor | `/analitica` | Placeholder |
+| Configuracion.razor | `/configuracion` | Implementada — usuarios, licencia, tutorial, auditoría |
 | Usuarios.razor | `/configuracion/usuarios` | Implementada |
+| Auditoria.razor | `/configuracion/auditoria` | Implementada — filtros entidad/fecha, tabla con JSON expandible |
 
-**Total páginas Razor: 44**
+**Total páginas Razor: 45**
 
 ## Componentes compartidos
 

@@ -224,7 +224,7 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-06-07:** Ciclo contable completo operativo (facturas + cobros/pagos → asiento automático). Tutorial guiado implementado (`TutorialService` + `TutorialOverlay`, 8 pasos, persistencia localStorage). Repositorio GitHub: `https://github.com/Wyboxa/DebaCore`.
+> **Actualización 2026-06-07:** AccountCode cascade completo (Customer + Supplier): campo editable en ficha, handlers actualizados, fallback contable 430/400 en `AccountingEntryService`. Sistema de auditoría automática (`AuditEntry`, `ApplicationDbContext.SaveChangesAsync`, `ICurrentUserService`, UI `/configuracion/auditoria`). Tutorial guiado (`TutorialService` + `TutorialOverlay`, 8 pasos, localStorage). Dashboard KPIs operativo (`Home.razor`). Repositorio GitHub: `https://github.com/Wyboxa/DebaCore`.
 > 12 migraciones aplicadas. 58 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
@@ -247,7 +247,9 @@ Lo que ya existe (no asumir como propuesta):
 - Despliegue Docker: `docker-compose.yml`, `Dockerfile.api`, `Dockerfile.web` en raíz del repositorio.
 - PDF export de facturas venta y compra (QuestPDF Community). Endpoints en `Debales.Web/Program.cs`.
 - API REST (`Debales.Api`) con controllers para todos los módulos.
-- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, proveedores, ventas, presupuestos, compras, inventario, contabilidad, informes, licencias, gestión de usuarios e IA. **Tutorial guiado** activable/desactivable desde Configuración (`TutorialService`, `TutorialOverlay`, 8 pasos, localStorage).
+- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, proveedores, ventas, presupuestos, compras, inventario, contabilidad, informes, licencias, gestión de usuarios e IA. **Tutorial guiado** activable/desactivable desde Configuración (`TutorialService`, `TutorialOverlay`, 8 pasos, localStorage). **AuditLog UI** (`/configuracion/auditoria`). **Dashboard KPIs** (`Home.razor`, 6 KPIs + alertas + actividad reciente).
+- `AccountCode` en `Customer` y `Supplier`: editable desde ficha, propagado en handlers y DTOs. `AccountingEntryService` usa fallback 430/400 cuando la cuenta individual es null.
+- Sistema de auditoría automática: `ApplicationDbContext.SaveChangesAsync` escribe `AuditEntry` para todas las entidades del dominio (excepto líneas y tablas de control). `ICurrentUserService` / `CurrentUserService` para captura del usuario activo.
 - UI con paleta teal `#6B9CA9`, sidebar oscuro.
 - **58 tests automatizados pasando** (Domain: 31, Application: 26, Integration: 1).
 - Vault Obsidian en `docs/obsidian/` — actualizado en cada sesión de desarrollo.
@@ -255,8 +257,6 @@ Lo que ya existe (no asumir como propuesta):
 Lo que aún no existe y debe tratarse como propuesta:
 
 - `ModuleRequired` en páginas de lista/detalle individuales (solo en hubs por ahora).
-- AuditLog UI (la tabla existe y se escribe, pero no hay página de consulta).
-- AuditLog UI (la tabla existe y se escribe, pero no hay página de consulta aún).
 - Multi-tenant (`TenantId` en tablas).
 
 ---
@@ -2540,3 +2540,7 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 | Informes contables (Balance, Libro diario, Situación) | Completo — ERP-Reports | sin migración |
 | Paridad Compras/Ventas (estado pedido en albarán) | Completo — fix | sin migración |
 | Asientos desde cobros/pagos (motor + plantillas seed) | Completo — 2026-06-06/07 | `20260607121801_AddPaymentAccountingTemplates` |
+| AccountCode en Customer/Supplier (cascade DTO→handler→UI) | Completo — 2026-06-07 | sin migración |
+| Sistema auditoría automática (`AuditEntry`, `ICurrentUserService`, UI `/configuracion/auditoria`) | Completo — 2026-06-07 | sin migración |
+| Tutorial guiado (`TutorialService`, `TutorialOverlay`, 8 pasos, localStorage) | Completo — 2026-06-07 | sin migración |
+| Dashboard KPIs (`Home.razor`, 6 KPIs + alertas + actividad reciente) | Completo — 2026-06-07 | sin migración |

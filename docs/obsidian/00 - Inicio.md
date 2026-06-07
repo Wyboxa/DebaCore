@@ -67,6 +67,9 @@ Debales es una plataforma CRM/ERP modular con inteligencia artificial supervisad
 | Asientos automáticos desde cobros/pagos | Implementado — 2026-06-06 |
 | GitHub remoto configurado (Wyboxa/DebaCore) | Configurado — 2026-06-06 |
 | Tutorial guiado activable (TutorialService + TutorialOverlay) | Implementado — 2026-06-07 |
+| AccountCode en Customer/Supplier — cascade DTO → handler → UI | Implementado — 2026-06-07 |
+| Sistema auditoría automática (AuditEntry, ICurrentUserService, UI /configuracion/auditoria) | Implementado — 2026-06-07 |
+| Dashboard KPIs (Home.razor — 6 KPIs + alertas + actividad reciente) | Implementado — 2026-06-07 |
 
 ### Tests
 
