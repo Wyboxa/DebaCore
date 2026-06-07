@@ -1,6 +1,8 @@
+using System.Text.Json;
+using Debales.Application.Common;
 using Debales.Domain.Accounting;
 using Debales.Domain.Catalog;
-using Debales.Domain.Licensing;
+using Debales.Domain.Common;
 using Debales.Domain.Core.Audit;
 using Debales.Domain.Core.Modules;
 using Debales.Domain.Core.Roles;
@@ -11,6 +13,7 @@ using Debales.Domain.CRM.Customers;
 using Debales.Domain.CRM.Notes;
 using Debales.Domain.CRM.Opportunities;
 using Debales.Domain.Inventory;
+using Debales.Domain.Licensing;
 using Debales.Domain.Purchasing;
 using Debales.Domain.Sales;
 using Debales.Domain.Suppliers;
@@ -20,7 +23,14 @@ namespace Debales.Infrastructure.Persistence;
 
 public sealed class ApplicationDbContext : DbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+    private readonly ICurrentUserService? _currentUser;
+
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        ICurrentUserService? currentUser = null) : base(options)
+    {
+        _currentUser = currentUser;
+    }
 
     // Core
     public DbSet<User> Users => Set<User>();
@@ -100,5 +110,105 @@ public sealed class ApplicationDbContext : DbContext
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        AddAuditEntries();
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    // ── Audit ────────────────────────────────────────────────────────────
+
+    private static readonly HashSet<string> _auditExclusions = new(StringComparer.Ordinal)
+    {
+        nameof(AuditEntry),
+        nameof(UserRole),
+        nameof(RolePermission),
+        nameof(StockBalance),        // updated frequently by stock movements
+        nameof(FiscalPeriod),        // child of FiscalYear, created in batch
+        nameof(AccountingTemplateLine),
+        nameof(AccountingEntryLine),
+        nameof(SalesOrderLine),
+        nameof(SalesQuoteLine),
+        nameof(SalesDeliveryNoteLine),
+        nameof(SalesInvoiceLine),
+        nameof(SalesCreditNoteLine),
+        nameof(PurchaseOrderLine),
+        nameof(PurchaseDeliveryNoteLine),
+        nameof(PurchaseInvoiceLine),
+        nameof(PurchaseCreditNoteLine),
+    };
+
+    private static bool IsSensitiveProp(string name) =>
+        name.Contains("Password", StringComparison.OrdinalIgnoreCase) ||
+        name.Contains("Hash", StringComparison.OrdinalIgnoreCase) ||
+        name.Contains("Token", StringComparison.OrdinalIgnoreCase) ||
+        name.Contains("Salt", StringComparison.OrdinalIgnoreCase);
+
+    private void AddAuditEntries()
+    {
+        var user = _currentUser?.Username;
+
+        var changed = ChangeTracker.Entries()
+            .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+            .Where(e => e.Entity is Entity)
+            .Where(e => !_auditExclusions.Contains(e.Entity.GetType().Name))
+            .ToList();
+
+        foreach (var entry in changed)
+        {
+            var entityName = entry.Entity.GetType().Name;
+            var entityId = (entry.Property("Id").CurrentValue ?? entry.Property("Id").OriginalValue)?.ToString()
+                           ?? string.Empty;
+
+            string action = entry.State switch
+            {
+                EntityState.Added => "Created",
+                EntityState.Modified => "Updated",
+                _ => "Deleted"
+            };
+
+            string? oldValues = null;
+            string? newValues = null;
+
+            try
+            {
+                if (entry.State == EntityState.Modified)
+                {
+                    var changedProps = entry.Properties
+                        .Where(p => p.IsModified && !IsSensitiveProp(p.Metadata.Name))
+                        .ToList();
+
+                    if (changedProps.Count > 0)
+                    {
+                        oldValues = JsonSerializer.Serialize(
+                            changedProps.ToDictionary(p => p.Metadata.Name, p => p.OriginalValue?.ToString()));
+                        newValues = JsonSerializer.Serialize(
+                            changedProps.ToDictionary(p => p.Metadata.Name, p => p.CurrentValue?.ToString()));
+                    }
+                }
+                else if (entry.State == EntityState.Added)
+                {
+                    newValues = JsonSerializer.Serialize(
+                        entry.Properties
+                            .Where(p => !IsSensitiveProp(p.Metadata.Name))
+                            .ToDictionary(p => p.Metadata.Name, p => p.CurrentValue?.ToString()));
+                }
+                else
+                {
+                    oldValues = JsonSerializer.Serialize(
+                        entry.Properties
+                            .Where(p => !IsSensitiveProp(p.Metadata.Name))
+                            .ToDictionary(p => p.Metadata.Name, p => p.OriginalValue?.ToString()));
+                }
+            }
+            catch
+            {
+                // Serialization failures must not block the save
+            }
+
+            AuditEntries.Add(AuditEntry.Record(entityName, entityId, action, user, oldValues, newValues));
+        }
     }
 }

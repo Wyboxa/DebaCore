@@ -2,6 +2,7 @@ using Debales.Application.Accounting;
 using Debales.Application.Catalog;
 using Debales.Application.Licensing;
 using Debales.Application.Common;
+using Debales.Application.Core.Audit;
 using Debales.Application.Core.Auth;
 using Debales.Application.Core.Roles;
 using Debales.Application.Core.Users;
@@ -44,6 +45,8 @@ public static class DependencyInjection
                 sql => sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IAuditEntryRepository, AuditEntryRepository>();
 
         // Documents
         services.AddSingleton<IInvoicePdfGenerator, InvoicePdfGenerator>();

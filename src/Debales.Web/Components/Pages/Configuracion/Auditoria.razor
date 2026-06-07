@@ -1,0 +1,202 @@
+@page "/configuracion/auditoria"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetAuditEntriesHandler AuditHandler
+
+<PageTitle>Auditoría — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h4 fw-bold mb-0">Auditoría del sistema</h1>
+        <small class="text-muted">Registro de cambios sobre entidades del sistema</small>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Entidad</label>
+                <select class="form-select" @bind="_entityFilter">
+                    <option value="">— Todas —</option>
+                    @foreach (var name in _entityNames)
+                    {
+                        <option value="@name">@name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Desde</label>
+                <input type="date" class="form-control" @bind="_from" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Hasta</label>
+                <input type="date" class="form-control" @bind="_to" />
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" @onclick="LoadAsync" disabled="@_loading">
+                    @if (_loading) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    Buscar
+                </button>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-secondary" @onclick="ClearAndLoad">Limpiar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_entries is null)
+{
+    <div class="text-muted text-center py-5">Aplica los filtros y pulsa Buscar</div>
+}
+else if (_entries.Count == 0)
+{
+    <div class="text-muted text-center py-5">No se encontraron registros con los filtros aplicados</div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Registro de auditoría</span>
+            <small class="text-muted">@_entries.Count entradas (máx. 200)</small>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:150px">Fecha</th>
+                        <th style="width:140px">Entidad</th>
+                        <th style="width:80px">Acción</th>
+                        <th style="width:120px">Usuario</th>
+                        <th>ID</th>
+                        <th style="width:40px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in _entries)
+                    {
+                        <tr>
+                            <td class="text-muted small">@e.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><span class="badge bg-light text-dark border">@e.EntityName</span></td>
+                            <td>
+                                <span class="badge @ActionBadge(e.Action)">@e.Action</span>
+                            </td>
+                            <td class="small text-muted">@(e.UserId ?? "—")</td>
+                            <td><code class="small text-muted">@e.EntityId[..Math.Min(8, e.EntityId.Length)]…</code></td>
+                            <td>
+                                @if (e.OldValues is not null || e.NewValues is not null)
+                                {
+                                    <button class="btn btn-link btn-sm p-0 text-muted"
+                                            @onclick="() => ToggleDetail(e.Id)"
+                                            title="Ver detalle">
+                                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                            <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/>
+                                            <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/>
+                                        </svg>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                        @if (_expandedId == e.Id && (e.OldValues is not null || e.NewValues is not null))
+                        {
+                            <tr class="table-light">
+                                <td colspan="6">
+                                    <div class="row g-3 p-2">
+                                        @if (e.OldValues is not null)
+                                        {
+                                            <div class="col-md-6">
+                                                <div class="small fw-semibold text-danger mb-1">Antes</div>
+                                                <pre class="small bg-white border rounded p-2 mb-0" style="max-height:200px;overflow:auto;font-size:.72rem">@FormatJson(e.OldValues)</pre>
+                                            </div>
+                                        }
+                                        @if (e.NewValues is not null)
+                                        {
+                                            <div class="col-md-6">
+                                                <div class="small fw-semibold text-success mb-1">Después</div>
+                                                <pre class="small bg-white border rounded p-2 mb-0" style="max-height:200px;overflow:auto;font-size:.72rem">@FormatJson(e.NewValues)</pre>
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    string _entityFilter = string.Empty;
+    DateTime? _from;
+    DateTime? _to;
+    bool _loading;
+    Guid? _expandedId;
+
+    IReadOnlyList<AuditEntrySummaryDto>? _entries;
+    IReadOnlyList<string> _entityNames = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Carga la lista de tipos de entidad al iniciar para el filtro
+        await LoadAsync();
+    }
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _expandedId = null;
+
+        var query = new GetAuditEntriesQuery(
+            EntityName: string.IsNullOrEmpty(_entityFilter) ? null : _entityFilter,
+            From: _from,
+            To: _to,
+            Take: 200);
+
+        _entries = await AuditHandler.Handle(query);
+
+        // Actualizar nombres distintos desde los resultados cargados
+        if (_entries.Count > 0)
+        {
+            _entityNames = _entries.Select(e => e.EntityName).Distinct().OrderBy(n => n).ToList();
+        }
+
+        _loading = false;
+    }
+
+    async Task ClearAndLoad()
+    {
+        _entityFilter = string.Empty;
+        _from = null;
+        _to = null;
+        await LoadAsync();
+    }
+
+    void ToggleDetail(Guid id) =>
+        _expandedId = _expandedId == id ? null : id;
+
+    static string ActionBadge(string action) => action switch
+    {
+        "Created" => "bg-success",
+        "Updated" => "bg-primary",
+        "Deleted" => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    static string FormatJson(string json)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            return System.Text.Json.JsonSerializer.Serialize(
+                doc.RootElement,
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        }
+        catch
+        {
+            return json;
+        }
+    }
+}

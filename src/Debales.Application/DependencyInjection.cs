@@ -1,3 +1,4 @@
+using Debales.Application.Core.Audit.Queries.GetAuditEntries;
 using Debales.Application.AI.Briefing;
 using Debales.Application.AI.Chat;
 using Debales.Application.AI.Summary;
@@ -295,6 +296,9 @@ public static class DependencyInjection
         services.AddScoped<GetCurrentLicenseHandler>();
         services.AddScoped<GetSubscriptionPlansHandler>();
         services.AddScoped<ActivateLicenseHandler>();
+
+        // Audit
+        services.AddScoped<GetAuditEntriesHandler>();
 
         // Dashboard
         services.AddScoped<GetDashboardStatsHandler>();
