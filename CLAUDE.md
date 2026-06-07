@@ -224,8 +224,8 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-06-07:** AccountCode cascade completo (Customer + Supplier): campo editable en ficha, handlers actualizados, fallback contable 430/400 en `AccountingEntryService`. Sistema de auditoría automática (`AuditEntry`, `ApplicationDbContext.SaveChangesAsync`, `ICurrentUserService`, UI `/configuracion/auditoria`). Tutorial guiado (`TutorialService` + `TutorialOverlay`, 8 pasos, localStorage). Dashboard KPIs operativo (`Home.razor`). Repositorio GitHub: `https://github.com/Wyboxa/DebaCore`.
-> 12 migraciones aplicadas. 58 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
+> **Actualización 2026-06-07:** AccountCode cascade completo (Customer + Supplier). Sistema de auditoría automática. Tutorial guiado. Dashboard KPIs. Tests `AssignRoleHandler`/`DeactivateUserHandler` (cobertura completa de handlers). Módulo **NumberSeries** (series documentales configurables): entidad `Consume()`/`GetNextFormatted()`, 3 handlers, repositorio, migración, UI `/configuracion/series`. Fix `IHttpContextAccessor` en `Debales.Api`. Repositorio GitHub: `https://github.com/Wyboxa/DebaCore`.
+> 13 migraciones aplicadas. 65 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
 El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada sobre ERP.
@@ -233,7 +233,7 @@ El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada so
 Lo que ya existe (no asumir como propuesta):
 
 - Solución .NET 8 (`Debales.slnx`) con 10 proyectos.
-- Base de datos SQL Server LocalDB con **12 migraciones aplicadas**.
+- Base de datos SQL Server LocalDB con **13 migraciones aplicadas**.
 - Módulo Core: usuarios, roles, permisos, auditoría. **UI de gestión de usuarios** (`/configuracion/usuarios`).
 - Módulo CRM: clientes, contactos, actividades, notas, oportunidades.
 - Módulo Suppliers: proveedores con búsqueda, paginación, dirección embebida, soft-delete.
@@ -247,11 +247,12 @@ Lo que ya existe (no asumir como propuesta):
 - Despliegue Docker: `docker-compose.yml`, `Dockerfile.api`, `Dockerfile.web` en raíz del repositorio.
 - PDF export de facturas venta y compra (QuestPDF Community). Endpoints en `Debales.Web/Program.cs`.
 - API REST (`Debales.Api`) con controllers para todos los módulos.
-- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, proveedores, ventas, presupuestos, compras, inventario, contabilidad, informes, licencias, gestión de usuarios e IA. **Tutorial guiado** activable/desactivable desde Configuración (`TutorialService`, `TutorialOverlay`, 8 pasos, localStorage). **AuditLog UI** (`/configuracion/auditoria`). **Dashboard KPIs** (`Home.razor`, 6 KPIs + alertas + actividad reciente).
+- UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, proveedores, ventas, presupuestos, compras, inventario, contabilidad, informes, licencias, gestión de usuarios e IA. **Tutorial guiado** activable/desactivable desde Configuración (`TutorialService`, `TutorialOverlay`, 8 pasos, localStorage). **AuditLog UI** (`/configuracion/auditoria`). **Dashboard KPIs** (`Home.razor`, 6 KPIs con importes € + alertas cobros/pagos vencidos + actividad reciente). **Series documentales** (`/configuracion/series`).
 - `AccountCode` en `Customer` y `Supplier`: editable desde ficha, propagado en handlers y DTOs. `AccountingEntryService` usa fallback 430/400 cuando la cuenta individual es null.
 - Sistema de auditoría automática: `ApplicationDbContext.SaveChangesAsync` escribe `AuditEntry` para todas las entidades del dominio (excepto líneas y tablas de control). `ICurrentUserService` / `CurrentUserService` para captura del usuario activo.
+- Módulo NumberSeries: `NumberSeries.Consume()` genera y consume numeración; `GetNextFormatted()` previsualiza. UI en `/configuracion/series`. **Pendiente de cablear en handlers de creación de documentos** (facturas, pedidos, albaranes).
 - UI con paleta teal `#6B9CA9`, sidebar oscuro.
-- **58 tests automatizados pasando** (Domain: 31, Application: 26, Integration: 1).
+- **65 tests automatizados pasando** (Domain: 31, Application: 33, Integration: 1).
 - Vault Obsidian en `docs/obsidian/` — actualizado en cada sesión de desarrollo.
 
 Lo que aún no existe y debe tratarse como propuesta:
@@ -2543,4 +2544,6 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 | AccountCode en Customer/Supplier (cascade DTO→handler→UI) | Completo — 2026-06-07 | sin migración |
 | Sistema auditoría automática (`AuditEntry`, `ICurrentUserService`, UI `/configuracion/auditoria`) | Completo — 2026-06-07 | sin migración |
 | Tutorial guiado (`TutorialService`, `TutorialOverlay`, 8 pasos, localStorage) | Completo — 2026-06-07 | sin migración |
-| Dashboard KPIs (`Home.razor`, 6 KPIs + alertas + actividad reciente) | Completo — 2026-06-07 | sin migración |
+| Dashboard KPIs (`Home.razor`, 6 KPIs importes € + alertas cobros/pagos vencidos) | Completo — 2026-06-07 | sin migración |
+| Tests `AssignRoleHandler` (4) + `DeactivateUserHandler` (3) — cobertura completa handlers | Completo — 2026-06-07 | sin migración |
+| NumberSeries (series documentales configurables, UI `/configuracion/series`) | Completo — 2026-06-07 | `20260607141730_AddNumberSeriesModule` |

@@ -41,6 +41,7 @@ Debales es una plataforma CRM/ERP modular con inteligencia artificial supervisad
 | 10 | AddLicensingModule | 2026-06-04 |
 | 11 | AddSalesQuoteModule | 2026-06-04 |
 | 12 | AddPaymentAccountingTemplates | 2026-06-07 |
+| 13 | AddNumberSeriesModule | 2026-06-07 |
 
 ### Módulos con código real
 
@@ -69,16 +70,18 @@ Debales es una plataforma CRM/ERP modular con inteligencia artificial supervisad
 | Tutorial guiado activable (TutorialService + TutorialOverlay) | Implementado — 2026-06-07 |
 | AccountCode en Customer/Supplier — cascade DTO → handler → UI | Implementado — 2026-06-07 |
 | Sistema auditoría automática (AuditEntry, ICurrentUserService, UI /configuracion/auditoria) | Implementado — 2026-06-07 |
-| Dashboard KPIs (Home.razor — 6 KPIs + alertas + actividad reciente) | Implementado — 2026-06-07 |
+| Dashboard KPIs (Home.razor — 6 KPIs importes € + alertas cobros/pagos vencidos) | Implementado — 2026-06-07 |
+| Tests AssignRoleHandler (4) + DeactivateUserHandler (3) — cobertura handlers completa | Implementado — 2026-06-07 |
+| NumberSeries (series documentales configurables, UI `/configuracion/series`) | Implementado — 2026-06-07 |
 
 ### Tests
 
-**Total: 58 tests — 0 errores**
+**Total: 65 tests — 0 errores**
 
 | Suite | Tests | Última actualización |
 |-------|-------|---------------------|
 | `Debales.Domain.Tests` | 31 — Customer, Opportunity, Role, User, UserExtended, SalesDeliveryNote | 2026-06-05 |
-| `Debales.Application.Tests` | 26 — CreateCustomer, CreateUser, ChangePassword, PostSalesDeliveryNote, GenerateInvoiceFromPurchaseDeliveryNote, PostPurchaseDeliveryNote, **CreateCustomerPayment, CreateSupplierPayment** | 2026-06-06 |
+| `Debales.Application.Tests` | 33 — CreateCustomer, CreateUser, ChangePassword, PostSalesDeliveryNote, GenerateInvoiceFromPurchaseDeliveryNote, PostPurchaseDeliveryNote, CreateCustomerPayment, CreateSupplierPayment, **AssignRoleHandler (4), DeactivateUserHandler (3)** | 2026-06-07 |
 | `Debales.Integration.Tests` | 1 — Smoke tests de solución | 2026-06-04 |
 
 ---
