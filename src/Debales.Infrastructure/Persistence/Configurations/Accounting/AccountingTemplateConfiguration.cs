@@ -38,7 +38,15 @@ internal sealed class AccountingTemplateConfiguration : IEntityTypeConfiguration
             AccountingTemplate.ForSeed(
                 AccountingSeeds.Template_PurchaseInvoicePosted,
                 "PURCH_INV_POSTED", "PurchaseInvoicePosted",
-                "Factura de compra contabilizada", "CPR")
+                "Factura de compra contabilizada", "CPR"),
+            AccountingTemplate.ForSeed(
+                AccountingSeeds.Template_CustomerPaymentConfirmed,
+                "CUST_PAY_CONFIRMED", "CustomerPaymentConfirmed",
+                "Cobro de cliente", "BCO"),
+            AccountingTemplate.ForSeed(
+                AccountingSeeds.Template_SupplierPaymentConfirmed,
+                "SUPP_PAY_CONFIRMED", "SupplierPaymentConfirmed",
+                "Pago a proveedor", "BCO")
         );
     }
 }

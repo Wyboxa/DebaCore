@@ -52,7 +52,31 @@ internal sealed class AccountingTemplateLineConfiguration : IEntityTypeConfigura
                 AccountingSeeds.TemplateLine_Purchase_H_Supplier,
                 AccountingSeeds.Template_PurchaseInvoicePosted,
                 3, TemplateSide.Credit, "{SUPPLIER}", TemplateAmountType.Total,
-                "Proveedor — total factura")
+                "Proveedor — total factura"),
+
+            // Cobro cliente: D: 572 Bancos Total  H: {CUSTOMER} Total
+            AccountingTemplateLine.ForSeed(
+                AccountingSeeds.TemplateLine_CustPay_D_572,
+                AccountingSeeds.Template_CustomerPaymentConfirmed,
+                1, TemplateSide.Debit, "572", TemplateAmountType.Total,
+                "Bancos — cobro recibido"),
+            AccountingTemplateLine.ForSeed(
+                AccountingSeeds.TemplateLine_CustPay_H_Customer,
+                AccountingSeeds.Template_CustomerPaymentConfirmed,
+                2, TemplateSide.Credit, "{CUSTOMER}", TemplateAmountType.Total,
+                "Cliente — cancelación de deuda"),
+
+            // Pago proveedor: D: {SUPPLIER} Total  H: 572 Bancos Total
+            AccountingTemplateLine.ForSeed(
+                AccountingSeeds.TemplateLine_SuppPay_D_Supplier,
+                AccountingSeeds.Template_SupplierPaymentConfirmed,
+                1, TemplateSide.Debit, "{SUPPLIER}", TemplateAmountType.Total,
+                "Proveedor — cancelación de deuda"),
+            AccountingTemplateLine.ForSeed(
+                AccountingSeeds.TemplateLine_SuppPay_H_572,
+                AccountingSeeds.Template_SupplierPaymentConfirmed,
+                2, TemplateSide.Credit, "572", TemplateAmountType.Total,
+                "Bancos — pago realizado")
         );
     }
 }

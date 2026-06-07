@@ -29,6 +29,8 @@ internal static class AccountingSeeds
     // Templates
     internal static readonly Guid Template_SalesInvoicePosted = new("22222222-0000-0000-0000-000000000001");
     internal static readonly Guid Template_PurchaseInvoicePosted = new("22222222-0000-0000-0000-000000000002");
+    internal static readonly Guid Template_CustomerPaymentConfirmed = new("22222222-0000-0000-0000-000000000003");
+    internal static readonly Guid Template_SupplierPaymentConfirmed = new("22222222-0000-0000-0000-000000000004");
 
     // Template lines
     internal static readonly Guid TemplateLine_Sales_D_Customer = new("44444444-0000-0000-0000-000000000001");
@@ -37,4 +39,8 @@ internal static class AccountingSeeds
     internal static readonly Guid TemplateLine_Purchase_D_600 = new("44444444-0000-0000-0000-000000000004");
     internal static readonly Guid TemplateLine_Purchase_D_472 = new("44444444-0000-0000-0000-000000000005");
     internal static readonly Guid TemplateLine_Purchase_H_Supplier = new("44444444-0000-0000-0000-000000000006");
+    internal static readonly Guid TemplateLine_CustPay_D_572 = new("44444444-0000-0000-0000-000000000007");
+    internal static readonly Guid TemplateLine_CustPay_H_Customer = new("44444444-0000-0000-0000-000000000008");
+    internal static readonly Guid TemplateLine_SuppPay_D_Supplier = new("44444444-0000-0000-0000-000000000009");
+    internal static readonly Guid TemplateLine_SuppPay_H_572 = new("44444444-0000-0000-0000-000000000010");
 }

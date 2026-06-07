@@ -40,6 +40,7 @@ Debales es una plataforma CRM/ERP modular con inteligencia artificial supervisad
 | 9 | AddAccountingModule | 2026-06-02 |
 | 10 | AddLicensingModule | 2026-06-04 |
 | 11 | AddSalesQuoteModule | 2026-06-04 |
+| 12 | AddPaymentAccountingTemplates | 2026-06-07 |
 
 ### Módulos con código real
 

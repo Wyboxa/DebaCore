@@ -224,8 +224,8 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-06-06:** Asientos contables automáticos desde cobros/pagos implementados (`CustomerPaymentConfirmed`, `SupplierPaymentConfirmed`). Repositorio GitHub configurado: `https://github.com/Wyboxa/DebaCore` (rama `master`). README.md creado.
-> 11 migraciones aplicadas. 58 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
+> **Actualización 2026-06-07:** Plantillas contables para cobros/pagos añadidas como seed (`AddPaymentAccountingTemplates`). El ciclo contable completo está operativo: facturas → cobros/pagos → asiento automático en cuenta bancaria y de tercero. Repositorio GitHub: `https://github.com/Wyboxa/DebaCore`.
+> 12 migraciones aplicadas. 58 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
 El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada sobre ERP.
@@ -256,7 +256,7 @@ Lo que aún no existe y debe tratarse como propuesta:
 
 - `ModuleRequired` en páginas de lista/detalle individuales (solo en hubs por ahora).
 - AuditLog UI (la tabla existe y se escribe, pero no hay página de consulta).
-- Seed de plantillas contables para `CustomerPaymentConfirmed` y `SupplierPaymentConfirmed` (el motor existe, falta la plantilla en BD).
+- AuditLog UI (la tabla existe y se escribe, pero no hay página de consulta aún).
 - Multi-tenant (`TenantId` en tablas).
 
 ---
@@ -2539,3 +2539,4 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 | SalesQuote (Presupuestos) | Completo — ERP-Quote | `20260604230558_AddSalesQuoteModule` |
 | Informes contables (Balance, Libro diario, Situación) | Completo — ERP-Reports | sin migración |
 | Paridad Compras/Ventas (estado pedido en albarán) | Completo — fix | sin migración |
+| Asientos desde cobros/pagos (motor + plantillas seed) | Completo — 2026-06-06/07 | `20260607121801_AddPaymentAccountingTemplates` |

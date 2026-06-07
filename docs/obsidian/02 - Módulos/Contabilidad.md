@@ -121,8 +121,8 @@ Implementado — migración `AddAccountingModule` (2026-06-02).
 `AccountingSeeds` define GUIDs fijos para:
 - **Diarios**: VTA (Ventas), CPR (Compras), BCO (Banco), CAJ (Caja)
 - **Cuentas**: 300, 400, 430, 472, 475, 477, 570, 572, 600, 621, 628, 640, 700, 705
-- **Plantillas**: SalesInvoicePosted, PurchaseInvoicePosted
-- **Pendiente de seed**: CustomerPaymentConfirmed, SupplierPaymentConfirmed (el código los soporta, la plantilla debe configurarse manualmente en BD)
+- **Plantillas**: SalesInvoicePosted, PurchaseInvoicePosted, CustomerPaymentConfirmed, SupplierPaymentConfirmed
+- Migración `AddPaymentAccountingTemplates` (2026-06-07) — ciclo contable completo operativo
 
 ## Lo que está completo
 
@@ -135,6 +135,5 @@ Implementado — migración `AddAccountingModule` (2026-06-02).
 
 ## Lo que falta
 
-- Seed de plantillas para `CustomerPaymentConfirmed` y `SupplierPaymentConfirmed` (el motor ya existe)
 - Cierre contable con asiento de regularización
 - Remesas bancarias
