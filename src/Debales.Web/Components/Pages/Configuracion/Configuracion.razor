@@ -5,6 +5,8 @@
 @inject GetUsersHandler GetUsers
 @inject GetRolesHandler GetRoles
 @inject NavigationManager Nav
+@inject TutorialService Tutorial
+@implements IDisposable
 
 <PageTitle>Configuración — Debales</PageTitle>
 
@@ -102,6 +104,44 @@ else
             </div>
         </div>
 
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-2 p-2" style="background:var(--db-teal-light);color:var(--db-teal)">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+                            </svg>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">Tutorial</div>
+                            @if (Tutorial.IsEnabled)
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:.65rem">Activado</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary border" style="font-size:.65rem">Desactivado</span>
+                            }
+                        </div>
+                    </div>
+                    <p class="small text-muted mb-3">Tutorial guiado de la plataforma. Puedes activarlo, desactivarlo y reiniciarlo en cualquier momento.</p>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-sm @(Tutorial.IsEnabled ? "btn-outline-danger" : "btn-outline-success")"
+                                @onclick="ToggleTutorialAsync">
+                            @(Tutorial.IsEnabled ? "Desactivar" : "Activar")
+                        </button>
+                        @if (Tutorial.IsEnabled)
+                        {
+                            <button class="btn btn-sm btn-primary" @onclick="StartTutorialAsync">
+                                Iniciar tutorial
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @foreach (var s in _proximos)
         {
             <div class="col-md-6 col-lg-4">
@@ -143,11 +183,35 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        Tutorial.OnChange += StateHasChanged;
         _license = await GetLicense.Handle();
         var users = await GetUsers.Handle(new GetUsersQuery());
         _totalUsers = users.Count;
         _activeUsers = users.Count(u => u.IsActive);
         _roleCount = (await GetRoles.Handle()).Count;
         _loading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Tutorial.LoadAsync();
+        StateHasChanged();
+    }
+
+    private async Task ToggleTutorialAsync()
+    {
+        await Tutorial.SetEnabledAsync(!Tutorial.IsEnabled);
+    }
+
+    private async Task StartTutorialAsync()
+    {
+        await Tutorial.StartAsync();
+        Nav.NavigateTo(TutorialService.Steps[0].NavigateTo ?? "/");
+    }
+
+    public void Dispose()
+    {
+        Tutorial.OnChange -= StateHasChanged;
     }
 }

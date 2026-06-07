@@ -229,3 +229,119 @@ h1:focus {
 
 /* ── Toast ───────────────────────────────────────────── */
 /* (defined in ToastContainer.razor.css) */
+
+/* ── Tutorial overlay ────────────────────────────────── */
+.tutorial-overlay {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 1060;
+    animation: tutorial-slide-in .25s ease;
+}
+
+@keyframes tutorial-slide-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.tutorial-card {
+    background: #fff;
+    border: 1px solid var(--db-border);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(28,59,76,.18);
+    width: 340px;
+    overflow: hidden;
+}
+
+.tutorial-header {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .75rem 1rem .5rem;
+}
+
+.tutorial-badge {
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    background: var(--db-teal-light);
+    color: var(--db-teal-dark);
+    padding: .15rem .5rem;
+    border-radius: 20px;
+}
+
+.tutorial-progress {
+    font-size: .72rem;
+    color: var(--db-text-muted);
+    margin-left: auto;
+}
+
+.tutorial-close {
+    background: none;
+    border: none;
+    padding: .2rem;
+    color: var(--db-text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.tutorial-close:hover { background: var(--db-page-bg); color: #333; }
+
+.tutorial-progress-bar {
+    height: 3px;
+    background: var(--db-border);
+}
+
+.tutorial-progress-fill {
+    height: 100%;
+    background: var(--db-teal);
+    transition: width .3s ease;
+}
+
+.tutorial-body {
+    padding: 1rem 1rem .75rem;
+}
+
+.tutorial-title {
+    font-weight: 600;
+    font-size: .9rem;
+    margin-bottom: .4rem;
+    color: #1a1a2e;
+}
+
+.tutorial-text {
+    font-size: .82rem;
+    color: #555;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.tutorial-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .65rem 1rem .85rem;
+    border-top: 1px solid var(--db-border);
+    background: var(--db-page-bg);
+}
+
+.tutorial-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.tutorial-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--db-border);
+    transition: background .2s, transform .2s;
+}
+
+.tutorial-dot.active {
+    background: var(--db-teal);
+    transform: scale(1.3);
+}

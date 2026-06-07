@@ -1,0 +1,97 @@
+@inject TutorialService Tutorial
+@inject NavigationManager Nav
+@implements IDisposable
+
+@if (Tutorial.IsEnabled && Tutorial.IsActive)
+{
+    <div class="tutorial-overlay" @onclick:stopPropagation="true">
+        <div class="tutorial-card">
+            <div class="tutorial-header">
+                <span class="tutorial-badge">Tutorial</span>
+                <span class="tutorial-progress">@(Tutorial.CurrentStep + 1) de @Tutorial.TotalSteps</span>
+                <button class="tutorial-close" @onclick="SkipAsync" title="Cerrar tutorial">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="tutorial-progress-bar">
+                <div class="tutorial-progress-fill" style="width: @ProgressPercent%"></div>
+            </div>
+
+            <div class="tutorial-body">
+                <h6 class="tutorial-title">@Tutorial.Current.Title</h6>
+                <p class="tutorial-text">@Tutorial.Current.Body</p>
+            </div>
+
+            <div class="tutorial-footer">
+                @if (!Tutorial.IsFirst)
+                {
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="PrevAsync">Anterior</button>
+                }
+                else
+                {
+                    <span></span>
+                }
+
+                <div class="tutorial-dots">
+                    @for (int i = 0; i < Tutorial.TotalSteps; i++)
+                    {
+                        var idx = i;
+                        <span class="tutorial-dot @(idx == Tutorial.CurrentStep ? "active" : "")"></span>
+                    }
+                </div>
+
+                <button class="btn btn-sm btn-primary" @onclick="NextAsync">
+                    @(Tutorial.IsLast ? "Finalizar" : "Siguiente")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        Tutorial.OnChange += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await Tutorial.LoadAsync();
+        StateHasChanged();
+    }
+
+    private double ProgressPercent =>
+        Tutorial.TotalSteps <= 1 ? 100
+        : (Tutorial.CurrentStep / (double)(Tutorial.TotalSteps - 1)) * 100;
+
+    private async Task NextAsync()
+    {
+        var target = Tutorial.Current.NavigateTo;
+        await Tutorial.NextAsync();
+        if (!Tutorial.IsActive) return;
+        var next = Tutorial.Current.NavigateTo;
+        if (next is not null && next != target)
+            Nav.NavigateTo(next);
+    }
+
+    private async Task PrevAsync()
+    {
+        await Tutorial.PreviousAsync();
+        var prev = Tutorial.Current.NavigateTo;
+        if (prev is not null) Nav.NavigateTo(prev);
+    }
+
+    private async Task SkipAsync()
+    {
+        await Tutorial.SkipAsync();
+    }
+
+    public void Dispose()
+    {
+        Tutorial.OnChange -= StateHasChanged;
+    }
+}

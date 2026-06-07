@@ -42,6 +42,7 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddAI(builder.Configuration);
 builder.Services.AddScoped<ToastService>();
+builder.Services.AddScoped<TutorialService>();
 
 var app = builder.Build();
 
