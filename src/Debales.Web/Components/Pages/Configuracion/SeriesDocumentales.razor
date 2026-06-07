@@ -1,0 +1,285 @@
+@page "/configuracion/series"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetNumberSeriesHandler GetHandler
+@inject CreateNumberSeriesHandler CreateHandler
+@inject UpdateNumberSeriesHandler UpdateHandler
+@inject ToastService Toast
+@using Debales.Application.Core.NumberSeries.DTOs
+@using Debales.Application.Core.NumberSeries.Queries.GetNumberSeries
+@using Debales.Application.Core.NumberSeries.Commands.CreateNumberSeries
+@using Debales.Application.Core.NumberSeries.Commands.UpdateNumberSeries
+
+<PageTitle>Series documentales — Debales</PageTitle>
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/configuracion">Configuración</a></li>
+        <li class="breadcrumb-item active">Series documentales</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 fw-bold mb-0">Series documentales</h1>
+    <button class="btn btn-primary btn-sm" @onclick="OpenCreate">+ Nueva serie</button>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Código</th>
+                        <th>Nombre</th>
+                        <th>Prefijo</th>
+                        <th class="text-center">Padding</th>
+                        <th class="text-center">Siguiente</th>
+                        <th>Vista previa</th>
+                        <th class="text-center">Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in _series)
+                    {
+                        <tr>
+                            <td class="ps-3 font-monospace fw-semibold">@s.Code</td>
+                            <td>@s.Name</td>
+                            <td class="font-monospace">@s.Prefix</td>
+                            <td class="text-center">@s.Padding</td>
+                            <td class="text-center">@s.NextNumber</td>
+                            <td class="font-monospace text-primary">@s.Preview</td>
+                            <td class="text-center">
+                                @if (s.IsActive)
+                                {
+                                    <span class="badge bg-success">Activa</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactiva</span>
+                                }
+                            </td>
+                            <td class="text-end pe-3">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenEdit(s)">Editar</button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_series.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                Sin series configuradas. Crea la primera serie para empezar a numerar documentos.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (_showCreate)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nueva serie documental</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showCreate = false"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_createForm" OnValidSubmit="SaveCreate">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label">Código *</label>
+                                <InputText class="form-control font-monospace text-uppercase" @bind-Value="_createForm.Code" placeholder="FAC" />
+                                <div class="form-text">Identificador único, p.ej. FAC, PED, ALB</div>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="_createForm.Name" placeholder="Facturas de venta" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Prefijo *</label>
+                                <InputText class="form-control font-monospace" @bind-Value="_createForm.Prefix" placeholder="FAC-2026-" />
+                                <div class="form-text">Texto antes del número</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Dígitos</label>
+                                <InputNumber class="form-control" @bind-Value="_createForm.Padding" min="1" max="10" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Vista previa</label>
+                                <div class="form-control bg-light font-monospace text-primary">
+                                    @PreviewCreate()
+                                </div>
+                            </div>
+                        </div>
+                        @if (_createError is not null) { <div class="alert alert-danger mt-2">@_createError</div> }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="() => _showCreate = false">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Crear")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showEdit && _editTarget is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar serie — @_editTarget.Code</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showEdit = false"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_editForm" OnValidSubmit="SaveEdit">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Prefijo *</label>
+                                <InputText class="form-control font-monospace" @bind-Value="_editForm.Prefix" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Dígitos</label>
+                                <InputNumber class="form-control" @bind-Value="_editForm.Padding" min="1" max="10" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Vista previa</label>
+                                <div class="form-control bg-light font-monospace text-primary">@PreviewEdit()</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Siguiente número</label>
+                                <InputNumber class="form-control" @bind-Value="_editForm.NextNumber" min="1" />
+                                <div class="form-text">Actual: @_editTarget.NextNumber</div>
+                            </div>
+                        </div>
+                        @if (_editError is not null) { <div class="alert alert-danger mt-2">@_editError</div> }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="() => _showEdit = false">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<NumberSeriesDto> _series = [];
+    private bool _loading = true;
+    private bool _saving;
+
+    private bool _showCreate;
+    private string? _createError;
+    private CreateForm _createForm = new();
+
+    private bool _showEdit;
+    private string? _editError;
+    private NumberSeriesDto? _editTarget;
+    private EditForm _editForm = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _loading = false;
+    }
+
+    private async Task LoadAsync() =>
+        _series = await GetHandler.Handle();
+
+    private void OpenCreate()
+    {
+        _createError = null;
+        _createForm = new();
+        _showCreate = true;
+    }
+
+    private async Task SaveCreate()
+    {
+        _saving = true;
+        _createError = null;
+        try
+        {
+            await CreateHandler.Handle(new CreateNumberSeriesCommand(
+                _createForm.Code!, _createForm.Name!, _createForm.Prefix!, _createForm.Padding, "web"));
+            _showCreate = false;
+            await LoadAsync();
+            Toast.Show("Serie creada correctamente");
+        }
+        catch (InvalidOperationException ex) { _createError = ex.Message; }
+        catch (ArgumentException ex) { _createError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private void OpenEdit(NumberSeriesDto s)
+    {
+        _editError = null;
+        _editTarget = s;
+        _editForm = new() { Name = s.Name, Prefix = s.Prefix, Padding = s.Padding, NextNumber = s.NextNumber };
+        _showEdit = true;
+    }
+
+    private async Task SaveEdit()
+    {
+        _saving = true;
+        _editError = null;
+        try
+        {
+            await UpdateHandler.Handle(new UpdateNumberSeriesCommand(
+                _editTarget!.Id, _editForm.Name!, _editForm.Prefix!, _editForm.Padding,
+                _editForm.NextNumber != _editTarget.NextNumber ? _editForm.NextNumber : null,
+                "web"));
+            _showEdit = false;
+            await LoadAsync();
+            Toast.Show("Serie actualizada");
+        }
+        catch (KeyNotFoundException) { _editError = "Serie no encontrada."; }
+        catch (ArgumentException ex) { _editError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private string PreviewCreate()
+    {
+        if (string.IsNullOrWhiteSpace(_createForm.Prefix)) return "—";
+        var num = "1".PadLeft(_createForm.Padding, '0');
+        return $"{_createForm.Prefix}{num}";
+    }
+
+    private string PreviewEdit()
+    {
+        if (string.IsNullOrWhiteSpace(_editForm.Prefix)) return "—";
+        var num = _editForm.NextNumber.ToString().PadLeft(_editForm.Padding, '0');
+        return $"{_editForm.Prefix}{num}";
+    }
+
+    private sealed class CreateForm
+    {
+        public string? Code { get; set; }
+        public string? Name { get; set; }
+        public string? Prefix { get; set; }
+        public int Padding { get; set; } = 5;
+    }
+
+    private sealed class EditForm
+    {
+        public string? Name { get; set; }
+        public string? Prefix { get; set; }
+        public int Padding { get; set; } = 5;
+        public int NextNumber { get; set; } = 1;
+    }
+}

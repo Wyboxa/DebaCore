@@ -3,6 +3,7 @@ using Debales.Application.Catalog;
 using Debales.Application.Licensing;
 using Debales.Application.Common;
 using Debales.Application.Core.Audit;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Core.Auth;
 using Debales.Application.Core.Roles;
 using Debales.Application.Core.Users;
@@ -47,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IAuditEntryRepository, AuditEntryRepository>();
+        services.AddScoped<INumberSeriesRepository, NumberSeriesRepository>();
 
         // Documents
         services.AddSingleton<IInvoicePdfGenerator, InvoicePdfGenerator>();

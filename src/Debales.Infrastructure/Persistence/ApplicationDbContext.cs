@@ -5,6 +5,7 @@ using Debales.Domain.Catalog;
 using Debales.Domain.Common;
 using Debales.Domain.Core.Audit;
 using Debales.Domain.Core.Modules;
+using Debales.Domain.Core.NumberSeries;
 using Debales.Domain.Core.Roles;
 using Debales.Domain.Core.Users;
 using Debales.Domain.CRM.Activities;
@@ -40,6 +41,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<SystemModule> SystemModules => Set<SystemModule>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+    public DbSet<NumberSeries> NumberSeries => Set<NumberSeries>();
 
     // CRM
     public DbSet<Customer> Customers => Set<Customer>();

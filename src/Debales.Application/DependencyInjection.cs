@@ -112,6 +112,9 @@ using Debales.Application.Core.Users.Commands.ReactivateUser;
 using Debales.Application.Core.Users.Commands.ChangePassword;
 using Debales.Application.Core.Users.Commands.AssignRole;
 using Debales.Application.Core.Roles.Queries.GetRoles;
+using Debales.Application.Core.NumberSeries.Queries.GetNumberSeries;
+using Debales.Application.Core.NumberSeries.Commands.CreateNumberSeries;
+using Debales.Application.Core.NumberSeries.Commands.UpdateNumberSeries;
 using Debales.Application.Sales.Commands.CreateSalesQuote;
 using Debales.Application.Sales.Commands.SendSalesQuote;
 using Debales.Application.Sales.Commands.AcceptSalesQuote;
@@ -141,6 +144,11 @@ public static class DependencyInjection
 
         // Core — Roles
         services.AddScoped<GetRolesHandler>();
+
+        // Core — NumberSeries
+        services.AddScoped<GetNumberSeriesHandler>();
+        services.AddScoped<CreateNumberSeriesHandler>();
+        services.AddScoped<UpdateNumberSeriesHandler>();
 
         // CRM — Customers
         services.AddScoped<CreateCustomerHandler>();
