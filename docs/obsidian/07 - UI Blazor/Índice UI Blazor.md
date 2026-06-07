@@ -110,7 +110,8 @@ related:
 | Home.razor | `/` | Implementada — dashboard |
 | Login.razor | `/login` | Implementada |
 | Analitica.razor | `/analitica` | Estado no confirmado |
-| Configuracion.razor | `/configuracion` | Placeholder |
+| Configuracion.razor | `/configuracion` | Implementada — usuarios, licencia, tutorial |
+| Usuarios.razor | `/configuracion/usuarios` | Implementada |
 
 **Total páginas Razor: 44**
 
@@ -122,4 +123,12 @@ related:
 | `MainLayout.razor` | Layout principal |
 | `ModulePlaceholder.razor` | Componente para páginas en construcción |
 | `ToastContainer.razor` | Notificaciones toast |
+| `TutorialOverlay.razor` | Card flotante de tutorial guiado (8 pasos, persistencia localStorage) |
 | `RedirectToLogin.razor` | Redirect a login si no autenticado |
+
+## Servicios Web
+
+| Servicio | Descripción |
+|----------|-------------|
+| `ToastService` | Notificaciones toast |
+| `TutorialService` | Estado del tutorial (localStorage), 8 pasos, activable desde Configuración |
