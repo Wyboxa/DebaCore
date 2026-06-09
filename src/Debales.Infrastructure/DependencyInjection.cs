@@ -80,6 +80,9 @@ public static class DependencyInjection
         // Payment Terms
         services.AddScoped<IPaymentTermRepository, PaymentTermRepository>();
 
+        // Payment Methods
+        services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
+
         // Sales
         services.AddScoped<ISalesQuoteRepository, SalesQuoteRepository>();
         services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();

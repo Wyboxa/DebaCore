@@ -21,6 +21,7 @@
 @inject GetItemsHandler GetItems
 @inject GetPriceListsHandler GetPriceLists
 @inject GetPaymentTermsHandler GetPaymentTermsList
+@inject GetPaymentMethodsHandler GetPaymentMethodsList
 @inject ToastService Toast
 @inject NavigationManager Nav
 
@@ -140,6 +141,12 @@ else
                     <dd class="col-sm-9">
                         @if (_customer.PaymentTermId.HasValue)
                         { <span>@(_customer.PaymentTermName ?? "—")</span> }
+                        else { <span>—</span> }
+                    </dd>
+                    <dt class="col-sm-3">Forma de pago</dt>
+                    <dd class="col-sm-9">
+                        @if (_customer.PaymentMethodId.HasValue)
+                        { <span>@(_customer.PaymentMethodName ?? "—")</span> }
                         else { <span>—</span> }
                     </dd>
                     <dt class="col-sm-3">Alta</dt>
@@ -710,6 +717,16 @@ else
                                 }
                             </select>
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Forma de pago</label>
+                            <select class="form-select" @bind="_editForm.PaymentMethodIdStr">
+                                <option value="">Sin forma de pago</option>
+                                @foreach (var pm in _availablePaymentMethods)
+                                {
+                                    <option value="@pm.Id">@pm.Name</option>
+                                }
+                            </select>
+                        </div>
                         <hr class="my-2" />
                         <div class="small text-muted fw-semibold mb-2">Dirección</div>
                         <div class="row g-2">
@@ -982,6 +999,7 @@ else
 
     private List<PriceListSummaryDto> _availablePriceLists = [];
     private List<PaymentTermSummaryDto> _availablePaymentTerms = [];
+    private List<PaymentMethodSummaryDto> _availablePaymentMethods = [];
 
     private async Task OpenEdit()
     {
@@ -995,6 +1013,11 @@ else
         {
             var result = await GetPaymentTermsList.Handle(new GetPaymentTermsQuery(IsActive: true, Page: 1, PageSize: 200));
             _availablePaymentTerms = result.Items.ToList();
+        }
+        if (!_availablePaymentMethods.Any())
+        {
+            var result = await GetPaymentMethodsList.Handle(new GetPaymentMethodsQuery(IsActive: true, Page: 1, PageSize: 200));
+            _availablePaymentMethods = result.Items.ToList();
         }
         _editForm = new()
         {
@@ -1010,7 +1033,8 @@ else
             AddressCountry    = _customer.Address?.Country,
             AccountCode       = _customer.AccountCode,
             PriceListIdStr    = _customer.PriceListId?.ToString(),
-            PaymentTermIdStr  = _customer.PaymentTermId?.ToString()
+            PaymentTermIdStr  = _customer.PaymentTermId?.ToString(),
+            PaymentMethodIdStr = _customer.PaymentMethodId?.ToString()
         };
         _showEdit = true;
     }
@@ -1023,6 +1047,7 @@ else
         {
             var priceListId = Guid.TryParse(_editForm.PriceListIdStr, out var plId) ? plId : (Guid?)null;
             var paymentTermId = Guid.TryParse(_editForm.PaymentTermIdStr, out var ptId) ? ptId : (Guid?)null;
+            var paymentMethodId = Guid.TryParse(_editForm.PaymentMethodIdStr, out var pmId) ? pmId : (Guid?)null;
             _customer = await UpdateHandler.Handle(new UpdateCustomerCommand(
                 Id, _editForm.Name!, _editForm.Sector, _editForm.TaxId, _editForm.Phone,
                 _editForm.Email, _editForm.Website,
@@ -1030,7 +1055,8 @@ else
                 _editForm.AddressPostalCode, _editForm.AddressCountry, "web",
                 AccountCode: _editForm.AccountCode,
                 PriceListId: priceListId,
-                PaymentTermId: paymentTermId));
+                PaymentTermId: paymentTermId,
+                PaymentMethodId: paymentMethodId));
             _showEdit = false;
             Toast.Show("Cliente actualizado correctamente");
         }
@@ -1174,6 +1200,7 @@ else
         public string? AccountCode { get; set; }
         public string? PriceListIdStr { get; set; }
         public string? PaymentTermIdStr { get; set; }
+        public string? PaymentMethodIdStr { get; set; }
     }
 
     private sealed class ContactFormModel

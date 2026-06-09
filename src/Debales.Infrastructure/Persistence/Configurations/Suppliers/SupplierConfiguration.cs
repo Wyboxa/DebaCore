@@ -38,6 +38,9 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
         builder.Property(s => s.PaymentTermId);
         builder.HasOne<Debales.Domain.Sales.PaymentTerm>().WithMany().HasForeignKey(s => s.PaymentTermId)
             .OnDelete(DeleteBehavior.SetNull).IsRequired(false);
+        builder.Property(s => s.PaymentMethodId);
+        builder.HasOne<Debales.Domain.Sales.PaymentMethod>().WithMany().HasForeignKey(s => s.PaymentMethodId)
+            .OnDelete(DeleteBehavior.SetNull).IsRequired(false);
 
         builder.HasQueryFilter(s => !s.IsDeleted);
     }

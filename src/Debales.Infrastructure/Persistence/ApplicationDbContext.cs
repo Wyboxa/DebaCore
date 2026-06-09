@@ -67,6 +67,9 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<PaymentTerm> PaymentTerms => Set<PaymentTerm>();
     public DbSet<PaymentTermLine> PaymentTermLines => Set<PaymentTermLine>();
 
+    // Payment Methods
+    public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
+
     // Sales
     public DbSet<SalesQuote> SalesQuotes => Set<SalesQuote>();
     public DbSet<SalesQuoteLine> SalesQuoteLines => Set<SalesQuoteLine>();

@@ -1,0 +1,226 @@
+@page "/configuracion/formas-pago"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetPaymentMethodsHandler GetAll
+@inject CreatePaymentMethodHandler CreateHandler
+@inject UpdatePaymentMethodHandler UpdateHandler
+@inject DeletePaymentMethodHandler DeleteHandler
+@inject ToastService Toast
+
+<PageTitle>Formas de pago — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Formas de pago</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nueva forma</button>
+</div>
+
+<p class="text-muted small mb-3">
+    Define las formas de pago disponibles (contado, transferencia, domiciliación…) para asignarlas a clientes y proveedores.
+</p>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pm in _items)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@pm.Name</td>
+                            <td>@if (pm.Code is not null) { <code>@pm.Code</code> } else { <span class="text-muted">—</span> }</td>
+                            <td class="text-muted small">@(pm.Description ?? "—")</td>
+                            <td><span class="badge @(pm.IsActive ? "bg-success" : "bg-secondary")">@(pm.IsActive ? "Activa" : "Inactiva")</span></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenEdit(pm)">Editar</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(pm.Id, pm.Name)">Eliminar</button>
+                            </td>
+                        </tr>
+                    }
+                    @if (_items.Count == 0)
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">No hay formas de pago configuradas.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (_showForm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editId.HasValue ? "Editar forma de pago" : "Nueva forma de pago")</h5>
+                    <button class="btn-close" @onclick="CloseForm"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Nombre *</label>
+                            <input class="form-control" @bind="_form.Name" placeholder="Ej: Contado, Transferencia, Domiciliación SEPA…" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Código</label>
+                            <input class="form-control text-uppercase" @bind="_form.Code" placeholder="CASH, WIRE…" maxlength="20" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descripción</label>
+                            <input class="form-control" @bind="_form.Description" />
+                        </div>
+                        @if (_editId.HasValue)
+                        {
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isActive" @bind="_form.IsActive" />
+                                    <label class="form-check-label" for="isActive">Forma de pago activa</label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="alert alert-danger py-2 mt-3">@_error</div>
+                    }
+
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseForm">Cancelar</button>
+                        <button type="button" class="btn btn-primary" disabled="@_saving" @onclick="Save">
+                            @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_confirmDeleteId.HasValue)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar forma de pago</h5>
+                    <button class="btn-close" @onclick="() => _confirmDeleteId = null"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Eliminar <strong>@_confirmDeleteName</strong>? Los clientes y proveedores que la tengan asignada quedarán sin forma de pago.
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _confirmDeleteId = null">Cancelar</button>
+                    <button class="btn btn-danger" disabled="@_saving" @onclick="ExecuteDelete">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    bool _loading = true;
+    bool _showForm;
+    bool _saving;
+    string? _error;
+    Guid? _editId;
+    Guid? _confirmDeleteId;
+    string? _confirmDeleteName;
+    List<PaymentMethodSummaryDto> _items = [];
+    FormModel _form = new();
+
+    sealed class FormModel
+    {
+        public string Name { get; set; } = "";
+        public string? Code { get; set; }
+        public string? Description { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await GetAll.Handle(new GetPaymentMethodsQuery(Page: 1, PageSize: 200));
+        _items = result.Items.ToList();
+        _loading = false;
+    }
+
+    void OpenCreate()
+    {
+        _editId = null;
+        _form = new FormModel();
+        _error = null;
+        _showForm = true;
+    }
+
+    void OpenEdit(PaymentMethodSummaryDto pm)
+    {
+        _editId = pm.Id;
+        _error = null;
+        _form = new FormModel { Name = pm.Name, Code = pm.Code, Description = pm.Description, IsActive = pm.IsActive };
+        _showForm = true;
+    }
+
+    void CloseForm() => _showForm = false;
+
+    async Task Save()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_form.Name)) { _error = "El nombre es obligatorio."; return; }
+
+        _saving = true;
+        try
+        {
+            if (_editId.HasValue)
+            {
+                await UpdateHandler.Handle(new UpdatePaymentMethodCommand(_editId.Value, _form.Name, _form.Code, _form.Description, _form.IsActive, "web"));
+                Toast.Show("Forma de pago actualizada.");
+            }
+            else
+            {
+                await CreateHandler.Handle(new CreatePaymentMethodCommand(_form.Name, _form.Code, _form.Description, "web"));
+                Toast.Show("Forma de pago creada.");
+            }
+            _showForm = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    void ConfirmDelete(Guid id, string name) { _confirmDeleteId = id; _confirmDeleteName = name; }
+
+    async Task ExecuteDelete()
+    {
+        _saving = true;
+        try
+        {
+            await DeleteHandler.Handle(new DeletePaymentMethodCommand(_confirmDeleteId!.Value, "web"));
+            Toast.Show("Forma de pago eliminada.");
+            _confirmDeleteId = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+}

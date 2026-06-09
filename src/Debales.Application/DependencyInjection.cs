@@ -82,6 +82,11 @@ using Debales.Application.Sales.Commands.UpdatePaymentTerm;
 using Debales.Application.Sales.Commands.DeletePaymentTerm;
 using Debales.Application.Sales.Queries.GetPaymentTerms;
 using Debales.Application.Sales.Queries.GetPaymentTermById;
+using Debales.Application.Sales.Commands.CreatePaymentMethod;
+using Debales.Application.Sales.Commands.UpdatePaymentMethod;
+using Debales.Application.Sales.Commands.DeletePaymentMethod;
+using Debales.Application.Sales.Queries.GetPaymentMethods;
+using Debales.Application.Sales.Queries.GetPaymentMethodById;
 using Debales.Application.Sales.Commands.CreateSalesInvoice;
 using Debales.Application.Sales.Commands.PostSalesInvoice;
 using Debales.Application.Sales.Commands.CancelSalesInvoice;
@@ -268,6 +273,13 @@ public static class DependencyInjection
         services.AddScoped<DeletePaymentTermHandler>();
         services.AddScoped<GetPaymentTermsHandler>();
         services.AddScoped<GetPaymentTermByIdHandler>();
+
+        // Payment Methods
+        services.AddScoped<CreatePaymentMethodHandler>();
+        services.AddScoped<UpdatePaymentMethodHandler>();
+        services.AddScoped<DeletePaymentMethodHandler>();
+        services.AddScoped<GetPaymentMethodsHandler>();
+        services.AddScoped<GetPaymentMethodByIdHandler>();
 
         // Sales — Invoices
         services.AddScoped<CreateSalesInvoiceHandler>();

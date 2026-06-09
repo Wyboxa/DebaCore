@@ -92,4 +92,12 @@ public sealed class Customer : AuditableEntity
         PaymentTermId = paymentTermId;
         SetUpdated(updatedBy);
     }
+
+    public Guid? PaymentMethodId { get; private set; }
+
+    public void SetPaymentMethod(Guid? paymentMethodId, string updatedBy)
+    {
+        PaymentMethodId = paymentMethodId;
+        SetUpdated(updatedBy);
+    }
 }

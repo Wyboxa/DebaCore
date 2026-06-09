@@ -17,7 +17,9 @@ public sealed record CustomerDetailDto(
     Guid? PriceListId = null,
     string? PriceListName = null,
     Guid? PaymentTermId = null,
-    string? PaymentTermName = null);
+    string? PaymentTermName = null,
+    Guid? PaymentMethodId = null,
+    string? PaymentMethodName = null);
 
 public sealed record AddressDto(
     string Street,

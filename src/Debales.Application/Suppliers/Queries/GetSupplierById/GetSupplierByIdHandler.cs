@@ -8,11 +8,14 @@ public sealed class GetSupplierByIdHandler
 {
     private readonly ISupplierRepository _suppliers;
     private readonly IPaymentTermRepository _paymentTerms;
+    private readonly IPaymentMethodRepository _paymentMethods;
 
-    public GetSupplierByIdHandler(ISupplierRepository suppliers, IPaymentTermRepository paymentTerms)
+    public GetSupplierByIdHandler(ISupplierRepository suppliers, IPaymentTermRepository paymentTerms,
+        IPaymentMethodRepository paymentMethods)
     {
         _suppliers = suppliers;
         _paymentTerms = paymentTerms;
+        _paymentMethods = paymentMethods;
     }
 
     public async Task<SupplierDetailDto?> Handle(GetSupplierByIdQuery query, CancellationToken cancellationToken = default)
@@ -27,6 +30,13 @@ public sealed class GetSupplierByIdHandler
             paymentTermName = pt?.Name;
         }
 
-        return UpdateSupplierHandler.ToDto(supplier, paymentTermName);
+        string? paymentMethodName = null;
+        if (supplier.PaymentMethodId.HasValue)
+        {
+            var pm = await _paymentMethods.GetByIdAsync(supplier.PaymentMethodId.Value, cancellationToken);
+            paymentMethodName = pm?.Name;
+        }
+
+        return UpdateSupplierHandler.ToDto(supplier, paymentTermName, paymentMethodName);
     }
 }

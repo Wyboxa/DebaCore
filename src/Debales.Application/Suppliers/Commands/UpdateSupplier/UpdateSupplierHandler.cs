@@ -9,12 +9,15 @@ public sealed class UpdateSupplierHandler
 {
     private readonly ISupplierRepository _suppliers;
     private readonly IPaymentTermRepository _paymentTerms;
+    private readonly IPaymentMethodRepository _paymentMethods;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UpdateSupplierHandler(ISupplierRepository suppliers, IPaymentTermRepository paymentTerms, IUnitOfWork unitOfWork)
+    public UpdateSupplierHandler(ISupplierRepository suppliers, IPaymentTermRepository paymentTerms,
+        IPaymentMethodRepository paymentMethods, IUnitOfWork unitOfWork)
     {
         _suppliers = suppliers;
         _paymentTerms = paymentTerms;
+        _paymentMethods = paymentMethods;
         _unitOfWork = unitOfWork;
     }
 
@@ -43,6 +46,7 @@ public sealed class UpdateSupplierHandler
 
         supplier.SetAccountCode(command.AccountCode, command.UpdatedBy);
         supplier.SetPaymentTerm(command.PaymentTermId, command.UpdatedBy);
+        supplier.SetPaymentMethod(command.PaymentMethodId, command.UpdatedBy);
 
         _suppliers.Update(supplier);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -54,10 +58,17 @@ public sealed class UpdateSupplierHandler
             paymentTermName = pt?.Name;
         }
 
-        return ToDto(supplier, paymentTermName);
+        string? paymentMethodName = null;
+        if (supplier.PaymentMethodId.HasValue)
+        {
+            var pm = await _paymentMethods.GetByIdAsync(supplier.PaymentMethodId.Value, cancellationToken);
+            paymentMethodName = pm?.Name;
+        }
+
+        return ToDto(supplier, paymentTermName, paymentMethodName);
     }
 
-    internal static SupplierDetailDto ToDto(Supplier supplier, string? paymentTermName = null) =>
+    internal static SupplierDetailDto ToDto(Supplier supplier, string? paymentTermName = null, string? paymentMethodName = null) =>
         new(supplier.Id, supplier.Name, supplier.TaxId,
             supplier.Phone, supplier.Email, supplier.Website,
             supplier.ContactName, supplier.Notes, supplier.IsActive,
@@ -67,5 +78,7 @@ public sealed class UpdateSupplierHandler
             supplier.CreatedAt, supplier.CreatedBy, supplier.UpdatedAt,
             AccountCode: supplier.AccountCode,
             PaymentTermId: supplier.PaymentTermId,
-            PaymentTermName: paymentTermName);
+            PaymentTermName: paymentTermName,
+            PaymentMethodId: supplier.PaymentMethodId,
+            PaymentMethodName: paymentMethodName);
 }

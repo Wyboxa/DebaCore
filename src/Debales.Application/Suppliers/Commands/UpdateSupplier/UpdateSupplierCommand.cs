@@ -15,4 +15,5 @@ public sealed record UpdateSupplierCommand(
     string? AddressCountry,
     string UpdatedBy,
     string? AccountCode = null,
-    Guid? PaymentTermId = null);
+    Guid? PaymentTermId = null,
+    Guid? PaymentMethodId = null);

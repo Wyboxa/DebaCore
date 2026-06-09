@@ -9,13 +9,15 @@ public sealed class GetCustomerByIdHandler
     private readonly ICustomerRepository _customers;
     private readonly IPriceListRepository _priceLists;
     private readonly IPaymentTermRepository _paymentTerms;
+    private readonly IPaymentMethodRepository _paymentMethods;
 
     public GetCustomerByIdHandler(ICustomerRepository customers, IPriceListRepository priceLists,
-        IPaymentTermRepository paymentTerms)
+        IPaymentTermRepository paymentTerms, IPaymentMethodRepository paymentMethods)
     {
         _customers = customers;
         _priceLists = priceLists;
         _paymentTerms = paymentTerms;
+        _paymentMethods = paymentMethods;
     }
 
     public async Task<CustomerDetailDto?> Handle(GetCustomerByIdQuery query, CancellationToken cancellationToken = default)
@@ -37,6 +39,13 @@ public sealed class GetCustomerByIdHandler
             paymentTermName = pt?.Name;
         }
 
+        string? paymentMethodName = null;
+        if (customer.PaymentMethodId.HasValue)
+        {
+            var pm = await _paymentMethods.GetByIdAsync(customer.PaymentMethodId.Value, cancellationToken);
+            paymentMethodName = pm?.Name;
+        }
+
         return new CustomerDetailDto(
             customer.Id, customer.Name, customer.Sector, customer.TaxId,
             customer.Phone, customer.Email, customer.Website, customer.IsActive,
@@ -48,6 +57,8 @@ public sealed class GetCustomerByIdHandler
             PriceListId: customer.PriceListId,
             PriceListName: priceListName,
             PaymentTermId: customer.PaymentTermId,
-            PaymentTermName: paymentTermName);
+            PaymentTermName: paymentTermName,
+            PaymentMethodId: customer.PaymentMethodId,
+            PaymentMethodName: paymentMethodName);
     }
 }

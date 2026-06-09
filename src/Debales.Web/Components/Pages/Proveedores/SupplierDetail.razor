@@ -8,6 +8,7 @@
 @inject DeleteSupplierItemCodeHandler DeleteItemCode
 @inject GetItemsHandler GetItems
 @inject GetPaymentTermsHandler GetPaymentTermsList
+@inject GetPaymentMethodsHandler GetPaymentMethodsList
 @inject ToastService Toast
 @inject NavigationManager Nav
 
@@ -118,6 +119,13 @@ else
                             <dd class="mb-3">
                                 @if (_supplier.PaymentTermId.HasValue)
                                 { <span>@(_supplier.PaymentTermName ?? "—")</span> }
+                                else { <span>—</span> }
+                            </dd>
+
+                            <dt class="small text-muted fw-semibold mb-1">Forma de pago</dt>
+                            <dd class="mb-3">
+                                @if (_supplier.PaymentMethodId.HasValue)
+                                { <span>@(_supplier.PaymentMethodName ?? "—")</span> }
                                 else { <span>—</span> }
                             </dd>
 
@@ -322,6 +330,18 @@ else
                                 </select>
                             </div>
                         </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Forma de pago</label>
+                                <select class="form-select" @bind="_editForm.PaymentMethodIdStr">
+                                    <option value="">Sin forma de pago</option>
+                                    @foreach (var pm in _availablePaymentMethods)
+                                    {
+                                        <option value="@pm.Id">@pm.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
                         <hr class="my-2" />
                         <div class="small text-muted fw-semibold mb-2">Dirección</div>
                         <div class="row g-2 mb-2">
@@ -371,6 +391,7 @@ else
     private EditFormModel _editForm = new();
 
     private List<PaymentTermSummaryDto> _availablePaymentTerms = [];
+    private List<PaymentMethodSummaryDto> _availablePaymentMethods = [];
 
     // ── Item codes ──────────────────────────────────────────────────────────
     private List<SupplierItemCodeDto> _itemCodes = [];
@@ -483,6 +504,11 @@ else
             var pts = await GetPaymentTermsList.Handle(new GetPaymentTermsQuery(Page: 1, PageSize: 200));
             _availablePaymentTerms = pts.Items.ToList();
         }
+        if (!_availablePaymentMethods.Any())
+        {
+            var pms = await GetPaymentMethodsList.Handle(new GetPaymentMethodsQuery(IsActive: true, Page: 1, PageSize: 200));
+            _availablePaymentMethods = pms.Items.ToList();
+        }
         _editForm = new()
         {
             Name          = _supplier!.Name,
@@ -496,8 +522,9 @@ else
             AddressCity       = _supplier.Address?.City,
             AddressPostalCode = _supplier.Address?.PostalCode,
             AddressCountry    = _supplier.Address?.Country,
-            AccountCode       = _supplier.AccountCode,
-            PaymentTermIdStr  = _supplier.PaymentTermId?.ToString() ?? ""
+            AccountCode        = _supplier.AccountCode,
+            PaymentTermIdStr   = _supplier.PaymentTermId?.ToString() ?? "",
+            PaymentMethodIdStr = _supplier.PaymentMethodId?.ToString() ?? ""
         };
         _showEdit = true;
     }
@@ -509,13 +536,15 @@ else
         try
         {
             var paymentTermId = Guid.TryParse(_editForm.PaymentTermIdStr, out var ptg) ? ptg : (Guid?)null;
+            var paymentMethodId = Guid.TryParse(_editForm.PaymentMethodIdStr, out var pmg) ? pmg : (Guid?)null;
             _supplier = await UpdateHandler.Handle(new UpdateSupplierCommand(
                 Id, _editForm.Name!, _editForm.TaxId, _editForm.Phone, _editForm.Email,
                 _editForm.Website, _editForm.ContactName, _editForm.Notes,
                 _editForm.AddressStreet, _editForm.AddressCity,
                 _editForm.AddressPostalCode, _editForm.AddressCountry, "web",
                 AccountCode: _editForm.AccountCode,
-                PaymentTermId: paymentTermId));
+                PaymentTermId: paymentTermId,
+                PaymentMethodId: paymentMethodId));
             _showEdit = false;
             Toast.Show("Proveedor actualizado correctamente");
         }
@@ -539,5 +568,6 @@ else
         public string? AddressCountry { get; set; }
         public string? AccountCode { get; set; }
         public string? PaymentTermIdStr { get; set; }
+        public string? PaymentMethodIdStr { get; set; }
     }
 }
