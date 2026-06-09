@@ -7,6 +7,19 @@ using Debales.Application.Catalog.Commands.UpdateItem;
 using Debales.Application.Catalog.Queries.GetItems;
 using Debales.Application.Catalog.Queries.GetItemById;
 using Debales.Application.Catalog.Queries.GetCatalogLookups;
+using Debales.Application.Catalog.Queries.GetPriceLists;
+using Debales.Application.Catalog.Queries.GetPriceListById;
+using Debales.Application.Catalog.Commands.CreatePriceList;
+using Debales.Application.Catalog.Commands.UpdatePriceList;
+using Debales.Application.Catalog.Commands.SetItemPrice;
+using Debales.Application.Catalog.Commands.RemoveItemPrice;
+using Debales.Application.Catalog.Queries.GetSupplierItemCodes;
+using Debales.Application.Catalog.Commands.UpsertSupplierItemCode;
+using Debales.Application.Catalog.Commands.DeleteSupplierItemCode;
+using Debales.Application.Catalog.Queries.GetCustomerItemCodes;
+using Debales.Application.Catalog.Commands.UpsertCustomerItemCode;
+using Debales.Application.Catalog.Commands.DeleteCustomerItemCode;
+using Debales.Application.Catalog.Queries.GetItemPrice;
 using Debales.Application.CRM.Dashboard;
 using Debales.Application.Suppliers.Commands.CreateSupplier;
 using Debales.Application.Suppliers.Commands.UpdateSupplier;
@@ -180,6 +193,23 @@ public static class DependencyInjection
         services.AddScoped<GetItemsHandler>();
         services.AddScoped<GetItemByIdHandler>();
         services.AddScoped<GetCatalogLookupsHandler>();
+
+        // Catalog — Price Lists
+        services.AddScoped<GetPriceListsHandler>();
+        services.AddScoped<GetPriceListByIdHandler>();
+        services.AddScoped<CreatePriceListHandler>();
+        services.AddScoped<UpdatePriceListHandler>();
+        services.AddScoped<SetItemPriceHandler>();
+        services.AddScoped<RemoveItemPriceHandler>();
+
+        // Catalog — Supplier / Customer item codes
+        services.AddScoped<GetSupplierItemCodesHandler>();
+        services.AddScoped<UpsertSupplierItemCodeHandler>();
+        services.AddScoped<DeleteSupplierItemCodeHandler>();
+        services.AddScoped<GetCustomerItemCodesHandler>();
+        services.AddScoped<UpsertCustomerItemCodeHandler>();
+        services.AddScoped<DeleteCustomerItemCodeHandler>();
+        services.AddScoped<GetItemPriceHandler>();
 
         // Suppliers
         services.AddScoped<CreateSupplierHandler>();

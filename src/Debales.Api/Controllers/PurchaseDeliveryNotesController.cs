@@ -11,6 +11,7 @@ namespace Debales.Api.Controllers;
 [ApiController]
 [Route("api/purchasing/delivery-notes")]
 [Authorize]
+[RequiresModule("Purchasing")]
 public sealed class PurchaseDeliveryNotesController : ControllerBase
 {
     private readonly CreatePurchaseDeliveryNoteHandler _create;

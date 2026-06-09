@@ -18,6 +18,7 @@ namespace Debales.Api.Controllers;
 [ApiController]
 [Route("api/accounting")]
 [Authorize]
+[RequiresModule("Accounting")]
 public sealed class AccountingController : ControllerBase
 {
     private readonly CreateAccountHandler _createAccount;

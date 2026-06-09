@@ -1,3 +1,6 @@
+using Debales.Application.Catalog.Commands.DeleteCustomerItemCode;
+using Debales.Application.Catalog.Commands.UpsertCustomerItemCode;
+using Debales.Application.Catalog.Queries.GetCustomerItemCodes;
 using Debales.Application.CRM.Activities.Commands.CompleteActivity;
 using Debales.Application.CRM.Activities.Commands.LogActivity;
 using Debales.Application.CRM.Activities.Queries.GetActivitiesByCustomer;
@@ -38,6 +41,9 @@ public sealed class CustomersController : ControllerBase
     private readonly CreateOpportunityHandler _createOpportunity;
     private readonly UpdateOpportunityStatusHandler _updateOpportunityStatus;
     private readonly GetOpportunitiesByCustomerHandler _getOpportunities;
+    private readonly GetCustomerItemCodesHandler _getItemCodes;
+    private readonly UpsertCustomerItemCodeHandler _upsertItemCode;
+    private readonly DeleteCustomerItemCodeHandler _deleteItemCode;
 
     public CustomersController(
         CreateCustomerHandler create, UpdateCustomerHandler update,
@@ -46,7 +52,10 @@ public sealed class CustomersController : ControllerBase
         LogActivityHandler logActivity, CompleteActivityHandler completeActivity, GetActivitiesByCustomerHandler getActivities,
         AddNoteHandler addNote, GetNotesByCustomerHandler getNotes,
         CreateOpportunityHandler createOpportunity, UpdateOpportunityStatusHandler updateOpportunityStatus,
-        GetOpportunitiesByCustomerHandler getOpportunities)
+        GetOpportunitiesByCustomerHandler getOpportunities,
+        GetCustomerItemCodesHandler getItemCodes,
+        UpsertCustomerItemCodeHandler upsertItemCode,
+        DeleteCustomerItemCodeHandler deleteItemCode)
     {
         _create = create; _update = update; _getById = getById; _getAll = getAll;
         _addContact = addContact; _getContacts = getContacts;
@@ -54,6 +63,9 @@ public sealed class CustomersController : ControllerBase
         _addNote = addNote; _getNotes = getNotes;
         _createOpportunity = createOpportunity; _updateOpportunityStatus = updateOpportunityStatus;
         _getOpportunities = getOpportunities;
+        _getItemCodes = getItemCodes;
+        _upsertItemCode = upsertItemCode;
+        _deleteItemCode = deleteItemCode;
     }
 
     // ── Customers ─────────────────────────────────────────────────────────────
@@ -191,6 +203,36 @@ public sealed class CustomersController : ControllerBase
         }
         catch (KeyNotFoundException) { return NotFound(); }
     }
+
+    // ── Item codes ────────────────────────────────────────────────────────────
+
+    [HttpGet("{id:guid}/item-codes")]
+    public async Task<IActionResult> GetItemCodes(Guid id, CancellationToken ct)
+        => Ok(await _getItemCodes.Handle(new GetCustomerItemCodesQuery(id), ct));
+
+    [HttpPost("{id:guid}/item-codes")]
+    public async Task<IActionResult> UpsertItemCode(Guid id, [FromBody] UpsertCustomerItemCodeRequest req, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _upsertItemCode.Handle(
+                new UpsertCustomerItemCodeCommand(id, req.ItemId, req.CustomerCode, req.Description, "api"), ct);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    [HttpDelete("{id:guid}/item-codes/{itemId:guid}")]
+    public async Task<IActionResult> DeleteItemCode(Guid id, Guid itemId, CancellationToken ct)
+    {
+        try
+        {
+            await _deleteItemCode.Handle(new DeleteCustomerItemCodeCommand(id, itemId), ct);
+            return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+    }
 }
 
 // ── Request DTOs ──────────────────────────────────────────────────────────────
@@ -205,3 +247,4 @@ public sealed record LogActivityRequest(ActivityType Type, string Subject, DateT
 public sealed record AddNoteRequest(string Content);
 public sealed record CreateOpportunityRequest(string Title, decimal? EstimatedValue, DateTime? ExpectedCloseDate);
 public sealed record UpdateOpportunityStatusRequest(OpportunityStatus Status);
+public sealed record UpsertCustomerItemCodeRequest(Guid ItemId, string CustomerCode, string? Description);

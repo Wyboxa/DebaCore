@@ -256,7 +256,7 @@ else if (_result is not null)
         {
             var item = _catalogItems.FirstOrDefault(i => i.Id == itemId);
             if (item is not null)
-                _formLines[idx].UnitPrice = item.SalePrice;
+                _formLines[idx].UnitPrice = item.PurchasePrice;
         }
     }
 

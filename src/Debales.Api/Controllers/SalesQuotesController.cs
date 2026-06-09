@@ -14,6 +14,7 @@ namespace Debales.Api.Controllers;
 [ApiController]
 [Route("api/sales/quotes")]
 [Authorize]
+[RequiresModule("Sales")]
 public sealed class SalesQuotesController : ControllerBase
 {
     private readonly CreateSalesQuoteHandler _create;

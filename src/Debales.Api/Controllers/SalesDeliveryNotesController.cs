@@ -11,6 +11,7 @@ namespace Debales.Api.Controllers;
 [ApiController]
 [Route("api/sales/delivery-notes")]
 [Authorize]
+[RequiresModule("Sales")]
 public sealed class SalesDeliveryNotesController : ControllerBase
 {
     private readonly CreateSalesDeliveryNoteHandler _create;

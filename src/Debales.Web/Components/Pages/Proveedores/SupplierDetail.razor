@@ -3,6 +3,10 @@
 @attribute [Authorize]
 @inject GetSupplierByIdHandler GetById
 @inject UpdateSupplierHandler UpdateHandler
+@inject GetSupplierItemCodesHandler GetItemCodes
+@inject UpsertSupplierItemCodeHandler UpsertItemCode
+@inject DeleteSupplierItemCodeHandler DeleteItemCode
+@inject GetItemsHandler GetItems
 @inject ToastService Toast
 @inject NavigationManager Nav
 
@@ -47,10 +51,10 @@ else
     </div>
 
     <ul class="nav nav-tabs mb-3">
-        @foreach (var tab in new[] { "info", "notas" })
+        @foreach (var tab in new[] { "info", "notas", "codigos" })
         {
             <li class="nav-item">
-                <button class="nav-link @(_tab == tab ? "active" : "")" @onclick="() => _tab = tab">
+                <button class="nav-link @(_tab == tab ? "active" : "")" @onclick="() => OnTabChange(tab)">
                     @TabLabel(tab)
                 </button>
             </li>
@@ -133,6 +137,128 @@ else
             </div>
         </div>
     }
+
+    @if (_tab == "codigos")
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Códigos de artículo del proveedor</span>
+                <button class="btn btn-sm btn-primary" @onclick="OpenAddCode">+ Añadir código</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Artículo</th>
+                            <th>Código proveedor</th>
+                            <th>Descripción</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_codesLoading)
+                        {
+                            <tr><td colspan="4" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var c in _itemCodes)
+                            {
+                                <tr>
+                                    <td><code>@c.ItemCode</code> @c.ItemName</td>
+                                    <td><strong>@c.SupplierCode</strong></td>
+                                    <td class="text-muted">@(c.Description ?? "—")</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-secondary me-1"
+                                                @onclick="() => OpenEditCode(c)">Editar</button>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => ConfirmDeleteCode(c)">Eliminar</button>
+                                    </td>
+                                </tr>
+                            }
+                            @if (!_itemCodes.Any())
+                            {
+                                <tr><td colspan="4" class="text-center text-muted py-3">Sin códigos configurados.</td></tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@* ── Add/edit item code modal ── *@
+@if (_showCodeModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editingCode is not null ? "Editar código" : "Añadir código")</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showCodeModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="form-label">Artículo *</label>
+                            @if (_editingCode is not null)
+                            {
+                                <input class="form-control" readonly value="@(_editingCode.ItemCode + " — " + _editingCode.ItemName)" />
+                            }
+                            else
+                            {
+                                <select class="form-select" @bind="_codeForm.ItemIdStr">
+                                    <option value="">Seleccionar…</option>
+                                    @foreach (var item in _allItems)
+                                    {
+                                        <option value="@item.Id">@item.Code — @item.Name</option>
+                                    }
+                                </select>
+                            }
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Código del proveedor *</label>
+                            <InputText class="form-control text-uppercase" @bind-Value="_codeForm.SupplierCode" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descripción</label>
+                            <InputText class="form-control" @bind-Value="_codeForm.Description" />
+                        </div>
+                    </div>
+                    @if (_codeError is not null) { <div class="alert alert-danger mt-2">@_codeError</div> }
+                    <div class="d-flex gap-2 justify-content-end mt-3">
+                        <button type="button" class="btn btn-secondary" @onclick="() => _showCodeModal = false">Cancelar</button>
+                        <button type="button" class="btn btn-primary" @onclick="SaveCode" disabled="@_saving">
+                            @(_saving ? "Guardando…" : "Guardar")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Delete confirm ── *@
+@if (_deletingCode is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar</h5>
+                    <button type="button" class="btn-close" @onclick="() => _deletingCode = null"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Eliminar el código <strong>@_deletingCode.SupplierCode</strong> para @_deletingCode.ItemName?
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary btn-sm" @onclick="() => _deletingCode = null">Cancelar</button>
+                    <button class="btn btn-danger btn-sm" @onclick="ExecuteDeleteCode" disabled="@_saving">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 @if (_showEdit && _supplier is not null)
@@ -224,6 +350,16 @@ else
     private string? _editError;
     private EditFormModel _editForm = new();
 
+    // ── Item codes ──────────────────────────────────────────────────────────
+    private List<SupplierItemCodeDto> _itemCodes = [];
+    private List<ItemSummaryDto> _allItems = [];
+    private bool _codesLoading;
+    private bool _showCodeModal;
+    private SupplierItemCodeDto? _editingCode;
+    private SupplierItemCodeDto? _deletingCode;
+    private string? _codeError;
+    private CodeForm _codeForm = new();
+
     protected override async Task OnInitializedAsync()
     {
         _supplier = await GetById.Handle(new GetSupplierByIdQuery(Id));
@@ -232,10 +368,90 @@ else
 
     private static string TabLabel(string tab) => tab switch
     {
-        "info"  => "Información",
-        "notas" => "Notas",
-        _       => tab
+        "info"    => "Información",
+        "notas"   => "Notas",
+        "codigos" => "Códigos",
+        _         => tab
     };
+
+    private async Task OnTabChange(string tab)
+    {
+        _tab = tab;
+        if (tab == "codigos" && !_itemCodes.Any())
+            await LoadCodesAsync();
+    }
+
+    private async Task LoadCodesAsync()
+    {
+        _codesLoading = true;
+        _itemCodes = await GetItemCodes.Handle(new GetSupplierItemCodesQuery(Id));
+        _codesLoading = false;
+    }
+
+    private async Task OpenAddCode()
+    {
+        if (!_allItems.Any())
+        {
+            var paged = await GetItems.Handle(new GetItemsQuery(null, null, null, 1, 1000));
+            _allItems = paged.Items.ToList();
+        }
+        _editingCode = null;
+        _codeForm = new();
+        _codeError = null;
+        _showCodeModal = true;
+    }
+
+    private void OpenEditCode(SupplierItemCodeDto c)
+    {
+        _editingCode = c;
+        _codeForm = new CodeForm { SupplierCode = c.SupplierCode, Description = c.Description };
+        _codeError = null;
+        _showCodeModal = true;
+    }
+
+    private async Task SaveCode()
+    {
+        var itemId = _editingCode?.ItemId ?? (Guid.TryParse(_codeForm.ItemIdStr, out var g) ? g : Guid.Empty);
+        if (itemId == Guid.Empty) { _codeError = "Selecciona un artículo."; return; }
+        if (string.IsNullOrWhiteSpace(_codeForm.SupplierCode)) { _codeError = "El código del proveedor es obligatorio."; return; }
+
+        _saving = true;
+        _codeError = null;
+        try
+        {
+            await UpsertItemCode.Handle(new UpsertSupplierItemCodeCommand(
+                Id, itemId, _codeForm.SupplierCode!, _codeForm.Description, "web"));
+            _showCodeModal = false;
+            await LoadCodesAsync();
+            Toast.Show("Código guardado");
+        }
+        catch (Exception ex) { _codeError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private void ConfirmDeleteCode(SupplierItemCodeDto c) => _deletingCode = c;
+
+    private async Task ExecuteDeleteCode()
+    {
+        if (_deletingCode is null) return;
+        _saving = true;
+        try
+        {
+            await DeleteItemCode.Handle(new DeleteSupplierItemCodeCommand(Id, _deletingCode.ItemId));
+            _deletingCode = null;
+            await LoadCodesAsync();
+            Toast.Show("Código eliminado");
+        }
+        catch (Exception ex) { Toast.Show(ex.Message); }
+        finally { _saving = false; }
+    }
+
+    private sealed class CodeForm
+    {
+        public string? ItemIdStr { get; set; }
+        public string? SupplierCode { get; set; }
+        public string? Description { get; set; }
+    }
 
     private void OpenEdit()
     {

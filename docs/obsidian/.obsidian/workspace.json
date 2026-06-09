@@ -11,10 +11,14 @@
             "id": "0d32f538526805f4",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Vista gráfica"
+              "type": "markdown",
+              "state": {
+                "file": "03 - Entidades/Índice de entidades.md",
+                "mode": "preview",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Índice de entidades"
             }
           }
         ]
@@ -181,6 +185,8 @@
   },
   "active": "0d32f538526805f4",
   "lastOpenFiles": [
+    "08 - Pendientes/Mejoras UI.md",
+    "08 - Pendientes/Mejoras de datos demo.md",
     "00 - Inicio.md",
     "Sin título.base",
     "Sin título.canvas",

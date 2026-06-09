@@ -8,4 +8,5 @@ public sealed record CustomerSummaryDto(
     string? Phone,
     string? Email,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    Guid? PriceListId = null);

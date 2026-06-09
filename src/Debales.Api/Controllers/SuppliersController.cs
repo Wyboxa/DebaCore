@@ -1,3 +1,6 @@
+using Debales.Application.Catalog.Commands.DeleteSupplierItemCode;
+using Debales.Application.Catalog.Commands.UpsertSupplierItemCode;
+using Debales.Application.Catalog.Queries.GetSupplierItemCodes;
 using Debales.Application.Suppliers.Commands.CreateSupplier;
 using Debales.Application.Suppliers.Commands.UpdateSupplier;
 using Debales.Application.Suppliers.Queries.GetSupplierById;
@@ -16,17 +19,26 @@ public sealed class SuppliersController : ControllerBase
     private readonly UpdateSupplierHandler _update;
     private readonly GetSupplierByIdHandler _getById;
     private readonly GetSuppliersHandler _getAll;
+    private readonly GetSupplierItemCodesHandler _getItemCodes;
+    private readonly UpsertSupplierItemCodeHandler _upsertItemCode;
+    private readonly DeleteSupplierItemCodeHandler _deleteItemCode;
 
     public SuppliersController(
         CreateSupplierHandler create,
         UpdateSupplierHandler update,
         GetSupplierByIdHandler getById,
-        GetSuppliersHandler getAll)
+        GetSuppliersHandler getAll,
+        GetSupplierItemCodesHandler getItemCodes,
+        UpsertSupplierItemCodeHandler upsertItemCode,
+        DeleteSupplierItemCodeHandler deleteItemCode)
     {
         _create = create;
         _update = update;
         _getById = getById;
         _getAll = getAll;
+        _getItemCodes = getItemCodes;
+        _upsertItemCode = upsertItemCode;
+        _deleteItemCode = deleteItemCode;
     }
 
     [HttpGet]
@@ -74,4 +86,36 @@ public sealed class SuppliersController : ControllerBase
         string Name, string? TaxId, string? Phone, string? Email, string? Website,
         string? ContactName, string? Notes,
         string? AddressStreet, string? AddressCity, string? AddressPostalCode, string? AddressCountry);
+
+    // ── Item codes ────────────────────────────────────────────────────────────
+
+    [HttpGet("{id:guid}/item-codes")]
+    public async Task<IActionResult> GetItemCodes(Guid id, CancellationToken ct)
+        => Ok(await _getItemCodes.Handle(new GetSupplierItemCodesQuery(id), ct));
+
+    [HttpPost("{id:guid}/item-codes")]
+    public async Task<IActionResult> UpsertItemCode(Guid id, [FromBody] UpsertSupplierItemCodeRequest req, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _upsertItemCode.Handle(
+                new UpsertSupplierItemCodeCommand(id, req.ItemId, req.SupplierCode, req.Description, "api"), ct);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    [HttpDelete("{id:guid}/item-codes/{itemId:guid}")]
+    public async Task<IActionResult> DeleteItemCode(Guid id, Guid itemId, CancellationToken ct)
+    {
+        try
+        {
+            await _deleteItemCode.Handle(new DeleteSupplierItemCodeCommand(id, itemId), ct);
+            return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+    }
+
+    public sealed record UpsertSupplierItemCodeRequest(Guid ItemId, string SupplierCode, string? Description);
 }

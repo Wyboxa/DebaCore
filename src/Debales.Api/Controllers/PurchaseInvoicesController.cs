@@ -13,6 +13,7 @@ namespace Debales.Api.Controllers;
 [ApiController]
 [Route("api/purchasing/invoices")]
 [Authorize]
+[RequiresModule("Purchasing")]
 public sealed class PurchaseInvoicesController : ControllerBase
 {
     private readonly CreatePurchaseInvoiceHandler _create;

@@ -224,8 +224,8 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-06-09:** NumberSeries cableado en los **13 handlers** de creación de documentos (PRE/PV/ALV/FV/RV/PC/ALC/FC/RC). Migración seed `AddNumberSeriesSeed` con 9 series por defecto. `GetNextNumberAsync` eliminado de las 9 interfaces y repositorios de documentos. 65 tests pasando. Repositorio GitHub: `https://github.com/Wyboxa/DebaCore`.
-> 14 migraciones (seed pendiente de `database update`). 65 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
+> **Actualización 2026-06-09:** NumberSeries cableado en los **13 handlers** de creación de documentos (PRE/PV/ALV/FV/RV/PC/ALC/FC/RC). Migración seed `AddNumberSeriesSeed` con 9 series por defecto. `GetNextNumberAsync` eliminado de las 9 interfaces y repositorios de documentos. API REST para NumberSeries (`NumberSeriesController`). Middleware de licencias: `RequiresModuleAttribute` (API, 15 controllers) + `ModuleRouteGuard` (Web, `MainLayout`). Módulo Tarifas: `PriceList`, `ItemPrice`, `SupplierItemCode`, `CustomerItemCode` — Domain + Application (12 handlers) + Infrastructure + API + UI completos. Migración `20260609163530_AddPriceListModule`. 65 tests pasando. Repositorio GitHub: `https://github.com/Wyboxa/DebaCore`.
+> 15 migraciones (seed `AddNumberSeriesSeed` pendiente de `database update`). 65 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
 El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada sobre ERP.
@@ -2391,9 +2391,7 @@ Commit: `feat(erp6)` | Sin migración propia (usa datos de módulos anteriores).
 
 Commit: `feat(licensing)` | Migración: `20260604121322_AddLicensingModule`.
 
-Implementado: entidades `License`, `LicenseModule`, `SubscriptionPlan`, controller, UI, handlers, repositorio.
-
-Pendiente funcional: middleware que restrinja acceso por módulo contratado (el módulo existe pero no gatea aún).
+Implementado: entidades `License`, `LicenseModule`, `SubscriptionPlan`, controller, UI, handlers, repositorio. Middleware completo: `RequiresModuleAttribute` (API, 15 controllers) + `ModuleRouteGuard` en `MainLayout` (Web, 10 rutas protegidas).
 
 ## Fase 7 — Despliegue Docker ✓ COMPLETA
 
@@ -2548,3 +2546,6 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 | Tests `AssignRoleHandler` (4) + `DeactivateUserHandler` (3) — cobertura completa handlers | Completo — 2026-06-07 | sin migración |
 | NumberSeries (series documentales configurables, UI `/configuracion/series`) | Completo — 2026-06-07 | `20260607141730_AddNumberSeriesModule` |
 | NumberSeries cableado en handlers (13 handlers de creación de documentos) | Completo — 2026-06-09 | `20260609153343_AddNumberSeriesSeed` |
+| API REST NumberSeries (`NumberSeriesController` GET/POST/PUT) | Completo — 2026-06-09 | sin migración |
+| Middleware licencias API (`RequiresModuleAttribute`, 15 controllers) + Web (`ModuleRouteGuard` en MainLayout) | Completo — 2026-06-09 | sin migración |
+| Tarifas y códigos de artículo por tercero (`PriceList`, `ItemPrice`, `SupplierItemCode`, `CustomerItemCode`) — Domain + 12 handlers + API (PriceListsController, sub-rutas en Suppliers/Customers) + UI (Tarifas.razor, TarifaDetalle.razor, tabs Códigos en Proveedor/Cliente) | Completo — 2026-06-09 | `20260609163530_AddPriceListModule` |

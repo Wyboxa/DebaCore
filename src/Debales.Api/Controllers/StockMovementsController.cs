@@ -11,6 +11,7 @@ namespace Debales.Api.Controllers;
 [ApiController]
 [Route("api/inventory")]
 [Authorize]
+[RequiresModule("Inventory")]
 public sealed class StockMovementsController : ControllerBase
 {
     private readonly CreateStockMovementHandler _create;

@@ -8,4 +8,5 @@ public sealed record ItemSummaryDto(
     string UnitOfMeasureName,
     bool IsService,
     decimal SalePrice,
-    bool IsActive);
+    bool IsActive,
+    decimal PurchasePrice = 0m);

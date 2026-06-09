@@ -1,0 +1,397 @@
+@page "/catalogo/tarifas/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetPriceListByIdHandler GetPriceList
+@inject UpdatePriceListHandler UpdateHandler
+@inject SetItemPriceHandler SetPrice
+@inject RemoveItemPriceHandler RemovePrice
+@inject GetItemsHandler GetItems
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Tarifa — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_pl is null)
+{
+    <div class="alert alert-warning">Tarifa no encontrada. <a href="/catalogo/tarifas">Volver a tarifas</a></div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/catalogo/tarifas">Tarifas</a></li>
+            <li class="breadcrumb-item active">@_pl.Name</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="h3 mb-1">@_pl.Name</h1>
+            <div class="d-flex gap-2">
+                @if (_pl.IsActive)
+                {
+                    <span class="badge bg-success">Activa</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Inactiva</span>
+                }
+                @if (_pl.ValidFrom.HasValue || _pl.ValidTo.HasValue)
+                {
+                    <span class="badge bg-light text-dark border">
+                        @(_pl.ValidFrom?.ToString("dd/MM/yyyy") ?? "…") – @(_pl.ValidTo?.ToString("dd/MM/yyyy") ?? "…")
+                    </span>
+                }
+            </div>
+        </div>
+        <button class="btn btn-outline-primary" @onclick="OpenEdit">Editar</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_pl.Description))
+    {
+        <p class="text-muted mb-3">@_pl.Description</p>
+    }
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Precios por artículo</span>
+            <button class="btn btn-sm btn-primary" @onclick="OpenAddPriceAsync">+ Añadir artículo</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Código</th>
+                        <th>Artículo</th>
+                        <th>Unidad</th>
+                        <th class="text-end">Precio (€)</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ip in _pl.Items)
+                    {
+                        <tr>
+                            <td><code>@ip.ItemCode</code></td>
+                            <td>@ip.ItemName</td>
+                            <td class="text-muted">@(ip.UnitOfMeasure ?? "—")</td>
+                            <td class="text-end fw-semibold">@ip.Price.ToString("N2")</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary me-1"
+                                        @onclick="() => OpenEditPrice(ip)">Editar</button>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => ConfirmRemovePrice(ip)">Quitar</button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_pl.Items.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-3">Sin artículos en esta tarifa.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom fw-semibold">Auditoría</div>
+        <div class="card-body">
+            <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                    <tr>
+                        <th class="text-muted fw-normal" style="width:20%">Creado</th>
+                        <td>@_pl.CreatedAt.ToString("dd/MM/yyyy HH:mm") @(_pl.CreatedBy is not null ? $"por {_pl.CreatedBy}" : "")</td>
+                    </tr>
+                    @if (_pl.UpdatedAt.HasValue)
+                    {
+                        <tr>
+                            <th class="text-muted fw-normal">Modificado</th>
+                            <td>@_pl.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") @(_pl.UpdatedBy is not null ? $"por {_pl.UpdatedBy}" : "")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@* ── Edit price list modal ── *@
+@if (_showEdit && _pl is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar tarifa</h5>
+                    <button type="button" class="btn-close" @onclick="CloseEdit"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_editForm" OnValidSubmit="SaveEdit">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Name" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Descripción</label>
+                                <InputTextArea class="form-control" @bind-Value="_editForm.Description" rows="2" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Válida desde</label>
+                                <InputDate class="form-control" @bind-Value="_editForm.ValidFrom" TValue="DateOnly?" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Válida hasta</label>
+                                <InputDate class="form-control" @bind-Value="_editForm.ValidTo" TValue="DateOnly?" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input" @bind-Value="_editForm.IsActive" id="chkActive" />
+                                    <label class="form-check-label" for="chkActive">Tarifa activa</label>
+                                </div>
+                            </div>
+                        </div>
+                        @if (_editError is not null)
+                        {
+                            <div class="alert alert-danger mt-2">@_editError</div>
+                        }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseEdit">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">
+                                @(_saving ? "Guardando…" : "Guardar")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Add/edit item price modal ── *@
+@if (_showPriceModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editingItemId.HasValue ? "Editar precio" : "Añadir artículo")</h5>
+                    <button type="button" class="btn-close" @onclick="ClosePriceModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2">
+                        @if (!_editingItemId.HasValue)
+                        {
+                            <div class="col-12">
+                                <label class="form-label">Artículo *</label>
+                                <select class="form-select" @bind="_priceForm.ItemIdStr">
+                                    <option value="">Seleccionar…</option>
+                                    @foreach (var item in _allItems)
+                                    {
+                                        <option value="@item.Id">@item.Code — @item.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-12">
+                                <label class="form-label">Artículo</label>
+                                <input class="form-control" readonly value="@_editingItemName" />
+                            </div>
+                        }
+                        <div class="col-12">
+                            <label class="form-label">Precio (€) *</label>
+                            <input type="number" class="form-control" step="0.01" min="0"
+                                   @bind="_priceForm.Price" />
+                        </div>
+                    </div>
+                    @if (_priceError is not null)
+                    {
+                        <div class="alert alert-danger mt-2">@_priceError</div>
+                    }
+                    <div class="d-flex gap-2 justify-content-end mt-3">
+                        <button type="button" class="btn btn-secondary" @onclick="ClosePriceModal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" @onclick="SavePrice" disabled="@_saving">
+                            @(_saving ? "Guardando…" : "Guardar")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Remove confirm modal ── *@
+@if (_removingItem is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar</h5>
+                    <button type="button" class="btn-close" @onclick="() => _removingItem = null"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Quitar <strong>@_removingItem.ItemName</strong> de esta tarifa?
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary btn-sm" @onclick="() => _removingItem = null">Cancelar</button>
+                    <button class="btn btn-danger btn-sm" @onclick="RemoveItemPrice" disabled="@_saving">Quitar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private PriceListDetailDto? _pl;
+    private List<ItemSummaryDto> _allItems = [];
+    private bool _loading = true;
+    private bool _saving;
+
+    // Edit tarifa
+    private bool _showEdit;
+    private string? _editError;
+    private EditForm2 _editForm = new();
+
+    // Item price modal
+    private bool _showPriceModal;
+    private Guid? _editingItemId;
+    private string? _editingItemName;
+    private string? _priceError;
+    private PriceForm _priceForm = new();
+
+    // Remove confirm
+    private ItemPriceDto? _removingItem;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _pl = await GetPriceList.Handle(new GetPriceListByIdQuery(Id));
+        _loading = false;
+    }
+
+    // ── Edit tarifa ──────────────────────────────────────────────────────────
+
+    private void OpenEdit()
+    {
+        if (_pl is null) return;
+        _editForm = new EditForm2
+        {
+            Name = _pl.Name,
+            Description = _pl.Description,
+            ValidFrom = _pl.ValidFrom,
+            ValidTo = _pl.ValidTo,
+            IsActive = _pl.IsActive
+        };
+        _editError = null;
+        _showEdit = true;
+    }
+
+    private void CloseEdit() => _showEdit = false;
+
+    private async Task SaveEdit()
+    {
+        if (string.IsNullOrWhiteSpace(_editForm.Name)) { _editError = "El nombre es obligatorio."; return; }
+        _saving = true;
+        _editError = null;
+        try
+        {
+            _pl = await UpdateHandler.Handle(new UpdatePriceListCommand(
+                Id, _editForm.Name!, _editForm.Description,
+                _editForm.ValidFrom, _editForm.ValidTo, _editForm.IsActive, "web"));
+            _showEdit = false;
+            Toast.Show("Tarifa actualizada");
+        }
+        catch (ArgumentException ex) { _editError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    // ── Item prices ──────────────────────────────────────────────────────────
+
+    private async Task OpenAddPriceAsync()
+    {
+        if (!_allItems.Any())
+        {
+            var paged = await GetItems.Handle(new GetItemsQuery(null, null, null, 1, 1000));
+            _allItems = paged.Items.ToList();
+        }
+        _editingItemId = null;
+        _editingItemName = null;
+        _priceForm = new();
+        _priceError = null;
+        _showPriceModal = true;
+    }
+
+    private void OpenEditPrice(ItemPriceDto ip)
+    {
+        _editingItemId = ip.ItemId;
+        _editingItemName = $"{ip.ItemCode} — {ip.ItemName}";
+        _priceForm = new PriceForm { ItemIdStr = ip.ItemId.ToString(), Price = ip.Price };
+        _priceError = null;
+        _showPriceModal = true;
+    }
+
+    private void ClosePriceModal() => _showPriceModal = false;
+
+    private async Task SavePrice()
+    {
+        var itemId = _editingItemId ?? (Guid.TryParse(_priceForm.ItemIdStr, out var g) ? g : Guid.Empty);
+        if (itemId == Guid.Empty) { _priceError = "Selecciona un artículo."; return; }
+        if (_priceForm.Price < 0) { _priceError = "El precio no puede ser negativo."; return; }
+
+        _saving = true;
+        _priceError = null;
+        try
+        {
+            _pl = await SetPrice.Handle(new SetItemPriceCommand(Id, itemId, _priceForm.Price, "web"));
+            _showPriceModal = false;
+            Toast.Show("Precio guardado");
+        }
+        catch (Exception ex) { _priceError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private void ConfirmRemovePrice(ItemPriceDto ip) => _removingItem = ip;
+
+    private async Task RemoveItemPrice()
+    {
+        if (_removingItem is null) return;
+        _saving = true;
+        try
+        {
+            _pl = await RemovePrice.Handle(new RemoveItemPriceCommand(Id, _removingItem.ItemId, "web"));
+            _removingItem = null;
+            Toast.Show("Artículo eliminado de la tarifa");
+        }
+        catch (Exception ex) { Toast.Show(ex.Message); }
+        finally { _saving = false; }
+    }
+
+    private sealed class EditForm2
+    {
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public DateOnly? ValidFrom { get; set; }
+        public DateOnly? ValidTo { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private sealed class PriceForm
+    {
+        public string? ItemIdStr { get; set; }
+        public decimal Price { get; set; }
+    }
+}

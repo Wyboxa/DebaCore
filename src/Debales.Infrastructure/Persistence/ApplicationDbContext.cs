@@ -58,6 +58,10 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<ItemFamily> ItemFamilies => Set<ItemFamily>();
     public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<TaxType> TaxTypes => Set<TaxType>();
+    public DbSet<PriceList> PriceLists => Set<PriceList>();
+    public DbSet<ItemPrice> ItemPrices => Set<ItemPrice>();
+    public DbSet<SupplierItemCode> SupplierItemCodes => Set<SupplierItemCode>();
+    public DbSet<CustomerItemCode> CustomerItemCodes => Set<CustomerItemCode>();
 
     // Sales
     public DbSet<SalesQuote> SalesQuotes => Set<SalesQuote>();

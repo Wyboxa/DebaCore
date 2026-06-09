@@ -38,6 +38,11 @@ La API aplica migraciones automáticamente al arrancar mediante `context.Databas
 | 8 | `AddERP4Module` | 2026-06-01 | Inventory: Warehouses, Locations, StockMovements, StockBalances |
 | 9 | `AddAccountingModule` | 2026-06-02 | Accounting: Accounts, FiscalYears, Periods, Journals, Entries, Templates |
 | 10 | `AddLicensingModule` | 2026-06-04 | Licensing: SubscriptionPlans, Licenses, LicenseModules |
+| 11 | `AddSalesQuoteModule` | 2026-06-04 | Sales: SalesQuotes, SalesQuoteLines |
+| 12 | `AddPaymentAccountingTemplates` | 2026-06-07 | Accounting: AccountingTemplates seed para cobros/pagos |
+| 13 | `AddNumberSeriesModule` | 2026-06-07 | Core: NumberSeries |
+| 14 | `AddNumberSeriesSeed` | 2026-06-09 | Seed: 9 series documentales por defecto (pendiente `database update`) |
+| 15 | `AddPriceListModule` | 2026-06-09 | Catalog: PriceLists, ItemPrices, SupplierItemCodes, CustomerItemCodes |
 
 ## Nota sobre AddERP3Module
 

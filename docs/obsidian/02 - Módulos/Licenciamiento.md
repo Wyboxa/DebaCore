@@ -110,8 +110,36 @@ Comportamiento:
 
 Aplicado en: `Ventas.razor`, `Compras.razor`, `Inventario.razor`, `Facturacion.razor`, `Analitica.razor`
 
+## Middleware de licencias en API (implementado 2026-06-09)
+
+`RequiresModuleAttribute` en `src/Debales.Api/Filters/RequiresModuleAttribute.cs` — implementa `IFilterFactory` para inyectar `ILicenseService` vía DI:
+
+```csharp
+[RequiresModule("Sales")]
+public sealed class SalesOrdersController : ControllerBase { ... }
+```
+
+Comportamiento:
+- Sin licencia válida → permite todo (nueva instalación)
+- Licencia válida + módulo no contratado → HTTP 403 `{ "error": "Módulo 'X' no licenciado." }`
+
+Aplicado a 15 controllers: Sales (6), Purchasing (5), Inventory (2), Accounting (1), AI (1).
+
+## Middleware de licencias en Web (implementado 2026-06-09)
+
+`ModuleRouteGuard.razor` en `MainLayout` — cubre automáticamente todas las páginas individuales sin modificarlas:
+
+```razor
+<ModuleRouteGuard>
+    @Body
+</ModuleRouteGuard>
+```
+
+Tabla de rutas protegidas: `/ventas`, `/facturacion/ventas*`, `/facturacion/rectificativas-venta*`, `/compras`, `/facturacion/compras*`, `/facturacion/rectificativas-compra*`, `/inventario`, `/contabilidad`, `/ia`, `/analitica`.
+
+Patrón optimista: muestra contenido mientras comprueba (igual que `ModuleRequired`). Reactivo a `LocationChanged`.
+
 ## Lo que falta
 
-- Aplicar `ModuleRequired` en páginas de lista/detalle individuales (no solo hubs)
 - Modo offline con expiración controlada
 - Renovación desde UI

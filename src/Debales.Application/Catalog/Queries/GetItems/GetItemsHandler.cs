@@ -18,7 +18,8 @@ public sealed class GetItemsHandler
             i.Id, i.Code, i.Name,
             i.Family?.Name,
             i.UnitOfMeasure?.Name ?? string.Empty,
-            i.IsService, i.SalePrice, i.IsActive)).ToList();
+            i.IsService, i.SalePrice, i.IsActive,
+            PurchasePrice: i.PurchasePrice)).ToList();
 
         return new PagedResult<ItemSummaryDto>(dtos, result.TotalCount, result.Page, result.PageSize);
     }

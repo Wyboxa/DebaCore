@@ -12,7 +12,18 @@ related:
 
 # Pendientes priorizados
 
-> Última actualización: 2026-06-07
+> Última actualización: 2026-06-09
+
+## Resueltos en sesión 2026-06-09
+
+| Item | Estado |
+|------|--------|
+| P1 — ModuleRequired en páginas individuales | ✓ Resuelto — `ModuleRouteGuard` en `MainLayout` (cubre todas las rutas automáticamente) |
+| P3 — NumberSeries cableado en handlers (13 handlers) | ✓ Resuelto — migración `AddNumberSeriesSeed`, serie consumida en cada Create |
+| API REST NumberSeries | ✓ Resuelto — `NumberSeriesController` GET/POST/PUT |
+| `RequiresModuleAttribute` en 15 controllers API | ✓ Resuelto — `IFilterFactory` + `ILicenseService` |
+
+---
 
 ## Resueltos en sesión 2026-06-07
 
@@ -46,39 +57,19 @@ related:
 
 ---
 
-## Prioridad 1 — ModuleRequired en páginas de lista (no solo hubs)
-
-**Qué falta**: `ModuleRequired` está aplicado en los hubs (`/ventas`, `/compras`, `/inventario`, `/facturacion`, `/analitica`), pero no en las páginas de lista y detalle individuales (`/ventas/pedidos`, `/contabilidad/asientos`, etc.).
-
-**Impacto**: Un usuario sin módulo Sales puede navegar directamente a `/ventas/pedidos` sin bloqueo.
-
-**Solución**: Envolver `@body` en cada página de lista/detalle con `<ModuleRequired Module="Sales">`.
-
----
-
-## Prioridad 2 — Tarifas de precio y códigos de artículo por tercero
+## Prioridad 1 — Tarifas de precio y códigos de artículo por tercero
 
 **Qué falta**: Las entidades `PriceList`, `ItemPrice`, `SupplierItemCode`, `CustomerItemCode` del CLAUDE.md §42.4 no están implementadas.
 
 ---
 
-## Prioridad 3 — NumberSeries en handlers de documentos
-
-**Qué falta**: `NumberSeries.Consume()` existe y funciona, pero no está cableado en los handlers de creación de documentos (`CreateSalesInvoiceHandler`, `CreateSalesOrderHandler`, `CreatePurchaseInvoiceHandler`, etc.).
-
-**Impacto**: Los números de factura/pedido/albarán siguen siendo entrada manual o secuencial simple. Las series configuradas en `/configuracion/series` no se usan todavía.
-
-**Estimación**: Media. Cada handler necesita recibir `INumberSeriesRepository` y llamar a `Consume()` con el código de serie correcto.
-
----
-
-## Prioridad 4 — Importación masiva de datos
+## Prioridad 2 — Importación masiva de datos
 
 **Qué falta**: No hay funcionalidad de importación CSV/Excel para clientes, proveedores, artículos.
 
 ---
 
-## Prioridad 5 — Multi-tenant
+## Prioridad 3 — Multi-tenant
 
 **Qué falta**: Decisión arquitectónica pendiente (ver CLAUDE.md §47.2). Si se decide multi-tenant, todas las tablas necesitan `TenantId`.
 

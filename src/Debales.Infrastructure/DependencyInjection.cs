@@ -65,6 +65,9 @@ public static class DependencyInjection
         services.AddScoped<IItemFamilyRepository, ItemFamilyRepository>();
         services.AddScoped<IUnitOfMeasureRepository, UnitOfMeasureRepository>();
         services.AddScoped<ITaxTypeRepository, TaxTypeRepository>();
+        services.AddScoped<IPriceListRepository, PriceListRepository>();
+        services.AddScoped<ISupplierItemCodeRepository, SupplierItemCodeRepository>();
+        services.AddScoped<ICustomerItemCodeRepository, CustomerItemCodeRepository>();
 
         // CRM
         services.AddScoped<ICustomerRepository, CustomerRepository>();

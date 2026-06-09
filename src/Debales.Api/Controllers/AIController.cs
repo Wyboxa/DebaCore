@@ -9,6 +9,7 @@ namespace Debales.Api.Controllers;
 [ApiController]
 [Route("api/ai")]
 [Authorize]
+[RequiresModule("AI")]
 public sealed class AIController : ControllerBase
 {
     private readonly ChatWithCustomerHandler _chat;

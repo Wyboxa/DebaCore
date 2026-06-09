@@ -10,6 +10,7 @@ namespace Debales.Api.Controllers;
 [ApiController]
 [Route("api/purchasing/credit-notes")]
 [Authorize]
+[RequiresModule("Purchasing")]
 public sealed class PurchaseCreditNotesController : ControllerBase
 {
     private readonly CreatePurchaseCreditNoteHandler _create;

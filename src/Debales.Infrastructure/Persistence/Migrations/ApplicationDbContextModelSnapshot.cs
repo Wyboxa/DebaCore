@@ -975,7 +975,8 @@ namespace Debales.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AccountCode")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1010,6 +1011,9 @@ namespace Debales.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<Guid?>("PriceListId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Sector")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -1030,6 +1034,8 @@ namespace Debales.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(255)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PriceListId");
 
                     b.HasIndex("TaxId")
                         .IsUnique()
@@ -1123,6 +1129,51 @@ namespace Debales.Infrastructure.Persistence.Migrations
                     b.HasIndex("CustomerId");
 
                     b.ToTable("CrmOpportunities", (string)null);
+                });
+
+            modelBuilder.Entity("Debales.Domain.Catalog.CustomerItemCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CustomerCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("CustomerId", "ItemId")
+                        .IsUnique();
+
+                    b.ToTable("CustomerItemCodes", (string)null);
                 });
 
             modelBuilder.Entity("Debales.Domain.Catalog.Item", b =>
@@ -1246,6 +1297,147 @@ namespace Debales.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("ItemFamilies", (string)null);
+                });
+
+            modelBuilder.Entity("Debales.Domain.Catalog.ItemPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("PriceListId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("PriceListId", "ItemId")
+                        .IsUnique();
+
+                    b.ToTable("ItemPrices", (string)null);
+                });
+
+            modelBuilder.Entity("Debales.Domain.Catalog.PriceList", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateOnly?>("ValidFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("PriceLists", (string)null);
+                });
+
+            modelBuilder.Entity("Debales.Domain.Catalog.SupplierItemCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SupplierCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("SupplierId", "ItemId")
+                        .IsUnique();
+
+                    b.ToTable("SupplierItemCodes", (string)null);
                 });
 
             modelBuilder.Entity("Debales.Domain.Catalog.TaxType", b =>
@@ -3586,6 +3778,11 @@ namespace Debales.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Debales.Domain.CRM.Customers.Customer", b =>
                 {
+                    b.HasOne("Debales.Domain.Catalog.PriceList", null)
+                        .WithMany()
+                        .HasForeignKey("PriceListId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.OwnsOne("Debales.Domain.CRM.Customers.Address", "Address", b1 =>
                         {
                             b1.Property<Guid>("CustomerId")
@@ -3644,6 +3841,17 @@ namespace Debales.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Debales.Domain.Catalog.CustomerItemCode", b =>
+                {
+                    b.HasOne("Debales.Domain.Catalog.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+                });
+
             modelBuilder.Entity("Debales.Domain.Catalog.Item", b =>
                 {
                     b.HasOne("Debales.Domain.Catalog.ItemFamily", "Family")
@@ -3667,6 +3875,36 @@ namespace Debales.Infrastructure.Persistence.Migrations
                     b.Navigation("TaxType");
 
                     b.Navigation("UnitOfMeasure");
+                });
+
+            modelBuilder.Entity("Debales.Domain.Catalog.ItemPrice", b =>
+                {
+                    b.HasOne("Debales.Domain.Catalog.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Debales.Domain.Catalog.PriceList", "PriceList")
+                        .WithMany("Items")
+                        .HasForeignKey("PriceListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+
+                    b.Navigation("PriceList");
+                });
+
+            modelBuilder.Entity("Debales.Domain.Catalog.SupplierItemCode", b =>
+                {
+                    b.HasOne("Debales.Domain.Catalog.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Item");
                 });
 
             modelBuilder.Entity("Debales.Domain.Core.Roles.RolePermission", b =>
@@ -4155,6 +4393,11 @@ namespace Debales.Infrastructure.Persistence.Migrations
                     b.Navigation("Notes");
 
                     b.Navigation("Opportunities");
+                });
+
+            modelBuilder.Entity("Debales.Domain.Catalog.PriceList", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Debales.Domain.Core.Roles.Role", b =>

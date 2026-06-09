@@ -42,8 +42,13 @@ related:
 | [[AIController API]] | `api/ai` | IA |
 | [[LicensesController API]] | `api/licenses` | Licenciamiento |
 | `SubscriptionPlansController` | `api/subscription-plans` | Licenciamiento |
+| `NumberSeriesController` | `api/numberseries` | Core |
 
-**Total: 22 controllers**
+**Total: 23 controllers**
+
+## Middleware de licencias (2026-06-09)
+
+`RequiresModuleAttribute` (`src/Debales.Api/Filters/`) aplicado sobre 15 controllers mediante `IFilterFactory`. Sin licencia → permite todo. Licencia válida + módulo no contratado → HTTP 403.
 
 ## Endpoints minimal API (Debales.Web)
 

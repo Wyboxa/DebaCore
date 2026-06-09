@@ -25,7 +25,7 @@ Gestión del catálogo de artículos y servicios, incluyendo familias, unidades 
 
 ## Estado
 
-Implementado — migración `AddCatalogModule` (2026-05-28).
+Implementado — migración `AddCatalogModule` (2026-05-28). Tarifas implementadas — migración `AddPriceListModule` (2026-06-09).
 
 ## Entidades principales
 
@@ -35,6 +35,10 @@ Implementado — migración `AddCatalogModule` (2026-05-28).
 | [[ItemFamily]] | Familia de artículos (PROD, SERV, etc.) |
 | [[UnitOfMeasure]] | Unidad de medida (UN, KG, H, etc.) |
 | [[TaxType]] | Tipo de IVA con tasa (IVA21=21%, IVA10=10%) |
+| `PriceList` | Tarifa de venta con vigencia (ValidFrom/ValidTo), activa/inactiva |
+| `ItemPrice` | Precio de artículo dentro de una tarifa (cascade desde PriceList) |
+| `SupplierItemCode` | Código del proveedor para un artículo |
+| `CustomerItemCode` | Código del cliente para un artículo |
 
 ## Handlers
 
@@ -45,12 +49,27 @@ Implementado — migración `AddCatalogModule` (2026-05-28).
 | `GetItemsHandler` | Query (paginado, con filtros por familia e isService) |
 | `GetItemByIdHandler` | Query |
 | `GetCatalogLookupsHandler` | Query (devuelve datos de referencia para dropdowns) |
+| `GetPriceListsHandler` | Query (paginado, filtro por nombre/activo) |
+| `GetPriceListByIdHandler` | Query (include Items→Item→UoM) |
+| `CreatePriceListHandler` | Command |
+| `UpdatePriceListHandler` | Command (activa/desactiva) |
+| `SetItemPriceHandler` | Command (upsert de precio en tarifa) |
+| `RemoveItemPriceHandler` | Command |
+| `GetSupplierItemCodesHandler` | Query |
+| `UpsertSupplierItemCodeHandler` | Command (crea o actualiza) |
+| `DeleteSupplierItemCodeHandler` | Command |
+| `GetCustomerItemCodesHandler` | Query |
+| `UpsertCustomerItemCodeHandler` | Command |
+| `DeleteCustomerItemCodeHandler` | Command |
 
 ## Controllers
 
 | Controller | Ruta base |
 |------------|-----------|
 | `ItemsController` | `api/items` |
+| `PriceListsController` | `api/pricelists` (GET/POST/PUT, sub-rutas `/items`) |
+| `SuppliersController` | `api/suppliers/{id}/item-codes` (GET/POST/DELETE) |
+| `CustomersController` | `api/customers/{id}/item-codes` (GET/POST/DELETE) |
 
 ## Páginas Blazor
 
@@ -58,6 +77,10 @@ Implementado — migración `AddCatalogModule` (2026-05-28).
 |--------|------|--------|
 | `Items.razor` | `/catalogo` | Implementada — lista con búsqueda, filtros y creación inline |
 | `ItemDetail.razor` | `/catalogo/{id}` | Implementada — ficha de artículo |
+| `Tarifas.razor` | `/catalogo/tarifas` | Implementada — lista con búsqueda y creación inline |
+| `TarifaDetalle.razor` | `/catalogo/tarifas/{id}` | Implementada — ficha con tabla de precios (add/edit/remove) |
+| `SupplierDetail.razor` (tab Códigos) | `/proveedores/{id}` → tab | Implementada |
+| `CustomerDetail.razor` (tab Códigos) | `/crm/customers/{id}` → tab | Implementada |
 
 ## Repositorios
 
@@ -65,6 +88,9 @@ Implementado — migración `AddCatalogModule` (2026-05-28).
 - `IItemFamilyRepository` → `ItemFamilyRepository`
 - `IUnitOfMeasureRepository` → `UnitOfMeasureRepository`
 - `ITaxTypeRepository` → `TaxTypeRepository`
+- `IPriceListRepository` → `PriceListRepository`
+- `ISupplierItemCodeRepository` → `SupplierItemCodeRepository`
+- `ICustomerItemCodeRepository` → `CustomerItemCodeRepository`
 
 ## Seeds
 
@@ -79,9 +105,10 @@ Implementado — migración `AddCatalogModule` (2026-05-28).
 - Precios de venta y compra
 - Búsqueda y filtro por tipo y familia desde UI
 - Datos de referencia para dropdowns en pedidos/albaranes/facturas
+- Tarifas de precio (`PriceList` + `ItemPrice`) — CRUD completo con UI
+- Códigos de artículo por proveedor y cliente — upsert/delete con UI en fichas
 
 ## Lo que falta
 
-- Tarifas de precio por cliente (`PriceList`, `ItemPrice`)
-- Códigos de artículo por proveedor/cliente (`SupplierItemCode`, `CustomerItemCode`)
 - Control de stock mínimo y máximo
+- Aplicación de tarifas en líneas de pedido/presupuesto

@@ -5,6 +5,7 @@
 @inject CreateSalesOrderHandler CreateHandler
 @inject GetItemsHandler GetItems
 @inject GetCustomersHandler GetCustomers
+@inject GetItemPriceHandler GetItemPrice
 @inject NavigationManager Nav
 @inject ToastService Toast
 
@@ -256,15 +257,19 @@ else if (_result is not null)
     void AddLine() => _formLines.Add(new FormLine());
     void RemoveLine(int idx) => _formLines.RemoveAt(idx);
 
-    void OnLineItemChanged(int idx, string? val)
+    async Task OnLineItemChanged(int idx, string? val)
     {
         _formLines[idx].ItemIdStr = val ?? "";
-        if (Guid.TryParse(val, out var itemId))
-        {
-            var item = _catalogItems.FirstOrDefault(i => i.Id == itemId);
-            if (item is not null)
-                _formLines[idx].UnitPrice = item.SalePrice;
-        }
+        if (!Guid.TryParse(val, out var itemId)) return;
+
+        var customerId = Guid.TryParse(_form.CustomerIdStr, out var cid) ? cid : (Guid?)null;
+        var priceListId = customerId.HasValue
+            ? _customers.FirstOrDefault(c => c.Id == customerId)?.PriceListId
+            : null;
+
+        var result = await GetItemPrice.Handle(new GetItemPriceQuery(itemId, priceListId));
+        if (result is not null)
+            _formLines[idx].UnitPrice = result.Price;
     }
 
     async Task Save()

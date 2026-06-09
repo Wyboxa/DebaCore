@@ -15,6 +15,11 @@
 @inject CompleteActivityHandler CompleteActivityHandler
 @inject Debales.Application.AI.Chat.ChatWithCustomerHandler ChatHandler
 @inject Debales.Application.AI.Summary.GetCustomerSummaryHandler SummaryHandler
+@inject GetCustomerItemCodesHandler GetCustomerItemCodes
+@inject UpsertCustomerItemCodeHandler UpsertCustomerItemCode
+@inject DeleteCustomerItemCodeHandler DeleteCustomerItemCode
+@inject GetItemsHandler GetItems
+@inject GetPriceListsHandler GetPriceLists
 @inject ToastService Toast
 @inject NavigationManager Nav
 
@@ -71,11 +76,11 @@ else
                 }
             </div>
         </div>
-        <button class="btn btn-outline-secondary btn-sm" @onclick="OpenEdit">Editar</button>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="OpenEdit" disabled="@_saving">Editar</button>
     </div>
 
     <ul class="nav nav-tabs mb-3">
-        @foreach (var tab in new[] { "info", "contactos", "actividades", "notas", "oportunidades", "historial", "asistente" })
+        @foreach (var tab in new[] { "info", "contactos", "actividades", "notas", "oportunidades", "historial", "codigos", "asistente" })
         {
             <li class="nav-item">
                 <button class="nav-link @(_tab == tab ? "active" : "")" @onclick="() => SetTab(tab)">
@@ -124,6 +129,14 @@ else
                     </dd>
                     <dt class="col-sm-3">Cuenta contable</dt>
                     <dd class="col-sm-9">@(_customer.AccountCode ?? "—")</dd>
+                    <dt class="col-sm-3">Tarifa de precio</dt>
+                    <dd class="col-sm-9">
+                        @if (_customer.PriceListId.HasValue)
+                        {
+                            <a href="/catalogo/tarifas/@_customer.PriceListId">@(_customer.PriceListName ?? "—")</a>
+                        }
+                        else { <span>—</span> }
+                    </dd>
                     <dt class="col-sm-3">Alta</dt>
                     <dd class="col-sm-9">@_customer.CreatedAt.ToString("dd/MM/yyyy")</dd>
                 </dl>
@@ -433,6 +446,55 @@ else
         }
     }
 
+    @if (_tab == "codigos")
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Códigos de artículo del cliente</span>
+                <button class="btn btn-sm btn-primary" @onclick="OpenAddCustomerCode">+ Añadir código</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Artículo</th>
+                            <th>Código cliente</th>
+                            <th>Descripción</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_customerCodesLoading)
+                        {
+                            <tr><td colspan="4" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var c in _customerCodes)
+                            {
+                                <tr>
+                                    <td><code>@c.ItemCode</code> @c.ItemName</td>
+                                    <td><strong>@c.CustomerCode</strong></td>
+                                    <td class="text-muted">@(c.Description ?? "—")</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-secondary me-1"
+                                                @onclick="() => OpenEditCustomerCode(c)">Editar</button>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => ConfirmDeleteCustomerCode(c)">Eliminar</button>
+                                    </td>
+                                </tr>
+                            }
+                            @if (!_customerCodes.Any())
+                            {
+                                <tr><td colspan="4" class="text-center text-muted py-3">Sin códigos configurados.</td></tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
     @if (_tab == "asistente")
     {
         <div class="row g-3">
@@ -510,6 +572,78 @@ else
     }
 }
 
+@* ── Customer item code modals ── *@
+@if (_showCustomerCodeModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editingCustomerCode is not null ? "Editar código" : "Añadir código")</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showCustomerCodeModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="form-label">Artículo *</label>
+                            @if (_editingCustomerCode is not null)
+                            {
+                                <input class="form-control" readonly value="@(_editingCustomerCode.ItemCode + " — " + _editingCustomerCode.ItemName)" />
+                            }
+                            else
+                            {
+                                <select class="form-select" @bind="_customerCodeForm.ItemIdStr">
+                                    <option value="">Seleccionar…</option>
+                                    @foreach (var item in _allItemsForCodes)
+                                    {
+                                        <option value="@item.Id">@item.Code — @item.Name</option>
+                                    }
+                                </select>
+                            }
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Código del cliente *</label>
+                            <InputText class="form-control text-uppercase" @bind-Value="_customerCodeForm.CustomerCode" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descripción</label>
+                            <InputText class="form-control" @bind-Value="_customerCodeForm.Description" />
+                        </div>
+                    </div>
+                    @if (_customerCodeError is not null) { <div class="alert alert-danger mt-2">@_customerCodeError</div> }
+                    <div class="d-flex gap-2 justify-content-end mt-3">
+                        <button type="button" class="btn btn-secondary" @onclick="() => _showCustomerCodeModal = false">Cancelar</button>
+                        <button type="button" class="btn btn-primary" @onclick="SaveCustomerCode" disabled="@_saving">
+                            @(_saving ? "Guardando…" : "Guardar")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_deletingCustomerCode is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar</h5>
+                    <button type="button" class="btn-close" @onclick="() => _deletingCustomerCode = null"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Eliminar el código <strong>@_deletingCustomerCode.CustomerCode</strong> para @_deletingCustomerCode.ItemName?
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary btn-sm" @onclick="() => _deletingCustomerCode = null">Cancelar</button>
+                    <button class="btn btn-danger btn-sm" @onclick="ExecuteDeleteCustomerCode" disabled="@_saving">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @if (_showEdit && _customer is not null)
 {
     <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
@@ -550,6 +684,16 @@ else
                         <div class="col-md-6">
                             <label class="form-label">Cuenta contable</label>
                             <InputText class="form-control" @bind-Value="_editForm.AccountCode" placeholder="p.ej. 4300001" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tarifa de precio</label>
+                            <select class="form-select" @bind="_editForm.PriceListIdStr">
+                                <option value="">Sin tarifa</option>
+                                @foreach (var pl in _availablePriceLists)
+                                {
+                                    <option value="@pl.Id">@pl.Name</option>
+                                }
+                            </select>
                         </div>
                         <hr class="my-2" />
                         <div class="small text-muted fw-semibold mb-2">Dirección</div>
@@ -621,6 +765,16 @@ else
     private string? _oppError;
     private OppFormModel _oppForm = new();
 
+    // Item codes
+    private List<CustomerItemCodeDto> _customerCodes = [];
+    private List<ItemSummaryDto> _allItemsForCodes = [];
+    private bool _customerCodesLoading;
+    private bool _showCustomerCodeModal;
+    private CustomerItemCodeDto? _editingCustomerCode;
+    private CustomerItemCodeDto? _deletingCustomerCode;
+    private string? _customerCodeError;
+    private CustomerCodeForm _customerCodeForm = new();
+
     // Asistente IA
     private string? _summary;
     private bool _summaryLoading;
@@ -659,6 +813,81 @@ else
         _tab = tab;
         if (tab == "asistente" && _summary is null && !_summaryLoading)
             _ = LoadSummary();
+        if (tab == "codigos" && !_customerCodes.Any())
+            _ = LoadCustomerCodesAsync();
+    }
+
+    private async Task LoadCustomerCodesAsync()
+    {
+        _customerCodesLoading = true;
+        _customerCodes = await GetCustomerItemCodes.Handle(new GetCustomerItemCodesQuery(Id));
+        _customerCodesLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task OpenAddCustomerCode()
+    {
+        if (!_allItemsForCodes.Any())
+        {
+            var paged = await GetItems.Handle(new GetItemsQuery(null, null, null, 1, 1000));
+            _allItemsForCodes = paged.Items.ToList();
+        }
+        _editingCustomerCode = null;
+        _customerCodeForm = new();
+        _customerCodeError = null;
+        _showCustomerCodeModal = true;
+    }
+
+    private void OpenEditCustomerCode(CustomerItemCodeDto c)
+    {
+        _editingCustomerCode = c;
+        _customerCodeForm = new CustomerCodeForm { CustomerCode = c.CustomerCode, Description = c.Description };
+        _customerCodeError = null;
+        _showCustomerCodeModal = true;
+    }
+
+    private async Task SaveCustomerCode()
+    {
+        var itemId = _editingCustomerCode?.ItemId ?? (Guid.TryParse(_customerCodeForm.ItemIdStr, out var g) ? g : Guid.Empty);
+        if (itemId == Guid.Empty) { _customerCodeError = "Selecciona un artículo."; return; }
+        if (string.IsNullOrWhiteSpace(_customerCodeForm.CustomerCode)) { _customerCodeError = "El código del cliente es obligatorio."; return; }
+
+        _saving = true;
+        _customerCodeError = null;
+        try
+        {
+            await UpsertCustomerItemCode.Handle(new UpsertCustomerItemCodeCommand(
+                Id, itemId, _customerCodeForm.CustomerCode!, _customerCodeForm.Description, "web"));
+            _showCustomerCodeModal = false;
+            await LoadCustomerCodesAsync();
+            Toast.Show("Código guardado");
+        }
+        catch (Exception ex) { _customerCodeError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private void ConfirmDeleteCustomerCode(CustomerItemCodeDto c) => _deletingCustomerCode = c;
+
+    private async Task ExecuteDeleteCustomerCode()
+    {
+        if (_deletingCustomerCode is null) return;
+        _saving = true;
+        try
+        {
+            await DeleteCustomerItemCode.Handle(new DeleteCustomerItemCodeCommand(Id, _deletingCustomerCode.ItemId));
+            _deletingCustomerCode = null;
+            await LoadCustomerCodesAsync();
+            Toast.Show("Código eliminado");
+        }
+        catch (Exception ex) { Toast.Show(ex.Message); }
+        finally { _saving = false; }
+    }
+
+    private sealed class CustomerCodeForm
+    {
+        public string? ItemIdStr { get; set; }
+        public string? CustomerCode { get; set; }
+        public string? Description { get; set; }
     }
 
     // ── Timeline ─────────────────────────────────────────────────────────────────
@@ -715,13 +944,14 @@ else
 
     private static string TabLabel(string tab) => tab switch
     {
-        "info" => "Información",
-        "contactos" => "Contactos",
-        "actividades" => "Actividades",
-        "notas" => "Notas",
+        "info"          => "Información",
+        "contactos"     => "Contactos",
+        "actividades"   => "Actividades",
+        "notas"         => "Notas",
         "oportunidades" => "Oportunidades",
-        "historial"    => "Historial",
-        "asistente"    => "Asistente IA",
+        "historial"     => "Historial",
+        "codigos"       => "Códigos",
+        "asistente"     => "Asistente IA",
         _ => tab
     };
 
@@ -735,9 +965,16 @@ else
 
     // ── Edit customer ────────────────────────────────────────────────────────────
 
-    private void OpenEdit()
+    private List<PriceListSummaryDto> _availablePriceLists = [];
+
+    private async Task OpenEdit()
     {
         _editError = null;
+        if (!_availablePriceLists.Any())
+        {
+            var result = await GetPriceLists.Handle(new GetPriceListsQuery(null, true, 1, 200));
+            _availablePriceLists = result.Items.ToList();
+        }
         _editForm = new()
         {
             Name    = _customer!.Name,
@@ -750,7 +987,8 @@ else
             AddressCity       = _customer.Address?.City,
             AddressPostalCode = _customer.Address?.PostalCode,
             AddressCountry    = _customer.Address?.Country,
-            AccountCode       = _customer.AccountCode
+            AccountCode       = _customer.AccountCode,
+            PriceListIdStr    = _customer.PriceListId?.ToString()
         };
         _showEdit = true;
     }
@@ -761,12 +999,14 @@ else
         _editError = null;
         try
         {
+            var priceListId = Guid.TryParse(_editForm.PriceListIdStr, out var plId) ? plId : (Guid?)null;
             _customer = await UpdateHandler.Handle(new UpdateCustomerCommand(
                 Id, _editForm.Name!, _editForm.Sector, _editForm.TaxId, _editForm.Phone,
                 _editForm.Email, _editForm.Website,
                 _editForm.AddressStreet, _editForm.AddressCity,
                 _editForm.AddressPostalCode, _editForm.AddressCountry, "web",
-                AccountCode: _editForm.AccountCode));
+                AccountCode: _editForm.AccountCode,
+                PriceListId: priceListId));
             _showEdit = false;
             Toast.Show("Cliente actualizado correctamente");
         }
@@ -908,6 +1148,7 @@ else
         public string? AddressPostalCode { get; set; }
         public string? AddressCountry { get; set; }
         public string? AccountCode { get; set; }
+        public string? PriceListIdStr { get; set; }
     }
 
     private sealed class ContactFormModel

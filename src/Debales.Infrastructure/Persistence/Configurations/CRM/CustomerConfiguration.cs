@@ -33,6 +33,11 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             address.Property(a => a.Country).HasColumnName("AddressCountry").HasMaxLength(100);
         });
 
+        builder.Property(c => c.AccountCode).HasMaxLength(20);
+        builder.Property(c => c.PriceListId);
+        builder.HasOne<Debales.Domain.Catalog.PriceList>().WithMany().HasForeignKey(c => c.PriceListId)
+            .OnDelete(DeleteBehavior.SetNull).IsRequired(false);
+
         builder.HasQueryFilter(c => !c.IsDeleted);
 
         builder.HasMany(c => c.Contacts).WithOne().HasForeignKey(ct => ct.CustomerId).OnDelete(DeleteBehavior.Restrict);

@@ -10,6 +10,7 @@ namespace Debales.Api.Controllers;
 [ApiController]
 [Route("api/purchasing")]
 [Authorize]
+[RequiresModule("Purchasing")]
 public sealed class SupplierPaymentsController : ControllerBase
 {
     private readonly GetPayablesHandler _getPayables;

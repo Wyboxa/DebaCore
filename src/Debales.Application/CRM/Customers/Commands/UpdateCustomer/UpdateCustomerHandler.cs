@@ -1,3 +1,4 @@
+using Debales.Application.Catalog;
 using Debales.Application.Common;
 using Debales.Application.CRM.Customers.DTOs;
 using Debales.Domain.CRM.Customers;
@@ -7,11 +8,13 @@ namespace Debales.Application.CRM.Customers.Commands.UpdateCustomer;
 public sealed class UpdateCustomerHandler
 {
     private readonly ICustomerRepository _customers;
+    private readonly IPriceListRepository _priceLists;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UpdateCustomerHandler(ICustomerRepository customers, IUnitOfWork unitOfWork)
+    public UpdateCustomerHandler(ICustomerRepository customers, IPriceListRepository priceLists, IUnitOfWork unitOfWork)
     {
         _customers = customers;
+        _priceLists = priceLists;
         _unitOfWork = unitOfWork;
     }
 
@@ -39,19 +42,29 @@ public sealed class UpdateCustomerHandler
         }
 
         customer.SetAccountCode(command.AccountCode, command.UpdatedBy);
+        customer.SetPriceList(command.PriceListId, command.UpdatedBy);
 
         _customers.Update(customer);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ToDto(customer);
+        string? priceListName = null;
+        if (customer.PriceListId.HasValue)
+        {
+            var pl = await _priceLists.GetByIdAsync(customer.PriceListId.Value, cancellationToken);
+            priceListName = pl?.Name;
+        }
+
+        return ToDto(customer, priceListName);
     }
 
-    internal static CustomerDetailDto ToDto(Customer customer) =>
+    internal static CustomerDetailDto ToDto(Customer customer, string? priceListName = null) =>
         new(customer.Id, customer.Name, customer.Sector, customer.TaxId,
             customer.Phone, customer.Email, customer.Website, customer.IsActive,
             customer.Address is null ? null : new AddressDto(
                 customer.Address.Street, customer.Address.City,
                 customer.Address.PostalCode, customer.Address.Country),
             customer.CreatedAt, customer.CreatedBy, customer.UpdatedAt,
-            AccountCode: customer.AccountCode);
+            AccountCode: customer.AccountCode,
+            PriceListId: customer.PriceListId,
+            PriceListName: priceListName);
 }

@@ -10,6 +10,7 @@ namespace Debales.Api.Controllers;
 [ApiController]
 [Route("api/inventory/warehouses")]
 [Authorize]
+[RequiresModule("Inventory")]
 public sealed class WarehousesController : ControllerBase
 {
     private readonly CreateWarehouseHandler _create;
