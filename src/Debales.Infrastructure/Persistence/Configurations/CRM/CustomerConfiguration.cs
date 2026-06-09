@@ -37,6 +37,9 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(c => c.PriceListId);
         builder.HasOne<Debales.Domain.Catalog.PriceList>().WithMany().HasForeignKey(c => c.PriceListId)
             .OnDelete(DeleteBehavior.SetNull).IsRequired(false);
+        builder.Property(c => c.PaymentTermId);
+        builder.HasOne<Debales.Domain.Sales.PaymentTerm>().WithMany().HasForeignKey(c => c.PaymentTermId)
+            .OnDelete(DeleteBehavior.SetNull).IsRequired(false);
 
         builder.HasQueryFilter(c => !c.IsDeleted);
 

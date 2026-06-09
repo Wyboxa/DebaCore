@@ -1,6 +1,7 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
 using Debales.Application.CRM.Customers.DTOs;
+using Debales.Application.Sales;
 using Debales.Domain.CRM.Customers;
 
 namespace Debales.Application.CRM.Customers.Commands.UpdateCustomer;
@@ -9,12 +10,15 @@ public sealed class UpdateCustomerHandler
 {
     private readonly ICustomerRepository _customers;
     private readonly IPriceListRepository _priceLists;
+    private readonly IPaymentTermRepository _paymentTerms;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UpdateCustomerHandler(ICustomerRepository customers, IPriceListRepository priceLists, IUnitOfWork unitOfWork)
+    public UpdateCustomerHandler(ICustomerRepository customers, IPriceListRepository priceLists,
+        IPaymentTermRepository paymentTerms, IUnitOfWork unitOfWork)
     {
         _customers = customers;
         _priceLists = priceLists;
+        _paymentTerms = paymentTerms;
         _unitOfWork = unitOfWork;
     }
 
@@ -43,6 +47,7 @@ public sealed class UpdateCustomerHandler
 
         customer.SetAccountCode(command.AccountCode, command.UpdatedBy);
         customer.SetPriceList(command.PriceListId, command.UpdatedBy);
+        customer.SetPaymentTerm(command.PaymentTermId, command.UpdatedBy);
 
         _customers.Update(customer);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -54,10 +59,17 @@ public sealed class UpdateCustomerHandler
             priceListName = pl?.Name;
         }
 
-        return ToDto(customer, priceListName);
+        string? paymentTermName = null;
+        if (customer.PaymentTermId.HasValue)
+        {
+            var pt = await _paymentTerms.GetByIdAsync(customer.PaymentTermId.Value, cancellationToken);
+            paymentTermName = pt?.Name;
+        }
+
+        return ToDto(customer, priceListName, paymentTermName);
     }
 
-    internal static CustomerDetailDto ToDto(Customer customer, string? priceListName = null) =>
+    internal static CustomerDetailDto ToDto(Customer customer, string? priceListName = null, string? paymentTermName = null) =>
         new(customer.Id, customer.Name, customer.Sector, customer.TaxId,
             customer.Phone, customer.Email, customer.Website, customer.IsActive,
             customer.Address is null ? null : new AddressDto(
@@ -66,5 +78,7 @@ public sealed class UpdateCustomerHandler
             customer.CreatedAt, customer.CreatedBy, customer.UpdatedAt,
             AccountCode: customer.AccountCode,
             PriceListId: customer.PriceListId,
-            PriceListName: priceListName);
+            PriceListName: priceListName,
+            PaymentTermId: customer.PaymentTermId,
+            PaymentTermName: paymentTermName);
 }

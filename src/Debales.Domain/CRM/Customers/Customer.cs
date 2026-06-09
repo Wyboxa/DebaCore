@@ -23,6 +23,7 @@ public sealed class Customer : AuditableEntity
     public Address? Address { get; private set; }
     public string? AccountCode { get; private set; }
     public Guid? PriceListId { get; private set; }
+    public Guid? PaymentTermId { get; private set; }
 
     public IReadOnlyList<Contact> Contacts => _contacts.AsReadOnly();
     public IReadOnlyList<Activity> Activities => _activities.AsReadOnly();
@@ -83,6 +84,12 @@ public sealed class Customer : AuditableEntity
     public void SetPriceList(Guid? priceListId, string updatedBy)
     {
         PriceListId = priceListId;
+        SetUpdated(updatedBy);
+    }
+
+    public void SetPaymentTerm(Guid? paymentTermId, string updatedBy)
+    {
+        PaymentTermId = paymentTermId;
         SetUpdated(updatedBy);
     }
 }

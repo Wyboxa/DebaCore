@@ -14,7 +14,9 @@ public sealed record SupplierDetailDto(
     DateTime CreatedAt,
     string? CreatedBy,
     DateTime? UpdatedAt,
-    string? AccountCode = null);
+    string? AccountCode = null,
+    Guid? PaymentTermId = null,
+    string? PaymentTermName = null);
 
 public sealed record SupplierAddressDto(
     string Street,

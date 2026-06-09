@@ -77,6 +77,9 @@ public static class DependencyInjection
         services.AddScoped<INoteRepository, NoteRepository>();
         services.AddScoped<IOpportunityRepository, OpportunityRepository>();
 
+        // Payment Terms
+        services.AddScoped<IPaymentTermRepository, PaymentTermRepository>();
+
         // Sales
         services.AddScoped<ISalesQuoteRepository, SalesQuoteRepository>();
         services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();

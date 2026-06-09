@@ -1,4 +1,5 @@
 using Debales.Application.Common;
+using Debales.Application.Sales;
 using Debales.Application.Suppliers.DTOs;
 using Debales.Domain.Suppliers;
 
@@ -7,11 +8,13 @@ namespace Debales.Application.Suppliers.Commands.UpdateSupplier;
 public sealed class UpdateSupplierHandler
 {
     private readonly ISupplierRepository _suppliers;
+    private readonly IPaymentTermRepository _paymentTerms;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UpdateSupplierHandler(ISupplierRepository suppliers, IUnitOfWork unitOfWork)
+    public UpdateSupplierHandler(ISupplierRepository suppliers, IPaymentTermRepository paymentTerms, IUnitOfWork unitOfWork)
     {
         _suppliers = suppliers;
+        _paymentTerms = paymentTerms;
         _unitOfWork = unitOfWork;
     }
 
@@ -39,14 +42,22 @@ public sealed class UpdateSupplierHandler
         }
 
         supplier.SetAccountCode(command.AccountCode, command.UpdatedBy);
+        supplier.SetPaymentTerm(command.PaymentTermId, command.UpdatedBy);
 
         _suppliers.Update(supplier);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ToDto(supplier);
+        string? paymentTermName = null;
+        if (supplier.PaymentTermId.HasValue)
+        {
+            var pt = await _paymentTerms.GetByIdAsync(supplier.PaymentTermId.Value, cancellationToken);
+            paymentTermName = pt?.Name;
+        }
+
+        return ToDto(supplier, paymentTermName);
     }
 
-    internal static SupplierDetailDto ToDto(Supplier supplier) =>
+    internal static SupplierDetailDto ToDto(Supplier supplier, string? paymentTermName = null) =>
         new(supplier.Id, supplier.Name, supplier.TaxId,
             supplier.Phone, supplier.Email, supplier.Website,
             supplier.ContactName, supplier.Notes, supplier.IsActive,
@@ -54,5 +65,7 @@ public sealed class UpdateSupplierHandler
                 supplier.Address.Street, supplier.Address.City,
                 supplier.Address.PostalCode, supplier.Address.Country),
             supplier.CreatedAt, supplier.CreatedBy, supplier.UpdatedAt,
-            AccountCode: supplier.AccountCode);
+            AccountCode: supplier.AccountCode,
+            PaymentTermId: supplier.PaymentTermId,
+            PaymentTermName: paymentTermName);
 }

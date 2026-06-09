@@ -14,4 +14,5 @@ public sealed record UpdateCustomerCommand(
     string? AddressCountry,
     string UpdatedBy,
     string? AccountCode = null,
-    Guid? PriceListId = null);
+    Guid? PriceListId = null,
+    Guid? PaymentTermId = null);

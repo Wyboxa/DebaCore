@@ -34,6 +34,11 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
             address.Property(a => a.Country).HasColumnName("AddressCountry").HasMaxLength(100);
         });
 
+        builder.Property(s => s.AccountCode).HasMaxLength(20);
+        builder.Property(s => s.PaymentTermId);
+        builder.HasOne<Debales.Domain.Sales.PaymentTerm>().WithMany().HasForeignKey(s => s.PaymentTermId)
+            .OnDelete(DeleteBehavior.SetNull).IsRequired(false);
+
         builder.HasQueryFilter(s => !s.IsDeleted);
     }
 }

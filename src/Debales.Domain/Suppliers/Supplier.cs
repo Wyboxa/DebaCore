@@ -14,6 +14,7 @@ public sealed class Supplier : AuditableEntity
     public bool IsActive { get; private set; }
     public SupplierAddress? Address { get; private set; }
     public string? AccountCode { get; private set; }
+    public Guid? PaymentTermId { get; private set; }
 
     private Supplier() { }
 
@@ -78,6 +79,12 @@ public sealed class Supplier : AuditableEntity
     public void SetAccountCode(string? accountCode, string updatedBy)
     {
         AccountCode = accountCode?.Trim().ToUpper();
+        SetUpdated(updatedBy);
+    }
+
+    public void SetPaymentTerm(Guid? paymentTermId, string updatedBy)
+    {
+        PaymentTermId = paymentTermId;
         SetUpdated(updatedBy);
     }
 }

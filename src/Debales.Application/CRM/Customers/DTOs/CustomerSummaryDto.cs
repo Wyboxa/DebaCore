@@ -9,4 +9,5 @@ public sealed record CustomerSummaryDto(
     string? Email,
     bool IsActive,
     DateTime CreatedAt,
-    Guid? PriceListId = null);
+    Guid? PriceListId = null,
+    Guid? PaymentTermId = null);

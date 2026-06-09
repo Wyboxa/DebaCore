@@ -63,6 +63,10 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<SupplierItemCode> SupplierItemCodes => Set<SupplierItemCode>();
     public DbSet<CustomerItemCode> CustomerItemCodes => Set<CustomerItemCode>();
 
+    // Payment Terms
+    public DbSet<PaymentTerm> PaymentTerms => Set<PaymentTerm>();
+    public DbSet<PaymentTermLine> PaymentTermLines => Set<PaymentTermLine>();
+
     // Sales
     public DbSet<SalesQuote> SalesQuotes => Set<SalesQuote>();
     public DbSet<SalesQuoteLine> SalesQuoteLines => Set<SalesQuoteLine>();

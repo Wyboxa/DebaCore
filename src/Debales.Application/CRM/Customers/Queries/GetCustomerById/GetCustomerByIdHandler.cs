@@ -1,5 +1,6 @@
 using Debales.Application.Catalog;
 using Debales.Application.CRM.Customers.DTOs;
+using Debales.Application.Sales;
 
 namespace Debales.Application.CRM.Customers.Queries.GetCustomerById;
 
@@ -7,17 +8,19 @@ public sealed class GetCustomerByIdHandler
 {
     private readonly ICustomerRepository _customers;
     private readonly IPriceListRepository _priceLists;
+    private readonly IPaymentTermRepository _paymentTerms;
 
-    public GetCustomerByIdHandler(ICustomerRepository customers, IPriceListRepository priceLists)
+    public GetCustomerByIdHandler(ICustomerRepository customers, IPriceListRepository priceLists,
+        IPaymentTermRepository paymentTerms)
     {
         _customers = customers;
         _priceLists = priceLists;
+        _paymentTerms = paymentTerms;
     }
 
     public async Task<CustomerDetailDto?> Handle(GetCustomerByIdQuery query, CancellationToken cancellationToken = default)
     {
         var customer = await _customers.GetByIdWithDetailsAsync(query.CustomerId, cancellationToken);
-
         if (customer is null) return null;
 
         string? priceListName = null;
@@ -25,6 +28,13 @@ public sealed class GetCustomerByIdHandler
         {
             var pl = await _priceLists.GetByIdAsync(customer.PriceListId.Value, cancellationToken);
             priceListName = pl?.Name;
+        }
+
+        string? paymentTermName = null;
+        if (customer.PaymentTermId.HasValue)
+        {
+            var pt = await _paymentTerms.GetByIdAsync(customer.PaymentTermId.Value, cancellationToken);
+            paymentTermName = pt?.Name;
         }
 
         return new CustomerDetailDto(
@@ -36,6 +46,8 @@ public sealed class GetCustomerByIdHandler
             customer.CreatedAt, customer.CreatedBy, customer.UpdatedAt,
             AccountCode: customer.AccountCode,
             PriceListId: customer.PriceListId,
-            PriceListName: priceListName);
+            PriceListName: priceListName,
+            PaymentTermId: customer.PaymentTermId,
+            PaymentTermName: paymentTermName);
     }
 }

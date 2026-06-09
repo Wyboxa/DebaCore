@@ -15,7 +15,9 @@ public sealed record CustomerDetailDto(
     DateTime? UpdatedAt,
     string? AccountCode = null,
     Guid? PriceListId = null,
-    string? PriceListName = null);
+    string? PriceListName = null,
+    Guid? PaymentTermId = null,
+    string? PaymentTermName = null);
 
 public sealed record AddressDto(
     string Street,
