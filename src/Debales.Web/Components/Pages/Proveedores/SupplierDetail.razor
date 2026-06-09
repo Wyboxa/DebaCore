@@ -7,6 +7,7 @@
 @inject UpsertSupplierItemCodeHandler UpsertItemCode
 @inject DeleteSupplierItemCodeHandler DeleteItemCode
 @inject GetItemsHandler GetItems
+@inject GetPaymentTermsHandler GetPaymentTermsList
 @inject ToastService Toast
 @inject NavigationManager Nav
 
@@ -112,6 +113,13 @@ else
 
                             <dt class="small text-muted fw-semibold mb-1">Cuenta contable</dt>
                             <dd class="mb-3">@(_supplier.AccountCode ?? "—")</dd>
+
+                            <dt class="small text-muted fw-semibold mb-1">Condición de pago</dt>
+                            <dd class="mb-3">
+                                @if (_supplier.PaymentTermId.HasValue)
+                                { <span>@(_supplier.PaymentTermName ?? "—")</span> }
+                                else { <span>—</span> }
+                            </dd>
 
                             <dt class="small text-muted fw-semibold mb-1">Alta</dt>
                             <dd class="mb-0">@_supplier.CreatedAt.ToString("dd/MM/yyyy")</dd>
@@ -298,10 +306,22 @@ else
                                 <InputText class="form-control" @bind-Value="_editForm.Website" />
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
                                 <label class="form-label">Cuenta contable</label>
                                 <InputText class="form-control" @bind-Value="_editForm.AccountCode" placeholder="p.ej. 4000001" />
                             </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Condición de pago</label>
+                                <select class="form-select" @bind="_editForm.PaymentTermIdStr">
+                                    <option value="">Sin condición</option>
+                                    @foreach (var pt in _availablePaymentTerms)
+                                    {
+                                        <option value="@pt.Id">@pt.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
                         <hr class="my-2" />
                         <div class="small text-muted fw-semibold mb-2">Dirección</div>
                         <div class="row g-2 mb-2">
@@ -349,6 +369,8 @@ else
     private bool _showEdit;
     private string? _editError;
     private EditFormModel _editForm = new();
+
+    private List<PaymentTermSummaryDto> _availablePaymentTerms = [];
 
     // ── Item codes ──────────────────────────────────────────────────────────
     private List<SupplierItemCodeDto> _itemCodes = [];
@@ -453,9 +475,14 @@ else
         public string? Description { get; set; }
     }
 
-    private void OpenEdit()
+    private async Task OpenEdit()
     {
         _editError = null;
+        if (!_availablePaymentTerms.Any())
+        {
+            var pts = await GetPaymentTermsList.Handle(new GetPaymentTermsQuery(Page: 1, PageSize: 200));
+            _availablePaymentTerms = pts.Items.ToList();
+        }
         _editForm = new()
         {
             Name          = _supplier!.Name,
@@ -469,7 +496,8 @@ else
             AddressCity       = _supplier.Address?.City,
             AddressPostalCode = _supplier.Address?.PostalCode,
             AddressCountry    = _supplier.Address?.Country,
-            AccountCode       = _supplier.AccountCode
+            AccountCode       = _supplier.AccountCode,
+            PaymentTermIdStr  = _supplier.PaymentTermId?.ToString() ?? ""
         };
         _showEdit = true;
     }
@@ -480,12 +508,14 @@ else
         _editError = null;
         try
         {
+            var paymentTermId = Guid.TryParse(_editForm.PaymentTermIdStr, out var ptg) ? ptg : (Guid?)null;
             _supplier = await UpdateHandler.Handle(new UpdateSupplierCommand(
                 Id, _editForm.Name!, _editForm.TaxId, _editForm.Phone, _editForm.Email,
                 _editForm.Website, _editForm.ContactName, _editForm.Notes,
                 _editForm.AddressStreet, _editForm.AddressCity,
                 _editForm.AddressPostalCode, _editForm.AddressCountry, "web",
-                AccountCode: _editForm.AccountCode));
+                AccountCode: _editForm.AccountCode,
+                PaymentTermId: paymentTermId));
             _showEdit = false;
             Toast.Show("Proveedor actualizado correctamente");
         }
@@ -508,5 +538,6 @@ else
         public string? AddressPostalCode { get; set; }
         public string? AddressCountry { get; set; }
         public string? AccountCode { get; set; }
+        public string? PaymentTermIdStr { get; set; }
     }
 }

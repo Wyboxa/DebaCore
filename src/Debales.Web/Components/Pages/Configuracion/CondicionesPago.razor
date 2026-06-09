@@ -1,0 +1,291 @@
+@page "/configuracion/condiciones-pago"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetPaymentTermsHandler GetAll
+@inject GetPaymentTermByIdHandler GetById
+@inject CreatePaymentTermHandler CreateHandler
+@inject UpdatePaymentTermHandler UpdateHandler
+@inject DeletePaymentTermHandler DeleteHandler
+@inject ToastService Toast
+
+<PageTitle>Condiciones de pago — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Condiciones de pago</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nueva condición</button>
+</div>
+
+<p class="text-muted small mb-3">
+    Define los plazos de pago asignables a clientes y proveedores.
+    Al contabilizar una factura se generan automáticamente los vencimientos según la condición configurada.
+</p>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Plazos</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pt in _items)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@pt.Name</td>
+                            <td class="text-muted small">@(pt.Description ?? "—")</td>
+                            <td><span class="badge bg-secondary">@pt.LineCount @(pt.LineCount == 1 ? "plazo" : "plazos")</span></td>
+                            <td><span class="badge @(pt.IsActive ? "bg-success" : "bg-secondary")">@(pt.IsActive ? "Activa" : "Inactiva")</span></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenEdit(pt.Id)">Editar</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(pt.Id, pt.Name)">Eliminar</button>
+                            </td>
+                        </tr>
+                    }
+                    @if (_items.Count == 0)
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">No hay condiciones de pago configuradas.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (_showForm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editId.HasValue ? "Editar condición" : "Nueva condición de pago")</h5>
+                    <button class="btn-close" @onclick="CloseForm"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre *</label>
+                            <input class="form-control" @bind="_form.Name" placeholder="Ej: 30 días, Contado, 30/60 días…" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Descripción</label>
+                            <input class="form-control" @bind="_form.Description" />
+                        </div>
+                        @if (_editId.HasValue)
+                        {
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isActive" @bind="_form.IsActive" />
+                                    <label class="form-check-label" for="isActive">Condición activa</label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-semibold mb-0">Plazos</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="AddLine">+ Plazo</button>
+                    </div>
+
+                    @if (_formLines.Count > 0)
+                    {
+                        <div class="table-responsive mb-2">
+                            <table class="table table-sm align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Días al vencimiento <small class="text-muted">(0 = contado)</small></th>
+                                        <th class="text-end" style="width:160px">Porcentaje (%)</th>
+                                        <th style="width:40px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < _formLines.Count; i++)
+                                    {
+                                        var idx = i;
+                                        <tr>
+                                            <td><input class="form-control form-control-sm" type="number" min="0" @bind="_formLines[idx].DueDays" /></td>
+                                            <td><input class="form-control form-control-sm text-end" type="number" step="0.01" min="0.01" max="100" @bind="_formLines[idx].Percentage" /></td>
+                                            <td><button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveLine(idx)">✕</button></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    @{ var total = _formLines.Sum(l => l.Percentage); }
+                                    <tr class="@(Math.Abs(total - 100m) < 0.01m ? "table-success" : "table-warning")">
+                                        <td class="text-end fw-semibold">Total:</td>
+                                        <td class="text-end fw-semibold">@total.ToString("N2") %</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        @if (Math.Abs(_formLines.Sum(l => l.Percentage) - 100m) > 0.01m)
+                        {
+                            <div class="alert alert-warning py-2 small mb-0">Los porcentajes deben sumar exactamente 100%.</div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted small">Añade al menos un plazo.</p>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="alert alert-danger py-2 mt-2">@_error</div>
+                    }
+
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseForm">Cancelar</button>
+                        <button type="button" class="btn btn-primary" disabled="@_saving" @onclick="Save">
+                            @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_confirmDeleteId.HasValue)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar condición</h5>
+                    <button class="btn-close" @onclick="() => _confirmDeleteId = null"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Eliminar <strong>@_confirmDeleteName</strong>? Los clientes y proveedores que la tengan asignada quedarán sin condición de pago.
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _confirmDeleteId = null">Cancelar</button>
+                    <button class="btn btn-danger" disabled="@_saving" @onclick="ExecuteDelete">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    bool _loading = true;
+    bool _showForm;
+    bool _saving;
+    string? _error;
+    Guid? _editId;
+    Guid? _confirmDeleteId;
+    string? _confirmDeleteName;
+    List<PaymentTermSummaryDto> _items = [];
+    FormModel _form = new();
+    List<FormLine> _formLines = [];
+
+    sealed class FormModel
+    {
+        public string Name { get; set; } = "";
+        public string? Description { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    sealed class FormLine
+    {
+        public int DueDays { get; set; }
+        public decimal Percentage { get; set; } = 100;
+    }
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await GetAll.Handle(new GetPaymentTermsQuery(Page: 1, PageSize: 200));
+        _items = result.Items.ToList();
+        _loading = false;
+    }
+
+    void OpenCreate()
+    {
+        _editId = null;
+        _form = new FormModel();
+        _formLines = [new FormLine { DueDays = 30, Percentage = 100 }];
+        _error = null;
+        _showForm = true;
+    }
+
+    async Task OpenEdit(Guid id)
+    {
+        _editId = id;
+        _error = null;
+        var detail = await GetById.Handle(new GetPaymentTermByIdQuery(id));
+        if (detail is null) return;
+
+        _form = new FormModel { Name = detail.Name, Description = detail.Description, IsActive = detail.IsActive };
+        _formLines = detail.Lines
+            .OrderBy(l => l.SortOrder)
+            .Select(l => new FormLine { DueDays = l.DueDays, Percentage = l.Percentage })
+            .ToList();
+        _showForm = true;
+    }
+
+    void AddLine() => _formLines.Add(new FormLine { DueDays = 30, Percentage = 0 });
+    void RemoveLine(int idx) => _formLines.RemoveAt(idx);
+    void CloseForm() => _showForm = false;
+
+    async Task Save()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_form.Name)) { _error = "El nombre es obligatorio."; return; }
+        if (_formLines.Count == 0) { _error = "Añade al menos un plazo."; return; }
+        if (Math.Abs(_formLines.Sum(l => l.Percentage) - 100m) > 0.01m) { _error = "Los porcentajes deben sumar 100%."; return; }
+
+        _saving = true;
+        try
+        {
+            if (_editId.HasValue)
+            {
+                var lines = _formLines.Select(l => new UpdatePaymentTermLineRequest(l.DueDays, l.Percentage)).ToList();
+                await UpdateHandler.Handle(new UpdatePaymentTermCommand(_editId.Value, _form.Name, _form.Description, _form.IsActive, lines, "web"));
+                Toast.Show("Condición actualizada.");
+            }
+            else
+            {
+                var lines = _formLines.Select(l => new CreatePaymentTermLineRequest(l.DueDays, l.Percentage)).ToList();
+                await CreateHandler.Handle(new CreatePaymentTermCommand(_form.Name, _form.Description, lines, "web"));
+                Toast.Show("Condición de pago creada.");
+            }
+            _showForm = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    void ConfirmDelete(Guid id, string name) { _confirmDeleteId = id; _confirmDeleteName = name; }
+
+    async Task ExecuteDelete()
+    {
+        _saving = true;
+        try
+        {
+            await DeleteHandler.Handle(new DeletePaymentTermCommand(_confirmDeleteId!.Value, "web"));
+            Toast.Show("Condición eliminada.");
+            _confirmDeleteId = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+}
