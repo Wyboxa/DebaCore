@@ -1,5 +1,6 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Purchasing.DTOs;
 using Debales.Application.Purchasing.Queries.GetPurchaseOrderById;
 using Debales.Domain.Purchasing;
@@ -10,12 +11,14 @@ public sealed class CreatePurchaseOrderHandler
 {
     private readonly IPurchaseOrderRepository _orders;
     private readonly IItemRepository _items;
+    private readonly INumberSeriesRepository _series;
     private readonly IUnitOfWork _uow;
 
-    public CreatePurchaseOrderHandler(IPurchaseOrderRepository orders, IItemRepository items, IUnitOfWork uow)
+    public CreatePurchaseOrderHandler(IPurchaseOrderRepository orders, IItemRepository items, INumberSeriesRepository series, IUnitOfWork uow)
     {
         _orders = orders;
         _items = items;
+        _series = series;
         _uow = uow;
     }
 
@@ -24,7 +27,10 @@ public sealed class CreatePurchaseOrderHandler
         if (command.Lines.Count == 0)
             throw new ArgumentException("Un pedido debe tener al menos una línea.");
 
-        var number = await _orders.GetNextNumberAsync(cancellationToken);
+        var serie = await _series.GetByCodeAsync("PC", cancellationToken)
+            ?? throw new InvalidOperationException("Serie 'PC' no encontrada. Configure las series documentales en Configuración.");
+        var number = serie.Consume(command.CreatedBy);
+        _series.Update(serie);
 
         var order = PurchaseOrder.Create(
             number,

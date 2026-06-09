@@ -224,8 +224,8 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-06-07:** AccountCode cascade completo (Customer + Supplier). Sistema de auditoría automática. Tutorial guiado. Dashboard KPIs. Tests `AssignRoleHandler`/`DeactivateUserHandler` (cobertura completa de handlers). Módulo **NumberSeries** (series documentales configurables): entidad `Consume()`/`GetNextFormatted()`, 3 handlers, repositorio, migración, UI `/configuracion/series`. Fix `IHttpContextAccessor` en `Debales.Api`. Repositorio GitHub: `https://github.com/Wyboxa/DebaCore`.
-> 13 migraciones aplicadas. 65 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
+> **Actualización 2026-06-09:** NumberSeries cableado en los **13 handlers** de creación de documentos (PRE/PV/ALV/FV/RV/PC/ALC/FC/RC). Migración seed `AddNumberSeriesSeed` con 9 series por defecto. `GetNextNumberAsync` eliminado de las 9 interfaces y repositorios de documentos. 65 tests pasando. Repositorio GitHub: `https://github.com/Wyboxa/DebaCore`.
+> 14 migraciones (seed pendiente de `database update`). 65 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
 El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada sobre ERP.
@@ -250,7 +250,7 @@ Lo que ya existe (no asumir como propuesta):
 - UI Blazor Server (`Debales.Web`) con lista y ficha de clientes, proveedores, ventas, presupuestos, compras, inventario, contabilidad, informes, licencias, gestión de usuarios e IA. **Tutorial guiado** activable/desactivable desde Configuración (`TutorialService`, `TutorialOverlay`, 8 pasos, localStorage). **AuditLog UI** (`/configuracion/auditoria`). **Dashboard KPIs** (`Home.razor`, 6 KPIs con importes € + alertas cobros/pagos vencidos + actividad reciente). **Series documentales** (`/configuracion/series`).
 - `AccountCode` en `Customer` y `Supplier`: editable desde ficha, propagado en handlers y DTOs. `AccountingEntryService` usa fallback 430/400 cuando la cuenta individual es null.
 - Sistema de auditoría automática: `ApplicationDbContext.SaveChangesAsync` escribe `AuditEntry` para todas las entidades del dominio (excepto líneas y tablas de control). `ICurrentUserService` / `CurrentUserService` para captura del usuario activo.
-- Módulo NumberSeries: `NumberSeries.Consume()` genera y consume numeración; `GetNextFormatted()` previsualiza. UI en `/configuracion/series`. **Pendiente de cablear en handlers de creación de documentos** (facturas, pedidos, albaranes).
+- Módulo NumberSeries: `NumberSeries.Consume()` genera y consume numeración; `GetNextFormatted()` previsualiza. UI en `/configuracion/series`. **Cableado completo en los 13 handlers de creación de documentos** (PRE, PV, ALV, FV, RV, PC, ALC, FC, RC). Migración seed `AddNumberSeriesSeed` con 9 series por defecto (pendiente de aplicar con `database update`).
 - UI con paleta teal `#6B9CA9`, sidebar oscuro.
 - **65 tests automatizados pasando** (Domain: 31, Application: 33, Integration: 1).
 - Vault Obsidian en `docs/obsidian/` — actualizado en cada sesión de desarrollo.
@@ -2547,3 +2547,4 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 | Dashboard KPIs (`Home.razor`, 6 KPIs importes € + alertas cobros/pagos vencidos) | Completo — 2026-06-07 | sin migración |
 | Tests `AssignRoleHandler` (4) + `DeactivateUserHandler` (3) — cobertura completa handlers | Completo — 2026-06-07 | sin migración |
 | NumberSeries (series documentales configurables, UI `/configuracion/series`) | Completo — 2026-06-07 | `20260607141730_AddNumberSeriesModule` |
+| NumberSeries cableado en handlers (13 handlers de creación de documentos) | Completo — 2026-06-09 | `20260609153343_AddNumberSeriesSeed` |

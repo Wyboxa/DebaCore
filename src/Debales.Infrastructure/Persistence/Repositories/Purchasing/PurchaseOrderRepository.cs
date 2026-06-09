@@ -51,14 +51,4 @@ internal sealed class PurchaseOrderRepository : BaseRepository<PurchaseOrder>, I
 
     public async Task<bool> ExistsByNumberAsync(string number, CancellationToken cancellationToken = default) =>
         await DbSet.AnyAsync(o => o.Number == number.Trim().ToUpper(), cancellationToken);
-
-    public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
-    {
-        var year = DateTime.UtcNow.Year;
-        var prefix = $"PC-{year}-";
-        var count = await Context.Set<PurchaseOrder>()
-            .IgnoreQueryFilters()
-            .CountAsync(o => o.Number.StartsWith(prefix), cancellationToken);
-        return $"{prefix}{(count + 1):D4}";
-    }
 }

@@ -1,5 +1,6 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Purchasing.DTOs;
 using Debales.Application.Purchasing.Queries.GetPurchaseDeliveryNoteById;
 using Debales.Domain.Purchasing;
@@ -10,12 +11,14 @@ public sealed class CreatePurchaseDeliveryNoteHandler
 {
     private readonly IPurchaseDeliveryNoteRepository _notes;
     private readonly IItemRepository _items;
+    private readonly INumberSeriesRepository _series;
     private readonly IUnitOfWork _uow;
 
-    public CreatePurchaseDeliveryNoteHandler(IPurchaseDeliveryNoteRepository notes, IItemRepository items, IUnitOfWork uow)
+    public CreatePurchaseDeliveryNoteHandler(IPurchaseDeliveryNoteRepository notes, IItemRepository items, INumberSeriesRepository series, IUnitOfWork uow)
     {
         _notes = notes;
         _items = items;
+        _series = series;
         _uow = uow;
     }
 
@@ -24,7 +27,10 @@ public sealed class CreatePurchaseDeliveryNoteHandler
         if (command.Lines.Count == 0)
             throw new ArgumentException("Un albarán debe tener al menos una línea.");
 
-        var number = await _notes.GetNextNumberAsync(cancellationToken);
+        var serie = await _series.GetByCodeAsync("ALC", cancellationToken)
+            ?? throw new InvalidOperationException("Serie 'ALC' no encontrada. Configure las series documentales en Configuración.");
+        var number = serie.Consume(command.CreatedBy);
+        _series.Update(serie);
 
         var note = PurchaseDeliveryNote.Create(
             number,

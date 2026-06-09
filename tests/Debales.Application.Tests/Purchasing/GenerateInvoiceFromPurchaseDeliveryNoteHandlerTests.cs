@@ -1,7 +1,9 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Purchasing;
 using Debales.Application.Purchasing.Commands.GenerateInvoiceFromPurchaseDeliveryNote;
+using Debales.Domain.Core.NumberSeries;
 using Debales.Domain.Purchasing;
 using NSubstitute;
 
@@ -13,13 +15,16 @@ public sealed class GenerateInvoiceFromPurchaseDeliveryNoteHandlerTests
     private readonly IPurchaseOrderRepository _orders = Substitute.For<IPurchaseOrderRepository>();
     private readonly IPurchaseInvoiceRepository _invoices = Substitute.For<IPurchaseInvoiceRepository>();
     private readonly IItemRepository _items = Substitute.For<IItemRepository>();
+    private readonly INumberSeriesRepository _series = Substitute.For<INumberSeriesRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
     private readonly GenerateInvoiceFromPurchaseDeliveryNoteHandler _handler;
 
+    private static NumberSeries BuildSeries() => NumberSeries.Create("FC", "Facturas compra", "FC-", 5, "system");
+
     public GenerateInvoiceFromPurchaseDeliveryNoteHandlerTests()
     {
-        _invoices.GetNextNumberAsync(Arg.Any<CancellationToken>()).Returns("FC-2026-0001");
-        _handler = new GenerateInvoiceFromPurchaseDeliveryNoteHandler(_notes, _orders, _invoices, _items, _uow);
+        _series.GetByCodeAsync("FC", Arg.Any<CancellationToken>()).Returns(BuildSeries());
+        _handler = new GenerateInvoiceFromPurchaseDeliveryNoteHandler(_notes, _orders, _invoices, _items, _series, _uow);
     }
 
     private static PurchaseDeliveryNote BuildPostedNote()
@@ -39,7 +44,7 @@ public sealed class GenerateInvoiceFromPurchaseDeliveryNoteHandlerTests
         var dueDate = DateOnly.FromDateTime(DateTime.Today.AddDays(30));
 
         var savedInvoice = PurchaseInvoice.Create(
-            "FC-2026-0001", null, note.SupplierId, note.Id,
+            "FC-00001", null, note.SupplierId, note.Id,
             DateOnly.FromDateTime(DateTime.Today), dueDate, null, "web");
 
         _notes.GetByIdAsync(note.Id, Arg.Any<CancellationToken>()).Returns(note);
@@ -73,7 +78,7 @@ public sealed class GenerateInvoiceFromPurchaseDeliveryNoteHandlerTests
     {
         var note = BuildPostedNote();
         var existingInvoice = PurchaseInvoice.Create(
-            "FC-2026-0001", null, note.SupplierId, note.Id,
+            "FC-00001", null, note.SupplierId, note.Id,
             DateOnly.FromDateTime(DateTime.Today),
             DateOnly.FromDateTime(DateTime.Today.AddDays(30)),
             null, "system");

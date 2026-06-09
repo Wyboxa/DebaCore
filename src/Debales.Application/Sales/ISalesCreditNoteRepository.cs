@@ -7,5 +7,4 @@ public interface ISalesCreditNoteRepository : IRepository<SalesCreditNote>
 {
     new Task<SalesCreditNote?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<PagedResult<SalesCreditNote>> SearchAsync(string? search, Guid? customerId, int page, int pageSize, CancellationToken cancellationToken = default);
-    Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default);
 }

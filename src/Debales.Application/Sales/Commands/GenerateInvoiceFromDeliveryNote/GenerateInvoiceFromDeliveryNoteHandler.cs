@@ -1,5 +1,6 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Sales.DTOs;
 using Debales.Application.Sales.Queries.GetSalesInvoiceById;
 using Debales.Domain.Sales;
@@ -12,6 +13,7 @@ public sealed class GenerateInvoiceFromDeliveryNoteHandler
     private readonly ISalesOrderRepository _orders;
     private readonly ISalesInvoiceRepository _invoices;
     private readonly IItemRepository _items;
+    private readonly INumberSeriesRepository _series;
     private readonly IUnitOfWork _uow;
 
     public GenerateInvoiceFromDeliveryNoteHandler(
@@ -19,12 +21,14 @@ public sealed class GenerateInvoiceFromDeliveryNoteHandler
         ISalesOrderRepository orders,
         ISalesInvoiceRepository invoices,
         IItemRepository items,
+        INumberSeriesRepository series,
         IUnitOfWork uow)
     {
         _notes = notes;
         _orders = orders;
         _invoices = invoices;
         _items = items;
+        _series = series;
         _uow = uow;
     }
 
@@ -47,7 +51,10 @@ public sealed class GenerateInvoiceFromDeliveryNoteHandler
         if (note.SalesOrderId.HasValue)
             order = await _orders.GetByIdAsync(note.SalesOrderId.Value, cancellationToken);
 
-        var number = await _invoices.GetNextNumberAsync(cancellationToken);
+        var serie = await _series.GetByCodeAsync("FV", cancellationToken)
+            ?? throw new InvalidOperationException("Serie 'FV' no encontrada. Configure las series documentales en Configuración.");
+        var number = serie.Consume(command.CreatedBy);
+        _series.Update(serie);
         var today = DateOnly.FromDateTime(DateTime.Today);
         if (command.DueDate < today)
             throw new ArgumentException("La fecha de vencimiento no puede ser anterior a hoy.");

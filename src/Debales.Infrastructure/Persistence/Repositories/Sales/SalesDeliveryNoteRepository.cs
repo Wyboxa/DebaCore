@@ -51,16 +51,6 @@ internal sealed class SalesDeliveryNoteRepository : BaseRepository<SalesDelivery
         return new PagedResult<SalesDeliveryNote>(items, total, page, pageSize);
     }
 
-    public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
-    {
-        var year = DateTime.UtcNow.Year;
-        var prefix = $"ALV-{year}-";
-        var count = await Context.Set<SalesDeliveryNote>()
-            .IgnoreQueryFilters()
-            .CountAsync(n => n.Number.StartsWith(prefix), cancellationToken);
-        return $"{prefix}{(count + 1):D4}";
-    }
-
     public async Task<IReadOnlyList<SalesDeliveryNote>> GetBySalesOrderIdAsync(Guid salesOrderId, CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(n => n.Customer)

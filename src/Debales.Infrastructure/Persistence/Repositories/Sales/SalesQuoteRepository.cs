@@ -52,14 +52,4 @@ internal sealed class SalesQuoteRepository : BaseRepository<SalesQuote>, ISalesQ
 
     public async Task<bool> ExistsByNumberAsync(string number, CancellationToken cancellationToken = default) =>
         await DbSet.AnyAsync(q => q.Number == number.Trim().ToUpper(), cancellationToken);
-
-    public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
-    {
-        var year = DateTime.UtcNow.Year;
-        var prefix = $"PRE-{year}-";
-        var count = await Context.Set<SalesQuote>()
-            .IgnoreQueryFilters()
-            .CountAsync(q => q.Number.StartsWith(prefix), cancellationToken);
-        return $"{prefix}{(count + 1):D4}";
-    }
 }

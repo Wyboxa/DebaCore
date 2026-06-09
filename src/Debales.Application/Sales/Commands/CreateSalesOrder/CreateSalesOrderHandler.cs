@@ -1,5 +1,6 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Sales.DTOs;
 using Debales.Application.Sales.Queries.GetSalesOrderById;
 using Debales.Domain.Sales;
@@ -10,12 +11,14 @@ public sealed class CreateSalesOrderHandler
 {
     private readonly ISalesOrderRepository _orders;
     private readonly IItemRepository _items;
+    private readonly INumberSeriesRepository _series;
     private readonly IUnitOfWork _uow;
 
-    public CreateSalesOrderHandler(ISalesOrderRepository orders, IItemRepository items, IUnitOfWork uow)
+    public CreateSalesOrderHandler(ISalesOrderRepository orders, IItemRepository items, INumberSeriesRepository series, IUnitOfWork uow)
     {
         _orders = orders;
         _items = items;
+        _series = series;
         _uow = uow;
     }
 
@@ -24,7 +27,10 @@ public sealed class CreateSalesOrderHandler
         if (command.Lines.Count == 0)
             throw new ArgumentException("An order must have at least one line.");
 
-        var number = await _orders.GetNextNumberAsync(cancellationToken);
+        var serie = await _series.GetByCodeAsync("PV", cancellationToken)
+            ?? throw new InvalidOperationException("Serie 'PV' no encontrada. Configure las series documentales en Configuración.");
+        var number = serie.Consume(command.CreatedBy);
+        _series.Update(serie);
 
         var order = SalesOrder.Create(
             number,

@@ -1,5 +1,6 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Sales.DTOs;
 using Debales.Application.Sales.Queries.GetSalesQuoteById;
 using Debales.Domain.Sales;
@@ -10,12 +11,14 @@ public sealed class CreateSalesQuoteHandler
 {
     private readonly ISalesQuoteRepository _quotes;
     private readonly IItemRepository _items;
+    private readonly INumberSeriesRepository _series;
     private readonly IUnitOfWork _uow;
 
-    public CreateSalesQuoteHandler(ISalesQuoteRepository quotes, IItemRepository items, IUnitOfWork uow)
+    public CreateSalesQuoteHandler(ISalesQuoteRepository quotes, IItemRepository items, INumberSeriesRepository series, IUnitOfWork uow)
     {
         _quotes = quotes;
         _items = items;
+        _series = series;
         _uow = uow;
     }
 
@@ -24,7 +27,10 @@ public sealed class CreateSalesQuoteHandler
         if (command.Lines.Count == 0)
             throw new ArgumentException("A quote must have at least one line.");
 
-        var number = await _quotes.GetNextNumberAsync(cancellationToken);
+        var serie = await _series.GetByCodeAsync("PRE", cancellationToken)
+            ?? throw new InvalidOperationException("Serie 'PRE' no encontrada. Configure las series documentales en Configuración.");
+        var number = serie.Consume(command.CreatedBy);
+        _series.Update(serie);
 
         var quote = SalesQuote.Create(
             number,

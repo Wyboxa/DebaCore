@@ -7,5 +7,4 @@ public interface IPurchaseDeliveryNoteRepository : IRepository<PurchaseDeliveryN
 {
     new Task<PurchaseDeliveryNote?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<PagedResult<PurchaseDeliveryNote>> SearchAsync(string? search, Guid? supplierId, PurchaseDeliveryNoteStatus? status, int page, int pageSize, CancellationToken cancellationToken = default);
-    Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default);
 }

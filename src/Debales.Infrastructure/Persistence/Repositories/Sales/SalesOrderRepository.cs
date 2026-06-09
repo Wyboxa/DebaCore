@@ -53,16 +53,6 @@ internal sealed class SalesOrderRepository : BaseRepository<SalesOrder>, ISalesO
     public async Task<bool> ExistsByNumberAsync(string number, CancellationToken cancellationToken = default) =>
         await DbSet.AnyAsync(o => o.Number == number.Trim().ToUpper(), cancellationToken);
 
-    public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
-    {
-        var year = DateTime.UtcNow.Year;
-        var prefix = $"PV-{year}-";
-        var count = await Context.Set<SalesOrder>()
-            .IgnoreQueryFilters()
-            .CountAsync(o => o.Number.StartsWith(prefix), cancellationToken);
-        return $"{prefix}{(count + 1):D4}";
-    }
-
     public async Task<IReadOnlyList<SalesOrder>> GetConfirmedPendingDeliveryAsync(CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(o => o.Customer)

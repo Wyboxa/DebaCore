@@ -1,5 +1,6 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Sales.DTOs;
 using Debales.Application.Sales.Queries.GetSalesCreditNoteById;
 using Debales.Domain.Sales;
@@ -11,15 +12,17 @@ public sealed class CreateSalesCreditNoteHandler
     private readonly ISalesCreditNoteRepository _notes;
     private readonly ISalesInvoiceRepository _invoices;
     private readonly IItemRepository _items;
+    private readonly INumberSeriesRepository _series;
     private readonly IUnitOfWork _uow;
 
     public CreateSalesCreditNoteHandler(
         ISalesCreditNoteRepository notes, ISalesInvoiceRepository invoices,
-        IItemRepository items, IUnitOfWork uow)
+        IItemRepository items, INumberSeriesRepository series, IUnitOfWork uow)
     {
         _notes = notes;
         _invoices = invoices;
         _items = items;
+        _series = series;
         _uow = uow;
     }
 
@@ -34,7 +37,10 @@ public sealed class CreateSalesCreditNoteHandler
         if (invoice.Status != SalesInvoiceStatus.Posted)
             throw new InvalidOperationException("Credit notes can only be created for posted invoices.");
 
-        var number = await _notes.GetNextNumberAsync(cancellationToken);
+        var serie = await _series.GetByCodeAsync("RV", cancellationToken)
+            ?? throw new InvalidOperationException("Serie 'RV' no encontrada. Configure las series documentales en Configuración.");
+        var number = serie.Consume(command.CreatedBy);
+        _series.Update(serie);
 
         var note = SalesCreditNote.Create(
             number, command.CustomerId, command.OriginalInvoiceId,

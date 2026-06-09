@@ -1,4 +1,5 @@
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Sales.DTOs;
 using Debales.Application.Sales.Queries.GetSalesOrderById;
 using Debales.Domain.Sales;
@@ -9,12 +10,14 @@ public sealed class ConvertQuoteToOrderHandler
 {
     private readonly ISalesQuoteRepository _quotes;
     private readonly ISalesOrderRepository _orders;
+    private readonly INumberSeriesRepository _series;
     private readonly IUnitOfWork _uow;
 
-    public ConvertQuoteToOrderHandler(ISalesQuoteRepository quotes, ISalesOrderRepository orders, IUnitOfWork uow)
+    public ConvertQuoteToOrderHandler(ISalesQuoteRepository quotes, ISalesOrderRepository orders, INumberSeriesRepository series, IUnitOfWork uow)
     {
         _quotes = quotes;
         _orders = orders;
+        _series = series;
         _uow = uow;
     }
 
@@ -29,7 +32,10 @@ public sealed class ConvertQuoteToOrderHandler
         if (quote.ConvertedToOrderId.HasValue)
             throw new InvalidOperationException("Este presupuesto ya ha sido convertido a pedido.");
 
-        var orderNumber = await _orders.GetNextNumberAsync(cancellationToken);
+        var serie = await _series.GetByCodeAsync("PV", cancellationToken)
+            ?? throw new InvalidOperationException("Serie 'PV' no encontrada. Configure las series documentales en Configuración.");
+        var orderNumber = serie.Consume(command.CreatedBy);
+        _series.Update(serie);
 
         var order = SalesOrder.Create(
             orderNumber,

@@ -46,16 +46,6 @@ internal sealed class PurchaseInvoiceRepository : BaseRepository<PurchaseInvoice
     public async Task<bool> ExistsByNumberAsync(string number, CancellationToken cancellationToken = default) =>
         await DbSet.AnyAsync(i => i.Number == number.Trim().ToUpper(), cancellationToken);
 
-    public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
-    {
-        var year = DateTime.UtcNow.Year;
-        var prefix = $"FC-{year}-";
-        var count = await Context.Set<PurchaseInvoice>()
-            .IgnoreQueryFilters()
-            .CountAsync(i => i.Number.StartsWith(prefix), cancellationToken);
-        return $"{prefix}{(count + 1):D4}";
-    }
-
     public async Task<PurchaseInvoice?> GetByPurchaseDeliveryNoteIdAsync(Guid purchaseDeliveryNoteId, CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(i => i.Lines)

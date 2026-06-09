@@ -44,13 +44,4 @@ internal sealed class PurchaseCreditNoteRepository : BaseRepository<PurchaseCred
         return new PagedResult<PurchaseCreditNote>(items, total, page, pageSize);
     }
 
-    public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
-    {
-        var year = DateTime.UtcNow.Year;
-        var prefix = $"RC-{year}-";
-        var count = await Context.Set<PurchaseCreditNote>()
-            .IgnoreQueryFilters()
-            .CountAsync(n => n.Number.StartsWith(prefix), cancellationToken);
-        return $"{prefix}{(count + 1):D4}";
-    }
 }

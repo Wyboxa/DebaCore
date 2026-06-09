@@ -1,5 +1,6 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Purchasing.DTOs;
 using Debales.Application.Purchasing.Queries.GetPurchaseInvoiceById;
 using Debales.Domain.Purchasing;
@@ -12,6 +13,7 @@ public sealed class GenerateInvoiceFromPurchaseDeliveryNoteHandler
     private readonly IPurchaseOrderRepository _orders;
     private readonly IPurchaseInvoiceRepository _invoices;
     private readonly IItemRepository _items;
+    private readonly INumberSeriesRepository _series;
     private readonly IUnitOfWork _uow;
 
     public GenerateInvoiceFromPurchaseDeliveryNoteHandler(
@@ -19,12 +21,14 @@ public sealed class GenerateInvoiceFromPurchaseDeliveryNoteHandler
         IPurchaseOrderRepository orders,
         IPurchaseInvoiceRepository invoices,
         IItemRepository items,
+        INumberSeriesRepository series,
         IUnitOfWork uow)
     {
         _notes = notes;
         _orders = orders;
         _invoices = invoices;
         _items = items;
+        _series = series;
         _uow = uow;
     }
 
@@ -46,7 +50,10 @@ public sealed class GenerateInvoiceFromPurchaseDeliveryNoteHandler
         if (note.PurchaseOrderId.HasValue)
             order = await _orders.GetByIdAsync(note.PurchaseOrderId.Value, cancellationToken);
 
-        var number = await _invoices.GetNextNumberAsync(cancellationToken);
+        var serie = await _series.GetByCodeAsync("FC", cancellationToken)
+            ?? throw new InvalidOperationException("Serie 'FC' no encontrada. Configure las series documentales en Configuración.");
+        var number = serie.Consume(command.CreatedBy);
+        _series.Update(serie);
         var today = DateOnly.FromDateTime(DateTime.Today);
 
         var invoice = PurchaseInvoice.Create(

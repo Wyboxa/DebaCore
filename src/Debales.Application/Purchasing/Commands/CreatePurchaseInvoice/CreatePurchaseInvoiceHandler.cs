@@ -1,5 +1,6 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Purchasing.DTOs;
 using Debales.Application.Purchasing.Queries.GetPurchaseInvoiceById;
 using Debales.Domain.Purchasing;
@@ -10,12 +11,14 @@ public sealed class CreatePurchaseInvoiceHandler
 {
     private readonly IPurchaseInvoiceRepository _invoices;
     private readonly IItemRepository _items;
+    private readonly INumberSeriesRepository _series;
     private readonly IUnitOfWork _uow;
 
-    public CreatePurchaseInvoiceHandler(IPurchaseInvoiceRepository invoices, IItemRepository items, IUnitOfWork uow)
+    public CreatePurchaseInvoiceHandler(IPurchaseInvoiceRepository invoices, IItemRepository items, INumberSeriesRepository series, IUnitOfWork uow)
     {
         _invoices = invoices;
         _items = items;
+        _series = series;
         _uow = uow;
     }
 
@@ -24,7 +27,10 @@ public sealed class CreatePurchaseInvoiceHandler
         if (command.Lines.Count == 0)
             throw new ArgumentException("An invoice must have at least one line.");
 
-        var number = await _invoices.GetNextNumberAsync(cancellationToken);
+        var serie = await _series.GetByCodeAsync("FC", cancellationToken)
+            ?? throw new InvalidOperationException("Serie 'FC' no encontrada. Configure las series documentales en Configuración.");
+        var number = serie.Consume(command.CreatedBy);
+        _series.Update(serie);
 
         var invoice = PurchaseInvoice.Create(
             number, command.SupplierInvoiceNumber, command.SupplierId,

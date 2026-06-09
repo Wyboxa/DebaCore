@@ -1,5 +1,6 @@
 using Debales.Application.Catalog;
 using Debales.Application.Common;
+using Debales.Application.Core.NumberSeries;
 using Debales.Application.Purchasing.DTOs;
 using Debales.Application.Purchasing.Queries.GetPurchaseCreditNoteById;
 using Debales.Domain.Purchasing;
@@ -11,15 +12,17 @@ public sealed class CreatePurchaseCreditNoteHandler
     private readonly IPurchaseCreditNoteRepository _notes;
     private readonly IPurchaseInvoiceRepository _invoices;
     private readonly IItemRepository _items;
+    private readonly INumberSeriesRepository _series;
     private readonly IUnitOfWork _uow;
 
     public CreatePurchaseCreditNoteHandler(
         IPurchaseCreditNoteRepository notes, IPurchaseInvoiceRepository invoices,
-        IItemRepository items, IUnitOfWork uow)
+        IItemRepository items, INumberSeriesRepository series, IUnitOfWork uow)
     {
         _notes = notes;
         _invoices = invoices;
         _items = items;
+        _series = series;
         _uow = uow;
     }
 
@@ -34,7 +37,10 @@ public sealed class CreatePurchaseCreditNoteHandler
         if (invoice.Status != PurchaseInvoiceStatus.Posted)
             throw new InvalidOperationException("Credit notes can only be created for posted invoices.");
 
-        var number = await _notes.GetNextNumberAsync(cancellationToken);
+        var serie = await _series.GetByCodeAsync("RC", cancellationToken)
+            ?? throw new InvalidOperationException("Serie 'RC' no encontrada. Configure las series documentales en Configuración.");
+        var number = serie.Consume(command.CreatedBy);
+        _series.Update(serie);
 
         var note = PurchaseCreditNote.Create(
             number, command.SupplierId, command.OriginalInvoiceId,

@@ -45,13 +45,4 @@ internal sealed class SalesCreditNoteRepository : BaseRepository<SalesCreditNote
         return new PagedResult<SalesCreditNote>(items, total, page, pageSize);
     }
 
-    public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
-    {
-        var year = DateTime.UtcNow.Year;
-        var prefix = $"RV-{year}-";
-        var count = await Context.Set<SalesCreditNote>()
-            .IgnoreQueryFilters()
-            .CountAsync(n => n.Number.StartsWith(prefix), cancellationToken);
-        return $"{prefix}{(count + 1):D4}";
-    }
 }

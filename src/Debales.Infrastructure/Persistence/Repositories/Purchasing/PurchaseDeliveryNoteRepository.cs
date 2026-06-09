@@ -51,13 +51,4 @@ internal sealed class PurchaseDeliveryNoteRepository : BaseRepository<PurchaseDe
         return new PagedResult<PurchaseDeliveryNote>(items, total, page, pageSize);
     }
 
-    public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
-    {
-        var year = DateTime.UtcNow.Year;
-        var prefix = $"ALC-{year}-";
-        var count = await Context.Set<PurchaseDeliveryNote>()
-            .IgnoreQueryFilters()
-            .CountAsync(n => n.Number.StartsWith(prefix), cancellationToken);
-        return $"{prefix}{(count + 1):D4}";
-    }
 }
