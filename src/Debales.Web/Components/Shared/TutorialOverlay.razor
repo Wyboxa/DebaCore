@@ -23,6 +23,15 @@
             <div class="tutorial-body">
                 <h6 class="tutorial-title">@Tutorial.Current.Title</h6>
                 <p class="tutorial-text">@Tutorial.Current.Body</p>
+                @if (Tutorial.Current.Tips is { Length: > 0 } tips)
+                {
+                    <ul class="tutorial-tips">
+                        @foreach (var tip in tips)
+                        {
+                            <li>@tip</li>
+                        }
+                    </ul>
+                }
             </div>
 
             <div class="tutorial-footer">
