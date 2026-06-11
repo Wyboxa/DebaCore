@@ -71,10 +71,23 @@ Implementado — migraciones `AddERP3Module` (2026-06-01).
 | `RectificativasCompra.razor` | `/facturacion/rectificativas-compra` | Implementada |
 | `RectificativaCompraDetalle.razor` | `/facturacion/rectificativas-compra/{id}` | Implementada |
 
+## Módulos de configuración de facturación (2026-06-10)
+
+| Entidad | UI | Estado |
+|---------|-----|--------|
+| `PaymentTerm` + `PaymentTermLine` | `/configuracion/condiciones-pago` | Implementado |
+| `PaymentMethod` | `/configuracion/formas-pago` | Implementado |
+| `BankAccount` | `/contabilidad/cuentas-bancarias` | Implementado |
+
+- `PaymentTermId` y `PaymentMethodId` como FK opcional en `Customer` y `Supplier` (OnDelete SetNull)
+- 7 condiciones de pago + 6 formas de pago en seed `AddPaymentTermAndMethodSeed`
+
 ## Lo que falta
 
-- Series de facturación configurables (`InvoiceSeries`)
-- Condiciones de pago (`PaymentTerm`)
-- Formas de pago (`PaymentMethod`)
-- Generación de PDF de factura
 - Envío por email
+
+## Lo que está completo (actualizado 2026-06-11)
+
+- Series de numeración: cubierto por `NumberSeries` (9 series, cableado en 13 handlers)
+- Asignación automática de condiciones de pago: `PostSalesInvoiceHandler` + `PostPurchaseInvoiceHandler` leen `Customer.PaymentTermId` / `Supplier.PaymentTermId`
+- Generación de vencimientos por plazos: `PaymentTerm.Calculate()` → múltiples `Receivable`/`Payable`

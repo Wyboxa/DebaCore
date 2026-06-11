@@ -1,0 +1,317 @@
+@page "/contabilidad/cajas"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetCashAccountsHandler GetAll
+@inject GetCashAccountByIdHandler GetById
+@inject CreateCashAccountHandler CreateHandler
+@inject UpdateCashAccountHandler UpdateHandler
+@inject DeleteCashAccountHandler DeleteHandler
+@inject GetAccountsHandler GetAccounts
+@inject ToastService Toast
+
+<PageTitle>Cajas — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Cajas</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nueva caja</button>
+</div>
+
+<div class="mb-3 d-flex gap-2">
+    <div class="input-group" style="max-width:300px">
+        <input class="form-control" placeholder="Código o nombre…"
+               @bind="_search" @bind:event="oninput" @onkeyup="OnSearchKey" />
+        <button class="btn btn-outline-secondary" @onclick="Search">Buscar</button>
+    </div>
+    <select class="form-select" style="max-width:160px" @onchange="OnActiveChanged">
+        <option value="">Todas</option>
+        <option value="true">Activas</option>
+        <option value="false">Inactivas</option>
+    </select>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_result is not null)
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Moneda</th>
+                        <th class="text-end">Saldo</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in _result.Items)
+                    {
+                        <tr>
+                            <td><code>@a.Code</code></td>
+                            <td><strong>@a.Name</strong></td>
+                            <td>@a.CurrencyCode</td>
+                            <td class="text-end fw-semibold @(a.CurrentBalance < 0 ? "text-danger" : "")">
+                                @a.CurrentBalance.ToString("N2") €
+                            </td>
+                            <td>
+                                @if (a.IsActive)
+                                {
+                                    <span class="badge bg-success">Activa</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactiva</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1"
+                                        @onclick="() => OpenEdit(a.Id)">Editar</button>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => ConfirmDelete(a.Id, a.Name)">Eliminar</button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_result.Items.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">No hay cajas registradas.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (_result.TotalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination">
+                <li class="page-item @(_result.HasPreviousPage ? "" : "disabled")">
+                    <button class="page-link" @onclick="PrevPage">Anterior</button>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">@_result.Page / @_result.TotalPages</span>
+                </li>
+                <li class="page-item @(_result.HasNextPage ? "" : "disabled")">
+                    <button class="page-link" @onclick="NextPage">Siguiente</button>
+                </li>
+            </ul>
+        </nav>
+    }
+}
+
+@if (_showForm)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editId.HasValue ? "Editar caja" : "Nueva caja")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseForm"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Código *</label>
+                            <input class="form-control text-uppercase" @bind="_form.Code" placeholder="CAJA-01" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Nombre *</label>
+                            <input class="form-control" @bind="_form.Name" placeholder="Caja principal…" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Moneda</label>
+                            <input class="form-control text-uppercase" @bind="_form.CurrencyCode" placeholder="EUR" maxlength="3" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Cuenta contable</label>
+                            <select class="form-select" @bind="_form.AccountIdStr"
+                                    @onfocus="LoadAccounts">
+                                <option value="">Sin cuenta vinculada</option>
+                                @foreach (var a in _accounts)
+                                {
+                                    <option value="@a.Id">@a.Code — @a.Name</option>
+                                }
+                            </select>
+                        </div>
+                        @if (_editId.HasValue)
+                        {
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="chkActive" @bind="_form.IsActive" />
+                                    <label class="form-check-label" for="chkActive">Activa</label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    @if (_formError is not null)
+                    {
+                        <div class="alert alert-danger mt-3 py-2">@_formError</div>
+                    }
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseForm">Cancelar</button>
+                        <button type="button" class="btn btn-primary" disabled="@_saving" @onclick="SaveForm">
+                            @(_saving ? "Guardando…" : (_editId.HasValue ? "Guardar" : "Crear caja"))
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_deleteId.HasValue)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar eliminación</h5>
+                </div>
+                <div class="modal-body">
+                    <p>¿Eliminar la caja <strong>@_deleteName</strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete">Cancelar</button>
+                    <button type="button" class="btn btn-danger" disabled="@_saving" @onclick="ExecuteDelete">
+                        @(_saving ? "Eliminando…" : "Eliminar")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    PagedResult<CashAccountSummaryDto>? _result;
+    string? _search;
+    bool? _activeFilter;
+    int _page = 1;
+    bool _loading = true;
+
+    // Form
+    bool _showForm;
+    Guid? _editId;
+    bool _saving;
+    string? _formError;
+    FormModel _form = new();
+    List<AccountSummaryDto> _accounts = [];
+
+    // Delete
+    Guid? _deleteId;
+    string? _deleteName;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _result = await GetAll.Handle(new GetCashAccountsQuery(_search, _activeFilter, _page, 20));
+        _loading = false;
+    }
+
+    async Task Search() { _page = 1; await LoadAsync(); }
+    async Task OnSearchKey(KeyboardEventArgs e) { if (e.Key == "Enter") await Search(); }
+
+    async Task OnActiveChanged(ChangeEventArgs e)
+    {
+        _activeFilter = bool.TryParse(e.Value?.ToString(), out var v) ? v : null;
+        _page = 1; await LoadAsync();
+    }
+
+    async Task PrevPage() { _page--; await LoadAsync(); }
+    async Task NextPage() { _page++; await LoadAsync(); }
+
+    async Task LoadAccounts()
+    {
+        if (_accounts.Any()) return;
+        var result = await GetAccounts.Handle(new GetAccountsQuery(Search: null, Page: 1, PageSize: 500));
+        _accounts = result.Items.ToList();
+    }
+
+    void OpenCreate()
+    {
+        _editId = null;
+        _form = new() { CurrencyCode = "EUR", IsActive = true };
+        _formError = null;
+        _showForm = true;
+    }
+
+    async Task OpenEdit(Guid id)
+    {
+        var detail = await GetById.Handle(new GetCashAccountByIdQuery(id));
+        if (detail is null) return;
+        _editId = id;
+        _form = new FormModel
+        {
+            Code = detail.Code,
+            Name = detail.Name,
+            CurrencyCode = detail.CurrencyCode,
+            AccountIdStr = detail.AccountId?.ToString() ?? "",
+            IsActive = detail.IsActive
+        };
+        _formError = null;
+        _showForm = true;
+    }
+
+    void CloseForm() { _showForm = false; _editId = null; }
+
+    async Task SaveForm()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Code) || string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _formError = "Código y nombre son obligatorios."; return;
+        }
+        _saving = true; _formError = null;
+        try
+        {
+            var accountId = Guid.TryParse(_form.AccountIdStr, out var g) ? g : (Guid?)null;
+            if (_editId.HasValue)
+            {
+                await UpdateHandler.Handle(new UpdateCashAccountCommand(
+                    _editId.Value, _form.Code, _form.Name, _form.CurrencyCode, accountId, _form.IsActive, "web"));
+                Toast.Show("Caja actualizada");
+            }
+            else
+            {
+                await CreateHandler.Handle(new CreateCashAccountCommand(
+                    _form.Code, _form.Name, _form.CurrencyCode, accountId, "web"));
+                Toast.Show("Caja creada");
+            }
+            _showForm = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _formError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    void ConfirmDelete(Guid id, string name) { _deleteId = id; _deleteName = name; }
+    void CancelDelete() { _deleteId = null; _deleteName = null; }
+
+    async Task ExecuteDelete()
+    {
+        if (!_deleteId.HasValue) return;
+        _saving = true;
+        try
+        {
+            await DeleteHandler.Handle(new DeleteCashAccountCommand(_deleteId.Value, "web"));
+            Toast.Show("Caja eliminada");
+            _deleteId = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _formError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    sealed class FormModel
+    {
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string CurrencyCode { get; set; } = "EUR";
+        public string AccountIdStr { get; set; } = "";
+        public bool IsActive { get; set; } = true;
+    }
+}

@@ -9,6 +9,8 @@
 @inject GetItemsHandler GetItems
 @inject GetPaymentTermsHandler GetPaymentTermsList
 @inject GetPaymentMethodsHandler GetPaymentMethodsList
+@inject GetSupplierStatementHandler StatementHandler
+@inject GetPurchaseOrdersHandler GetOrders
 @inject ToastService Toast
 @inject NavigationManager Nav
 
@@ -53,7 +55,7 @@ else
     </div>
 
     <ul class="nav nav-tabs mb-3">
-        @foreach (var tab in new[] { "info", "notas", "codigos" })
+        @foreach (var tab in new[] { "info", "notas", "codigos", "pedidos", "cuenta" })
         {
             <li class="nav-item">
                 <button class="nav-link @(_tab == tab ? "active" : "")" @onclick="() => OnTabChange(tab)">
@@ -201,6 +203,125 @@ else
                 </table>
             </div>
         </div>
+    }
+}
+
+@if (_tab == "pedidos")
+{
+    @if (_pedidosLoading)
+    {
+        <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+    }
+    else if (!_pedidos.Any())
+    {
+        <div class="alert alert-info">Sin pedidos de compra registrados para este proveedor.</div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Pedidos de compra</span>
+                <a href="/compras/pedidos" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Número</th>
+                            <th>Fecha</th>
+                            <th>F. recepción</th>
+                            <th>Estado</th>
+                            <th class="text-end pe-3">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in _pedidos.OrderByDescending(p => p.Date))
+                        {
+                            <tr style="cursor:pointer" @onclick="() => GoToPurchaseOrder(o.Id)">
+                                <td class="ps-3 font-monospace small">@o.Number</td>
+                                <td class="small">@o.Date.ToString("dd/MM/yyyy")</td>
+                                <td class="small text-muted">@(o.ExpectedReceiptDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                <td><span class="badge @PurchaseOrderBadge(o.Status)">@o.StatusLabel</span></td>
+                                <td class="text-end pe-3 fw-semibold">@o.Total.ToString("N2") €</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@if (_tab == "cuenta")
+{
+    @if (_stmtLoading)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+    }
+    else if (_statement is not null)
+    {
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">Total cargos (rect. + pagos)</div>
+                        <div class="fw-bold fs-5 text-success">@_statement.TotalDebit.ToString("N2") €</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">Total abonos (facturas)</div>
+                        <div class="fw-bold fs-5">@_statement.TotalCredit.ToString("N2") €</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100 @(_statement.Balance > 0 ? "border-start border-warning border-3" : "")">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">Saldo pendiente (deuda)</div>
+                        <div class="fw-bold fs-5 @(_statement.Balance > 0 ? "text-warning" : "text-success")">@_statement.Balance.ToString("N2") €</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if (_statement.Lines.Count == 0)
+        {
+            <div class="alert alert-info">Sin movimientos registrados.</div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Fecha</th>
+                                <th>Tipo</th>
+                                <th>Referencia</th>
+                                <th class="text-end">Cargo</th>
+                                <th class="text-end">Abono</th>
+                                <th class="text-end pe-3">Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var l in _statement.Lines)
+                            {
+                                <tr>
+                                    <td class="ps-3 small">@l.Date.ToString("dd/MM/yyyy")</td>
+                                    <td><span class="badge @SupplierStmtBadge(l.Type)">@l.Type</span></td>
+                                    <td class="font-monospace small">@l.Reference</td>
+                                    <td class="text-end small text-success">@(l.Debit > 0 ? l.Debit.ToString("N2") + " €" : "—")</td>
+                                    <td class="text-end small">@(l.Credit > 0 ? l.Credit.ToString("N2") + " €" : "—")</td>
+                                    <td class="text-end pe-3 fw-semibold @(l.Balance > 0 ? "text-warning" : "text-success")">@l.Balance.ToString("N2") €</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
     }
 }
 
@@ -413,16 +534,64 @@ else
     {
         "info"    => "Información",
         "notas"   => "Notas",
-        "codigos" => "Códigos",
+        "codigos"  => "Códigos",
+        "pedidos"  => "Pedidos",
+        "cuenta"   => "Estado de cuenta",
         _         => tab
     };
+
+    Debales.Application.Common.StatementDto? _statement;
+    bool _stmtLoading;
+    List<PurchaseOrderSummaryDto> _pedidos = [];
+    bool _pedidosLoading;
 
     private async Task OnTabChange(string tab)
     {
         _tab = tab;
         if (tab == "codigos" && !_itemCodes.Any())
             await LoadCodesAsync();
+        if (tab == "cuenta" && _statement is null && !_stmtLoading)
+            _ = LoadStatementAsync();
+        if (tab == "pedidos" && !_pedidos.Any() && !_pedidosLoading)
+            _ = LoadPedidosAsync();
     }
+
+    private async Task LoadPedidosAsync()
+    {
+        _pedidosLoading = true;
+        var result = await GetOrders.Handle(new GetPurchaseOrdersQuery(null, Id, null, 1, 200));
+        _pedidos = result.Items.ToList();
+        _pedidosLoading = false;
+        StateHasChanged();
+    }
+
+    private void GoToPurchaseOrder(Guid orderId) => Nav.NavigateTo($"/compras/pedidos/{orderId}");
+
+    private static string PurchaseOrderBadge(PurchaseOrderStatus s) => s switch
+    {
+        PurchaseOrderStatus.Draft              => "bg-secondary",
+        PurchaseOrderStatus.Confirmed          => "bg-primary",
+        PurchaseOrderStatus.PartiallyReceived  => "bg-warning text-dark",
+        PurchaseOrderStatus.Received           => "bg-success",
+        PurchaseOrderStatus.Cancelled          => "bg-danger",
+        _                                      => "bg-secondary"
+    };
+
+    private async Task LoadStatementAsync()
+    {
+        _stmtLoading = true;
+        _statement = await StatementHandler.Handle(new GetSupplierStatementQuery(Id));
+        _stmtLoading = false;
+        StateHasChanged();
+    }
+
+    private static string SupplierStmtBadge(string type) => type switch
+    {
+        "Factura" => "bg-warning text-dark",
+        "Rectificativa" => "bg-secondary",
+        "Pago" => "bg-success",
+        _ => "bg-light text-dark border"
+    };
 
     private async Task LoadCodesAsync()
     {

@@ -18,6 +18,7 @@ internal sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
         builder.Property(i => i.IsActive).IsRequired();
         builder.Property(i => i.SalePrice).IsRequired().HasPrecision(18, 4);
         builder.Property(i => i.PurchasePrice).IsRequired().HasPrecision(18, 4);
+        builder.Property(i => i.MinimumStock).HasPrecision(18, 4);
         builder.Property(i => i.CreatedAt).IsRequired();
         builder.Property(i => i.CreatedBy).HasMaxLength(100);
         builder.Property(i => i.UpdatedBy).HasMaxLength(100);

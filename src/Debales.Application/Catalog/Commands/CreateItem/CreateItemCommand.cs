@@ -10,4 +10,5 @@ public sealed record CreateItemCommand(
     Guid? TaxTypeId,
     decimal SalePrice,
     decimal PurchasePrice,
-    string CreatedBy);
+    string CreatedBy,
+    decimal? MinimumStock = null);

@@ -36,6 +36,8 @@ Implementado — migración `AddERP4Module` (2026-06-01).
 | [[WarehouseLocation]] | Ubicación dentro de un almacén |
 | [[StockMovement]] | Movimiento de stock (In, Out, Transfer, Adjustment) |
 | [[StockBalance]] | Saldo actual de un artículo en un almacén |
+| [[InventoryCount]] | Sesión de recuento físico con líneas por artículo |
+| [[InventoryCountLine]] | Línea de recuento: stock sistema vs. cantidad contada |
 
 ## Handlers — Commands
 
@@ -44,6 +46,11 @@ Implementado — migración `AddERP4Module` (2026-06-01).
 | `CreateWarehouseHandler` | Crea almacén |
 | `AddWarehouseLocationHandler` | Añade ubicación a almacén |
 | `CreateStockMovementHandler` | Registra movimiento y actualiza saldo |
+| `AdjustStockHandler` | Ajusta stock a cantidad objetivo (calcula delta → Adjustment movement) |
+| `CreateInventoryCountHandler` | Crea sesión de recuento para un almacén |
+| `AddInventoryCountLineHandler` | Añade artículo al recuento con su stock sistema actual |
+| `SetCountedQuantityHandler` | Registra la cantidad contada para un artículo |
+| `CloseInventoryCountHandler` | Cierra recuento y genera movimientos de ajuste automáticos |
 
 ## Handlers — Queries
 
@@ -54,6 +61,8 @@ Implementado — migración `AddERP4Module` (2026-06-01).
 | `GetStockMovementsHandler` | Lista movimientos paginada |
 | `GetStockMovementByIdHandler` | Movimiento por ID |
 | `GetStockBalanceHandler` | Saldo por artículo/almacén |
+| `GetInventoryCountsHandler` | Lista recuentos paginada |
+| `GetInventoryCountByIdHandler` | Recuento con todas sus líneas |
 
 ## Controllers
 
@@ -61,6 +70,7 @@ Implementado — migración `AddERP4Module` (2026-06-01).
 |------------|------|
 | `WarehousesController` | `api/warehouses` |
 | `StockMovementsController` | `api/stock/movements` |
+| `InventoryCountsController` | `api/inventorycounts` |
 
 ## Páginas Blazor
 
@@ -68,7 +78,9 @@ Implementado — migración `AddERP4Module` (2026-06-01).
 |--------|------|--------|
 | `Almacenes.razor` | `/inventario/almacenes` | Implementada |
 | `Movimientos.razor` | `/inventario/movimientos` | Implementada |
-| `SaldosStock.razor` | `/inventario/saldos` | Implementada |
+| `SaldosStock.razor` | `/inventario/saldos` | Implementada — botón Ajustar + badge Bajo mínimo |
+| `ConteoInventario.razor` | `/inventario/conteo` | Implementada — lista de recuentos + crear |
+| `ConteoInventarioDetalle.razor` | `/inventario/conteo/{id}` | Implementada — añadir artículos, contar, cerrar |
 | `Inventario.razor` | `/inventario` | Placeholder de sección |
 
 ## Repositorios
@@ -77,6 +89,7 @@ Implementado — migración `AddERP4Module` (2026-06-01).
 - `IWarehouseLocationRepository` → `WarehouseLocationRepository`
 - `IStockMovementRepository` → `StockMovementRepository`
 - `IStockBalanceRepository` → `StockBalanceRepository`
+- `IInventoryCountRepository` → `InventoryCountRepository`
 
 ## Seeds
 
@@ -90,10 +103,13 @@ Implementado — migración `AddERP4Module` (2026-06-01).
 - Movimientos de stock con tipo (In/Out/Transfer/Adjustment)
 - Saldo automático actualizado por movimiento
 - UI de movimientos y saldos
+- Ajuste de stock desde UI de Saldos (modal, calcula delta, genera Adjustment movement)
+- `Item.MinimumStock`: campo decimal opcional, visible en ficha y editable; badge "Bajo mínimo" en saldos; alerta en dashboard
+- `InventoryCount` completo: Domain + Application + Infrastructure + API + UI lista + detalle
+  - Flujo: crear sesión → añadir artículos → introducir cantidades contadas → cerrar (genera ajustes automáticos)
+  - Migración: `AddInventoryCountModule` (2026-06-10)
 
 ## Lo que falta
 
-- Inventario físico (`InventoryCount`)
-- Ajustes de stock (`StockAdjustment`) — modelo definido en CLAUDE.md pero no en Domain
-- Integración de albaranes con movimientos de stock automáticos
-- Stock mínimo / alertas de rotura
+- `InventoryCount` exportable a PDF
+- Multi-almacén en el mismo recuento

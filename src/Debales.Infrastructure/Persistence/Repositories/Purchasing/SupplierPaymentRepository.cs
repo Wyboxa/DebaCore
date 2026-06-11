@@ -44,6 +44,15 @@ internal sealed class SupplierPaymentRepository : BaseRepository<SupplierPayment
         return new PagedResult<SupplierPayment>(items, total, page, pageSize);
     }
 
+    public async Task<IReadOnlyList<SupplierPayment>> GetBySupplierForStatementAsync(
+        Guid supplierId, DateOnly? from, DateOnly? to, CancellationToken cancellationToken = default)
+    {
+        var query = DbSet.Where(p => p.SupplierId == supplierId);
+        if (from.HasValue) query = query.Where(p => p.Date >= from.Value);
+        if (to.HasValue) query = query.Where(p => p.Date <= to.Value);
+        return await query.OrderBy(p => p.Date).ThenBy(p => p.Number).ToListAsync(cancellationToken);
+    }
+
     public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
     {
         var year = DateTime.UtcNow.Year;

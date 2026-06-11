@@ -1,0 +1,351 @@
+@page "/inventario/conteo/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetInventoryCountByIdHandler GetCount
+@inject AddInventoryCountLineHandler AddLine
+@inject SetCountedQuantityHandler SetQty
+@inject CloseInventoryCountHandler CloseCount
+@inject GetItemsHandler GetItems
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Recuento — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_count is null)
+{
+    <div class="alert alert-warning">Recuento no encontrado. <a href="/inventario/conteo">Volver</a></div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/inventario/conteo">Recuentos</a></li>
+            <li class="breadcrumb-item active">@_count.Number</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="h3 mb-1"><code class="me-2 text-muted fs-5">@_count.Number</code>@_count.WarehouseName</h1>
+            <div class="d-flex gap-2 align-items-center">
+                @if (_count.Status == "Open")
+                {
+                    <span class="badge bg-success">Abierto</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Cerrado</span>
+                }
+                <span class="text-muted small">@_count.Date.ToString("dd/MM/yyyy")</span>
+                <span class="text-muted small">@_count.Lines.Count(l => l.IsCounted) / @_count.Lines.Count artículos contados</span>
+            </div>
+        </div>
+        @if (_count.Status == "Open")
+        {
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" @onclick="OpenAddLine">+ Añadir artículo</button>
+                <button class="btn btn-success" @onclick="ConfirmClose" disabled="@(_count.Lines.Count == 0)">
+                    Cerrar y aplicar ajustes
+                </button>
+            </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(_count.Notes))
+    {
+        <div class="alert alert-light border mb-3">@_count.Notes</div>
+    }
+
+    @if (_count.Lines.Count == 0)
+    {
+        <div class="alert alert-light border">Añade artículos al recuento para comenzar.</div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Artículo</th>
+                            <th class="text-end">Stock sistema</th>
+                            <th class="text-end">Cantidad contada</th>
+                            <th class="text-end">Diferencia</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in _count.Lines)
+                        {
+                            <tr>
+                                <td><code>@line.ItemCode</code></td>
+                                <td>@line.ItemName</td>
+                                <td class="text-end">@line.SystemQuantity.ToString("N4")</td>
+                                <td class="text-end">
+                                    @if (_editingItemId == line.ItemId)
+                                    {
+                                        <input type="number" class="form-control form-control-sm text-end"
+                                               style="max-width:120px;display:inline-block"
+                                               step="0.0001" @bind="_editQty"
+                                               @onkeyup="OnEditKeyUp" />
+                                    }
+                                    else if (line.IsCounted)
+                                    {
+                                        <span class="fw-semibold" style="cursor:pointer" @onclick="() => StartEdit(line)"
+                                              title="Clic para editar">
+                                            @line.CountedQuantity!.Value.ToString("N4")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        @if (_count.Status == "Open")
+                                        {
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => StartEdit(line)">
+                                                Introducir
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (line.IsCounted)
+                                    {
+                                        var diff = line.Difference;
+                                        <span class="fw-semibold @(diff > 0 ? "text-success" : diff < 0 ? "text-danger" : "text-muted")">
+                                            @(diff > 0 ? "+" : "")@diff.ToString("N4")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (_editingItemId == line.ItemId)
+                                    {
+                                        <button class="btn btn-sm btn-success me-1" @onclick="SaveEdit" disabled="@_saving">✓</button>
+                                        <button class="btn btn-sm btn-outline-secondary" @onclick="CancelEdit">✕</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (_count.Status == "Open" && _count.Lines.Any(l => l.IsCounted && l.Difference != 0))
+        {
+            <div class="alert alert-info mt-3">
+                Al cerrar el recuento se generarán movimientos de ajuste automáticos para los artículos con diferencia.
+            </div>
+        }
+    }
+
+    @if (_error is not null)
+    {
+        <div class="alert alert-danger mt-3">@_error</div>
+    }
+}
+
+@if (_showAddLine)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Añadir artículo al recuento</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAddLine"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Artículo *</label>
+                        <div class="input-group mb-2">
+                            <input class="form-control" placeholder="Buscar por código o nombre…"
+                                   @bind="_itemSearch" @onkeyup="SearchItems" />
+                        </div>
+                        @if (_itemResults.Any())
+                        {
+                            <div class="list-group" style="max-height:260px;overflow-y:auto">
+                                @foreach (var item in _itemResults)
+                                {
+                                    <button type="button"
+                                            class="list-group-item list-group-item-action @(_selectedItemId == item.Id ? "active" : "")"
+                                            @onclick="() => SelectItem(item)">
+                                        <strong>@item.Code</strong> — @item.Name
+                                    </button>
+                                }
+                            </div>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(_itemSearch))
+                        {
+                            <div class="text-muted small">Sin resultados.</div>
+                        }
+                    </div>
+                    @if (_addLineError is not null)
+                    {
+                        <div class="alert alert-danger py-2">@_addLineError</div>
+                    }
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseAddLine">Cancelar</button>
+                        <button type="button" class="btn btn-primary" disabled="@(_selectedItemId == Guid.Empty || _saving)"
+                                @onclick="ConfirmAddLine">
+                            @(_saving ? "Añadiendo…" : "Añadir artículo")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showCloseConfirm)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">¿Cerrar recuento?</h5>
+                </div>
+                <div class="modal-body">
+                    @{
+                        var withDiff = _count?.Lines.Count(l => l.IsCounted && l.Difference != 0) ?? 0;
+                        var notCounted = _count?.Lines.Count(l => !l.IsCounted) ?? 0;
+                    }
+                    <p>Se van a generar <strong>@withDiff movimiento(s) de ajuste</strong>.</p>
+                    @if (notCounted > 0)
+                    {
+                        <div class="alert alert-warning py-2">
+                            <strong>@notCounted artículo(s)</strong> no han sido contados y no se ajustarán.
+                        </div>
+                    }
+                    <p>Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showCloseConfirm = false">Cancelar</button>
+                    <button type="button" class="btn btn-warning" disabled="@_saving" @onclick="ExecuteClose">
+                        @(_saving ? "Procesando…" : "Cerrar y aplicar")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    InventoryCountDetailDto? _count;
+    bool _loading = true;
+    bool _saving;
+    string? _error;
+
+    // Add line
+    bool _showAddLine;
+    string? _itemSearch;
+    List<ItemSummaryDto> _itemResults = [];
+    Guid _selectedItemId;
+    string? _addLineError;
+
+    // Edit counted quantity inline
+    Guid _editingItemId;
+    decimal? _editQty;
+
+    // Close confirmation
+    bool _showCloseConfirm;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _count = await GetCount.Handle(new GetInventoryCountByIdQuery(Id));
+        _loading = false;
+    }
+
+    void OpenAddLine()
+    {
+        _itemSearch = null; _itemResults = []; _selectedItemId = Guid.Empty;
+        _addLineError = null; _showAddLine = true;
+    }
+
+    void CloseAddLine() => _showAddLine = false;
+
+    async Task SearchItems(KeyboardEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_itemSearch) || _itemSearch.Length < 2) return;
+        var result = await GetItems.Handle(new GetItemsQuery(_itemSearch, null, false, 1, 20));
+        _itemResults = result.Items.ToList();
+    }
+
+    void SelectItem(ItemSummaryDto item)
+    {
+        _selectedItemId = item.Id;
+        _itemSearch = $"{item.Code} — {item.Name}";
+        _itemResults = [];
+    }
+
+    async Task ConfirmAddLine()
+    {
+        if (_selectedItemId == Guid.Empty) return;
+        _saving = true; _addLineError = null;
+        try
+        {
+            _count = await AddLine.Handle(new AddInventoryCountLineCommand(Id, _selectedItemId, "web"));
+            _showAddLine = false;
+            Toast.Show("Artículo añadido al recuento");
+        }
+        catch (Exception ex) { _addLineError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    void StartEdit(InventoryCountLineDto line)
+    {
+        _editingItemId = line.ItemId;
+        _editQty = line.CountedQuantity ?? line.SystemQuantity;
+    }
+
+    void CancelEdit() { _editingItemId = Guid.Empty; _editQty = null; }
+
+    async Task OnEditKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await SaveEdit();
+        if (e.Key == "Escape") CancelEdit();
+    }
+
+    async Task SaveEdit()
+    {
+        if (_editQty is null) return;
+        _saving = true; _error = null;
+        try
+        {
+            _count = await SetQty.Handle(new SetCountedQuantityCommand(Id, _editingItemId, _editQty.Value, "web"));
+            _editingItemId = Guid.Empty; _editQty = null;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    void ConfirmClose() { _showCloseConfirm = true; }
+
+    async Task ExecuteClose()
+    {
+        _saving = true; _error = null;
+        try
+        {
+            _count = await CloseCount.Handle(new CloseInventoryCountCommand(Id, "web"));
+            _showCloseConfirm = false;
+            Toast.Show($"Recuento {_count.Number} cerrado y ajustes aplicados");
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+}

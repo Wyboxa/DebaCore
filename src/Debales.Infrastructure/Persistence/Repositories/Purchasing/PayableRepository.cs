@@ -53,6 +53,14 @@ internal sealed class PayableRepository : BaseRepository<Payable>, IPayableRepos
         return new PagedResult<Payable>(items, total, page, pageSize);
     }
 
+    public async Task<IReadOnlyList<Payable>> GetForAgingAsync(Guid? supplierId = null, CancellationToken ct = default)
+    {
+        var query = DbSet.Include(p => p.Supplier).AsQueryable();
+        query = query.Where(p => p.Status == PayableStatus.Pending || p.Status == PayableStatus.Partial);
+        if (supplierId.HasValue) query = query.Where(p => p.SupplierId == supplierId);
+        return await query.OrderBy(p => p.DueDate).ToListAsync(ct);
+    }
+
     public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
     {
         var year = DateTime.UtcNow.Year;

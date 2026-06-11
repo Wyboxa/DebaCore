@@ -50,4 +50,13 @@ internal sealed class PurchaseInvoiceRepository : BaseRepository<PurchaseInvoice
         await DbSet
             .Include(i => i.Lines)
             .FirstOrDefaultAsync(i => i.PurchaseDeliveryNoteId == purchaseDeliveryNoteId, cancellationToken);
+
+    public async Task<IReadOnlyList<PurchaseInvoice>> GetBySupplierForStatementAsync(
+        Guid supplierId, DateOnly? from, DateOnly? to, CancellationToken cancellationToken = default)
+    {
+        var query = DbSet.Include(i => i.Lines).Where(i => i.SupplierId == supplierId);
+        if (from.HasValue) query = query.Where(i => i.Date >= from.Value);
+        if (to.HasValue) query = query.Where(i => i.Date <= to.Value);
+        return await query.OrderBy(i => i.Date).ThenBy(i => i.Number).ToListAsync(cancellationToken);
+    }
 }

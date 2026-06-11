@@ -86,11 +86,11 @@ Implementado — migración `AddCrmModule` (2026-05-27) + `AddCustomerEmail` (20
 - CRUD de clientes con búsqueda y paginación
 - Gestión de contactos, actividades, notas y oportunidades
 - Dirección embebida como value object
-- Ficha de cliente con tabs en UI
+- Ficha de cliente con tabs en UI (info, contactos, actividades, notas, oportunidades, historial, códigos, pedidos, estado de cuenta, asistente IA)
 - Código contable de cliente (`AccountCode`) para integración contable
+- Tab "Pedidos" — historial lazy de pedidos de venta del cliente, con badge estado y navegación a ficha
 
 ## Lo que falta
 
 - Importación masiva de clientes
 - Historial de cambios visible desde UI
-- Vinculación con pedidos de venta desde la ficha del cliente

@@ -22,6 +22,8 @@
 @inject GetPriceListsHandler GetPriceLists
 @inject GetPaymentTermsHandler GetPaymentTermsList
 @inject GetPaymentMethodsHandler GetPaymentMethodsList
+@inject GetCustomerStatementHandler StatementHandler
+@inject GetSalesOrdersHandler GetOrders
 @inject ToastService Toast
 @inject NavigationManager Nav
 
@@ -82,7 +84,7 @@ else
     </div>
 
     <ul class="nav nav-tabs mb-3">
-        @foreach (var tab in new[] { "info", "contactos", "actividades", "notas", "oportunidades", "historial", "codigos", "asistente" })
+        @foreach (var tab in new[] { "info", "contactos", "actividades", "notas", "oportunidades", "historial", "codigos", "pedidos", "cuenta", "asistente" })
         {
             <li class="nav-item">
                 <button class="nav-link @(_tab == tab ? "active" : "")" @onclick="() => SetTab(tab)">
@@ -507,6 +509,125 @@ else
         </div>
     }
 
+    @if (_tab == "pedidos")
+    {
+        @if (_pedidosLoading)
+        {
+            <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+        }
+        else if (!_pedidos.Any())
+        {
+            <div class="alert alert-info">Sin pedidos de venta registrados para este cliente.</div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold">Pedidos de venta</span>
+                    <a href="/ventas/pedidos" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Número</th>
+                                <th>Fecha</th>
+                                <th>F. entrega</th>
+                                <th>Estado</th>
+                                <th class="text-end pe-3">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in _pedidos.OrderByDescending(p => p.Date))
+                            {
+                                <tr style="cursor:pointer" @onclick="() => GoToOrder(o.Id)">
+                                    <td class="ps-3 font-monospace small">@o.Number</td>
+                                    <td class="small">@o.Date.ToString("dd/MM/yyyy")</td>
+                                    <td class="small text-muted">@(o.RequestedDeliveryDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                    <td><span class="badge @OrderBadge(o.Status)">@o.StatusLabel</span></td>
+                                    <td class="text-end pe-3 fw-semibold">@o.Total.ToString("N2") €</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+
+    @if (_tab == "cuenta")
+    {
+        @if (_statementLoading)
+        {
+            <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+        }
+        else if (_statement is not null)
+        {
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted small mb-1">Total cargos</div>
+                            <div class="fw-bold fs-5">@_statement.TotalDebit.ToString("N2") €</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="text-muted small mb-1">Total abonos</div>
+                            <div class="fw-bold fs-5 text-success">@_statement.TotalCredit.ToString("N2") €</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100 @(_statement.Balance > 0 ? "border-start border-warning border-3" : "")">
+                        <div class="card-body">
+                            <div class="text-muted small mb-1">Saldo pendiente</div>
+                            <div class="fw-bold fs-5 @(_statement.Balance > 0 ? "text-warning" : "text-success")">@_statement.Balance.ToString("N2") €</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (_statement.Lines.Count == 0)
+            {
+                <div class="alert alert-info">Sin movimientos registrados.</div>
+            }
+            else
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Fecha</th>
+                                    <th>Tipo</th>
+                                    <th>Referencia</th>
+                                    <th class="text-end">Cargo</th>
+                                    <th class="text-end">Abono</th>
+                                    <th class="text-end pe-3">Saldo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var l in _statement.Lines)
+                                {
+                                    <tr>
+                                        <td class="ps-3 small">@l.Date.ToString("dd/MM/yyyy")</td>
+                                        <td><span class="badge @CustomerStmtBadge(l.Type)">@l.Type</span></td>
+                                        <td class="font-monospace small">@l.Reference</td>
+                                        <td class="text-end small">@(l.Debit > 0 ? l.Debit.ToString("N2") + " €" : "—")</td>
+                                        <td class="text-end small text-success">@(l.Credit > 0 ? l.Credit.ToString("N2") + " €" : "—")</td>
+                                        <td class="text-end pe-3 fw-semibold @(l.Balance > 0 ? "text-warning" : "text-success")">@l.Balance.ToString("N2") €</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        }
+    }
+
     @if (_tab == "asistente")
     {
         <div class="row g-3">
@@ -840,6 +961,11 @@ else
     private async Task LoadOpportunitiesAsync() =>
         _opportunities = await GetOpportunities.Handle(new GetOpportunitiesByCustomerQuery(Id));
 
+    Debales.Application.Common.StatementDto? _statement;
+    bool _statementLoading;
+    List<SalesOrderSummaryDto> _pedidos = [];
+    bool _pedidosLoading;
+
     private void SetTab(string tab)
     {
         _tab = tab;
@@ -847,7 +973,48 @@ else
             _ = LoadSummary();
         if (tab == "codigos" && !_customerCodes.Any())
             _ = LoadCustomerCodesAsync();
+        if (tab == "cuenta" && _statement is null && !_statementLoading)
+            _ = LoadStatementAsync();
+        if (tab == "pedidos" && !_pedidos.Any() && !_pedidosLoading)
+            _ = LoadPedidosAsync();
     }
+
+    private async Task LoadPedidosAsync()
+    {
+        _pedidosLoading = true;
+        var result = await GetOrders.Handle(new GetSalesOrdersQuery(null, Id, null, 1, 200));
+        _pedidos = result.Items.ToList();
+        _pedidosLoading = false;
+        StateHasChanged();
+    }
+
+    private void GoToOrder(Guid orderId) => Nav.NavigateTo($"/ventas/pedidos/{orderId}");
+
+    private static string OrderBadge(SalesOrderStatus s) => s switch
+    {
+        SalesOrderStatus.Draft              => "bg-secondary",
+        SalesOrderStatus.Confirmed          => "bg-primary",
+        SalesOrderStatus.PartiallyDelivered => "bg-warning text-dark",
+        SalesOrderStatus.Delivered          => "bg-success",
+        SalesOrderStatus.Cancelled          => "bg-danger",
+        _                                   => "bg-secondary"
+    };
+
+    private async Task LoadStatementAsync()
+    {
+        _statementLoading = true;
+        _statement = await StatementHandler.Handle(new GetCustomerStatementQuery(Id));
+        _statementLoading = false;
+        StateHasChanged();
+    }
+
+    private static string CustomerStmtBadge(string type) => type switch
+    {
+        "Factura" => "bg-warning text-dark",
+        "Rectificativa" => "bg-secondary",
+        "Cobro" => "bg-success",
+        _ => "bg-light text-dark border"
+    };
 
     private async Task LoadCustomerCodesAsync()
     {
@@ -983,6 +1150,8 @@ else
         "oportunidades" => "Oportunidades",
         "historial"     => "Historial",
         "codigos"       => "Códigos",
+        "pedidos"       => "Pedidos",
+        "cuenta"        => "Estado de cuenta",
         "asistente"     => "Asistente IA",
         _ => tab
     };

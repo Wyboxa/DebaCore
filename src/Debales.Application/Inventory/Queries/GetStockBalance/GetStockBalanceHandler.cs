@@ -26,5 +26,5 @@ public sealed class GetStockBalanceHandler
     private static StockBalanceDto ToDto(StockBalance b) => new(
         b.ItemId, b.Item?.Code ?? string.Empty, b.Item?.Name ?? string.Empty,
         b.WarehouseId, b.Warehouse?.Name ?? string.Empty,
-        b.Quantity);
+        b.Quantity, b.Item?.MinimumStock);
 }

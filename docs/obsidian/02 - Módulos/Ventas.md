@@ -134,14 +134,16 @@ Implementado — migraciones `AddERP2Module` (2026-05-29) + `AddERP3Module` (202
 
 ## Lo que está completo
 
-- Ciclo completo: Pedido → Albarán → Factura → Cobro
+- Ciclo completo: Presupuesto → Pedido → Albarán → Factura → Cobro
 - Rectificativas de venta
 - Generación automática en lote
-- Vencimientos desde factura
+- Vencimientos desde factura (con condiciones de pago: múltiples plazos automáticos)
 - Cobros con liquidación de vencimientos
-- UI completa con modales de creación
+- Asientos contables automáticos desde facturas y cobros
+- Resolución automática de precios desde tarifa del cliente (`GetItemPriceHandler`)
+- UI completa con modales de creación y auto-fill de precio al seleccionar artículo
+- `SalesQuote` (presupuestos): ciclo Draft→Sent→Accepted→Convertido, `ConvertQuoteToOrderHandler`
 
 ## Lo que falta
 
-- Presupuestos de venta (`SalesQuote`)
-- Integración automática de cobros con asientos contables
+- Envío por email

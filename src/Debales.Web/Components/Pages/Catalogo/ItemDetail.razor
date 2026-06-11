@@ -4,6 +4,8 @@
 @inject GetItemByIdHandler GetItem
 @inject UpdateItemHandler UpdateHandler
 @inject GetCatalogLookupsHandler GetLookups
+@inject GetStockMovementsHandler GetMovements
+@inject GetStockBalanceHandler GetStockBalance
 @inject NavigationManager Nav
 @inject ToastService Toast
 
@@ -40,75 +42,197 @@ else
                 {
                     <span class="badge bg-secondary">Artículo</span>
                 }
-                @if (_item.IsActive)
-                {
-                    <span class="badge bg-success">Activo</span>
-                }
-                else
-                {
-                    <span class="badge bg-danger">Inactivo</span>
-                }
+                <span class="badge @(_item.IsActive ? "bg-success" : "bg-danger")">@(_item.IsActive ? "Activo" : "Inactivo")</span>
             </div>
         </div>
         <button class="btn btn-outline-primary" @onclick="OpenEdit">Editar</button>
     </div>
 
-    <div class="row g-3">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom fw-semibold">Información general</div>
-                <div class="card-body">
-                    <table class="table table-sm table-borderless mb-0">
-                        <tbody>
-                            <tr><th class="text-muted fw-normal" style="width:40%">Familia</th><td>@(_item.FamilyName ?? "—")</td></tr>
-                            <tr><th class="text-muted fw-normal">Unidad de medida</th><td>@_item.UnitOfMeasureName</td></tr>
-                            <tr><th class="text-muted fw-normal">Tipo IVA</th><td>@(_item.TaxTypeName is not null ? $"{_item.TaxTypeName} ({_item.TaxRate}%)" : "—")</td></tr>
-                            <tr><th class="text-muted fw-normal">Descripción</th><td>@(_item.Description ?? "—")</td></tr>
-                        </tbody>
-                    </table>
+    <ul class="nav nav-tabs mb-3">
+        @foreach (var tab in new[] { "info", "movimientos", "stock" })
+        {
+            <li class="nav-item">
+                <button class="nav-link @(_tab == tab ? "active" : "")" @onclick="() => SetTab(tab)">
+                    @TabLabel(tab)
+                </button>
+            </li>
+        }
+    </ul>
+
+    @if (_tab == "info")
+    {
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom fw-semibold">Información general</div>
+                    <div class="card-body">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tbody>
+                                <tr><th class="text-muted fw-normal" style="width:40%">Familia</th><td>@(_item.FamilyName ?? "—")</td></tr>
+                                <tr><th class="text-muted fw-normal">Unidad de medida</th><td>@_item.UnitOfMeasureName</td></tr>
+                                <tr><th class="text-muted fw-normal">Tipo IVA</th><td>@(_item.TaxTypeName is not null ? $"{_item.TaxTypeName} ({_item.TaxRate}%)" : "—")</td></tr>
+                                <tr><th class="text-muted fw-normal">Descripción</th><td>@(_item.Description ?? "—")</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom fw-semibold">Precios</div>
+                    <div class="card-body">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tbody>
+                                <tr><th class="text-muted fw-normal" style="width:50%">Precio de venta</th><td class="fw-semibold">@_item.SalePrice.ToString("N2") €</td></tr>
+                                <tr><th class="text-muted fw-normal">Precio de compra</th><td>@_item.PurchasePrice.ToString("N2") €</td></tr>
+                                <tr>
+                                    <th class="text-muted fw-normal">Stock mínimo</th>
+                                    <td>
+                                        @if (_item.MinimumStock.HasValue)
+                                        {
+                                            <span>@_item.MinimumStock.Value.ToString("N4")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted fw-normal">Margen bruto</th>
+                                    <td>
+                                        @{
+                                            var margin = _item.SalePrice > 0
+                                                ? ((_item.SalePrice - _item.PurchasePrice) / _item.SalePrice * 100)
+                                                : 0m;
+                                        }
+                                        @margin.ToString("N1")%
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom fw-semibold">Auditoría</div>
+                    <div class="card-body">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tbody>
+                                <tr><th class="text-muted fw-normal" style="width:20%">Creado</th><td>@_item.CreatedAt.ToString("dd/MM/yyyy HH:mm") @(_item.CreatedBy is not null ? $"por {_item.CreatedBy}" : "")</td></tr>
+                                @if (_item.UpdatedAt.HasValue)
+                                {
+                                    <tr><th class="text-muted fw-normal">Modificado</th><td>@_item.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") @(_item.UpdatedBy is not null ? $"por {_item.UpdatedBy}" : "")</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
+    }
+
+    @if (_tab == "stock")
+    {
+        @if (_stockLoading)
+        {
+            <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+        }
+        else if (!_stockBalances.Any())
+        {
+            <div class="alert alert-info">Sin saldos de stock registrados para este artículo.</div>
+        }
+        else
+        {
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom fw-semibold">Precios</div>
-                <div class="card-body">
-                    <table class="table table-sm table-borderless mb-0">
-                        <tbody>
-                            <tr><th class="text-muted fw-normal" style="width:50%">Precio de venta</th><td class="fw-semibold">@_item.SalePrice.ToString("N2") €</td></tr>
-                            <tr><th class="text-muted fw-normal">Precio de compra</th><td>@_item.PurchasePrice.ToString("N2") €</td></tr>
-                            <tr><th class="text-muted fw-normal">Margen bruto</th>
-                                <td>
-                                    @{
-                                        var margin = _item.SalePrice > 0
-                                            ? ((_item.SalePrice - _item.PurchasePrice) / _item.SalePrice * 100)
-                                            : 0m;
-                                    }
-                                    @margin.ToString("N1")%
-                                </td>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3" colspan="2">Almacén</th>
+                                <th class="text-end">Cantidad</th>
+                                <th class="text-end pe-3">Mínimo</th>
                             </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var b in _stockBalances)
+                            {
+                                var belowMin = b.MinimumStock.HasValue && b.Quantity < b.MinimumStock.Value;
+                                <tr class="@(belowMin ? "table-warning" : "")">
+                                    <td class="ps-3 fw-semibold" colspan="2">@b.WarehouseName</td>
+                                    <td class="text-end fw-bold @(b.Quantity <= 0 ? "text-danger" : "")">@b.Quantity.ToString("N4")</td>
+                                    <td class="text-end pe-3 text-muted small">@(b.MinimumStock.HasValue ? b.MinimumStock.Value.ToString("N4") : "—")</td>
+                                </tr>
+                            }
                         </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="2" class="ps-3 fw-semibold small">TOTAL</td>
+                                <td class="text-end fw-bold" colspan="2">@_stockBalances.Sum(b => b.Quantity).ToString("N4")</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
-        </div>
-        <div class="col-12">
+        }
+    }
+
+    @if (_tab == "movimientos")
+    {
+        @if (_movementsLoading)
+        {
+            <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+        }
+        else if (!_movements.Any())
+        {
+            <div class="alert alert-info">Sin movimientos de stock registrados para este artículo.</div>
+        }
+        else
+        {
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom fw-semibold">Auditoría</div>
-                <div class="card-body">
-                    <table class="table table-sm table-borderless mb-0">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold">Historial de movimientos</span>
+                    <span class="text-muted small">@_movements.Count movimiento@(_movements.Count != 1 ? "s" : "")</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Fecha</th>
+                                <th>Número</th>
+                                <th>Tipo</th>
+                                <th>Almacén</th>
+                                <th>Referencia</th>
+                                <th class="text-end">Cantidad</th>
+                                <th class="text-end pe-3">Saldo acum.</th>
+                            </tr>
+                        </thead>
                         <tbody>
-                            <tr><th class="text-muted fw-normal" style="width:20%">Creado</th><td>@_item.CreatedAt.ToString("dd/MM/yyyy HH:mm") @(_item.CreatedBy is not null ? $"por {_item.CreatedBy}" : "")</td></tr>
-                            @if (_item.UpdatedAt.HasValue)
+                            @{
+                                decimal running = 0m;
+                            }
+                            @foreach (var m in _movements.OrderBy(x => x.Date).ThenBy(x => x.Number))
                             {
-                                <tr><th class="text-muted fw-normal">Modificado</th><td>@_item.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") @(_item.UpdatedBy is not null ? $"por {_item.UpdatedBy}" : "")</td></tr>
+                                running += m.Quantity;
+                                <tr>
+                                    <td class="ps-3 small">@m.Date.ToString("dd/MM/yyyy")</td>
+                                    <td class="font-monospace small">@m.Number</td>
+                                    <td><span class="badge @MovBadge(m.Type)">@m.TypeLabel</span></td>
+                                    <td class="small">@m.WarehouseName</td>
+                                    <td class="small text-muted">@(m.Reference ?? "—")</td>
+                                    <td class="text-end fw-semibold @(m.Quantity >= 0 ? "text-success" : "text-danger")">
+                                        @(m.Quantity >= 0 ? "+" : "")@m.Quantity.ToString("N4")
+                                    </td>
+                                    <td class="text-end pe-3 @(running <= 0 ? "text-danger" : "")">@running.ToString("N4")</td>
+                                </tr>
                             }
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div>
-    </div>
+        }
+    }
 }
 
 @if (_showEdit && _item is not null)
@@ -168,6 +292,11 @@ else
                                 <label class="form-label">P. compra (€)</label>
                                 <InputNumber class="form-control" @bind-Value="_form.PurchasePrice" />
                             </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Stock mínimo</label>
+                                <InputNumber class="form-control" @bind-Value="_form.MinimumStock" placeholder="Sin umbral" />
+                                <div class="form-text">Deja vacío para no definir umbral de alerta.</div>
+                            </div>
                             <div class="col-12">
                                 <div class="form-check">
                                     <InputCheckbox class="form-check-input" @bind-Value="_form.IsService" id="chkServiceEdit" />
@@ -206,6 +335,15 @@ else
     private bool _saving;
     private string? _editError;
     private EditItemForm _form = new();
+    private string _tab = "info";
+
+    // Movimientos
+    private List<StockMovementSummaryDto> _movements = [];
+    private bool _movementsLoading;
+
+    // Saldos por almacén
+    private List<StockBalanceDto> _stockBalances = [];
+    private bool _stockLoading;
 
     protected override async Task OnInitializedAsync()
     {
@@ -218,6 +356,32 @@ else
         _loading = true;
         _item = await GetItem.Handle(new GetItemByIdQuery(Id));
         _loading = false;
+    }
+
+    private void SetTab(string tab)
+    {
+        _tab = tab;
+        if (tab == "movimientos" && !_movements.Any() && !_movementsLoading)
+            _ = LoadMovementsAsync();
+        if (tab == "stock" && !_stockBalances.Any() && !_stockLoading)
+            _ = LoadStockAsync();
+    }
+
+    private async Task LoadMovementsAsync()
+    {
+        _movementsLoading = true;
+        var result = await GetMovements.Handle(new GetStockMovementsQuery(null, Id, null, null, 1, 500));
+        _movements = result.Items.ToList();
+        _movementsLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadStockAsync()
+    {
+        _stockLoading = true;
+        _stockBalances = (await GetStockBalance.Handle(new GetStockBalanceQuery(Id, null))).ToList();
+        _stockLoading = false;
+        StateHasChanged();
     }
 
     private void OpenEdit()
@@ -233,7 +397,8 @@ else
             UnitOfMeasureIdStr = _item.UnitOfMeasureId.ToString(),
             TaxTypeIdStr = _item.TaxTypeId?.ToString() ?? "",
             SalePrice = _item.SalePrice,
-            PurchasePrice = _item.PurchasePrice
+            PurchasePrice = _item.PurchasePrice,
+            MinimumStock = _item.MinimumStock
         };
         _editError = null;
         _showEdit = true;
@@ -255,7 +420,7 @@ else
                 _form.IsService, unitId,
                 Guid.TryParse(_form.FamilyIdStr, out var f) ? f : null,
                 Guid.TryParse(_form.TaxTypeIdStr, out var t) ? t : null,
-                _form.SalePrice, _form.PurchasePrice, "web"));
+                _form.SalePrice, _form.PurchasePrice, "web", _form.MinimumStock));
             _showEdit = false;
             Toast.Show("Artículo actualizado correctamente");
         }
@@ -263,6 +428,22 @@ else
         catch (ArgumentException ex) { _editError = ex.Message; }
         finally { _saving = false; }
     }
+
+    private static string TabLabel(string tab) => tab switch
+    {
+        "info"        => "Información",
+        "movimientos" => "Movimientos",
+        "stock"       => "Saldos por almacén",
+        _             => tab
+    };
+
+    private static string MovBadge(StockMovementType type) => type switch
+    {
+        StockMovementType.In         => "bg-success",
+        StockMovementType.Out        => "bg-danger",
+        StockMovementType.Adjustment => "bg-warning text-dark",
+        _                            => "bg-secondary"
+    };
 
     private sealed class EditItemForm
     {
@@ -275,5 +456,6 @@ else
         public string? TaxTypeIdStr { get; set; }
         public decimal SalePrice { get; set; }
         public decimal PurchasePrice { get; set; }
+        public decimal? MinimumStock { get; set; }
     }
 }

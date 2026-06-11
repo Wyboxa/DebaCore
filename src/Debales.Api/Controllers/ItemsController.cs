@@ -67,7 +67,7 @@ public sealed class ItemsController : ControllerBase
             new CreateItemCommand(
                 request.Code, request.Name, request.Description,
                 request.IsService, request.UnitOfMeasureId, request.FamilyId, request.TaxTypeId,
-                request.SalePrice, request.PurchasePrice, "api"), ct);
+                request.SalePrice, request.PurchasePrice, "api", request.MinimumStock), ct);
         return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
     }
 
@@ -78,17 +78,17 @@ public sealed class ItemsController : ControllerBase
             new UpdateItemCommand(
                 id, request.Code, request.Name, request.Description,
                 request.IsService, request.UnitOfMeasureId, request.FamilyId, request.TaxTypeId,
-                request.SalePrice, request.PurchasePrice, "api"), ct);
+                request.SalePrice, request.PurchasePrice, "api", request.MinimumStock), ct);
         return Ok(item);
     }
 
     public sealed record CreateItemRequest(
         string Code, string Name, string? Description,
         bool IsService, Guid UnitOfMeasureId, Guid? FamilyId, Guid? TaxTypeId,
-        decimal SalePrice, decimal PurchasePrice);
+        decimal SalePrice, decimal PurchasePrice, decimal? MinimumStock = null);
 
     public sealed record UpdateItemRequest(
         string Code, string Name, string? Description,
         bool IsService, Guid UnitOfMeasureId, Guid? FamilyId, Guid? TaxTypeId,
-        decimal SalePrice, decimal PurchasePrice);
+        decimal SalePrice, decimal PurchasePrice, decimal? MinimumStock = null);
 }

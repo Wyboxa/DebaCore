@@ -1,0 +1,165 @@
+@page "/contabilidad/estado-cuenta-proveedores"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetSupplierStatementHandler StatementHandler
+@inject GetSuppliersHandler SuppliersHandler
+@using Debales.Application.Purchasing.Queries.GetSupplierStatement
+@using Debales.Application.Common
+
+<PageTitle>Estado de cuenta — Proveedores — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Estado de cuenta — Proveedores</h1>
+</div>
+
+@* Filtros *@
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Proveedor</label>
+                <select class="form-select" @bind="_supplierId">
+                    <option value="">— Seleccionar proveedor —</option>
+                    @foreach (var s in _suppliers)
+                    {
+                        <option value="@s.Id">@s.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Desde</label>
+                <input type="date" class="form-control" @bind="_from" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Hasta</label>
+                <input type="date" class="form-control" @bind="_to" />
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" @onclick="LoadStatement" disabled="@(_supplierId == Guid.Empty)">
+                    Consultar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_statement is not null)
+{
+    @* KPIs *@
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Total cargos (rect. + pagos)</div>
+                    <div class="fw-bold fs-4 text-success">@_statement.TotalDebit.ToString("N2") €</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Total abonos (facturas)</div>
+                    <div class="fw-bold fs-4">@_statement.TotalCredit.ToString("N2") €</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 @(_statement.Balance > 0 ? "border-start border-warning border-4" : "")">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Saldo pendiente (deuda)</div>
+                    <div class="fw-bold fs-4 @(_statement.Balance > 0 ? "text-warning" : "text-success")">
+                        @_statement.Balance.ToString("N2") €
+                    </div>
+                    <div class="small text-muted">@_statement.ThirdPartyName</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Tabla de movimientos *@
+    @if (_statement.Lines.Count == 0)
+    {
+        <div class="alert alert-info">Sin movimientos en el período seleccionado.</div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Fecha</th>
+                            <th>Tipo</th>
+                            <th>Referencia</th>
+                            <th class="text-end">Cargo</th>
+                            <th class="text-end">Abono</th>
+                            <th class="text-end pe-3">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var l in _statement.Lines)
+                        {
+                            <tr>
+                                <td class="ps-3 small">@l.Date.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <span class="badge @TypeBadge(l.Type)">@l.Type</span>
+                                </td>
+                                <td class="font-monospace small">@l.Reference</td>
+                                <td class="text-end small text-success">@(l.Debit > 0 ? l.Debit.ToString("N2") + " €" : "—")</td>
+                                <td class="text-end small">@(l.Credit > 0 ? l.Credit.ToString("N2") + " €" : "—")</td>
+                                <td class="text-end pe-3 fw-semibold @(l.Balance > 0 ? "text-warning" : "text-success")">
+                                    @l.Balance.ToString("N2") €
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="3" class="ps-3 fw-semibold small">TOTAL</td>
+                            <td class="text-end fw-bold text-success">@_statement.TotalDebit.ToString("N2") €</td>
+                            <td class="text-end fw-bold">@_statement.TotalCredit.ToString("N2") €</td>
+                            <td class="text-end pe-3 fw-bold @(_statement.Balance > 0 ? "text-warning" : "text-success")">
+                                @_statement.Balance.ToString("N2") €
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    bool _loading;
+    Guid _supplierId;
+    DateOnly? _from;
+    DateOnly? _to;
+    StatementDto? _statement;
+    List<Debales.Application.Suppliers.DTOs.SupplierSummaryDto> _suppliers = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await SuppliersHandler.Handle(new GetSuppliersQuery(null, 1, 500));
+        _suppliers = result.Items.Where(s => s.IsActive).OrderBy(s => s.Name).ToList();
+    }
+
+    async Task LoadStatement()
+    {
+        if (_supplierId == Guid.Empty) return;
+        _loading = true;
+        _statement = await StatementHandler.Handle(new GetSupplierStatementQuery(_supplierId, _from, _to));
+        _loading = false;
+    }
+
+    static string TypeBadge(string type) => type switch
+    {
+        "Factura" => "bg-warning text-dark",
+        "Rectificativa" => "bg-secondary",
+        "Pago" => "bg-success",
+        _ => "bg-light text-dark border"
+    };
+}

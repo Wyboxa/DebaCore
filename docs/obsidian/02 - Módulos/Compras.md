@@ -128,10 +128,11 @@ Implementado — migraciones `AddERP2Module` (2026-05-29) + `AddERP3Module` (202
 
 - Ciclo completo: Pedido → Albarán → Factura → Pago
 - Rectificativas de compra
-- Vencimientos desde factura
+- Vencimientos desde factura (con condiciones de pago del proveedor: múltiples plazos automáticos)
 - Pagos con liquidación de vencimientos
+- Asientos contables automáticos desde facturas y pagos
 - Número de factura de proveedor en PurchaseInvoice
 
 ## Lo que falta
 
-- Integración automática de pagos con asientos contables
+- Envío por email

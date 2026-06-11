@@ -24,7 +24,7 @@ public sealed class CreateItemHandler
         var item = Item.Create(
             command.Code, command.Name, command.Description,
             command.IsService, command.UnitOfMeasureId, command.FamilyId, command.TaxTypeId,
-            command.SalePrice, command.PurchasePrice, command.CreatedBy);
+            command.SalePrice, command.PurchasePrice, command.CreatedBy, command.MinimumStock);
 
         await _items.AddAsync(item, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);

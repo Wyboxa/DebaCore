@@ -76,7 +76,7 @@ Implementado — migración `AddCatalogModule` (2026-05-28). Tarifas implementad
 | Página | Ruta | Estado |
 |--------|------|--------|
 | `Items.razor` | `/catalogo` | Implementada — lista con búsqueda, filtros y creación inline |
-| `ItemDetail.razor` | `/catalogo/{id}` | Implementada — ficha de artículo |
+| `ItemDetail.razor` | `/catalogo/{id}` | Implementada — ficha con 3 tabs: Información, Movimientos (historial stock acumulado), Saldos por almacén |
 | `Tarifas.razor` | `/catalogo/tarifas` | Implementada — lista con búsqueda y creación inline |
 | `TarifaDetalle.razor` | `/catalogo/tarifas/{id}` | Implementada — ficha con tabla de precios (add/edit/remove) |
 | `SupplierDetail.razor` (tab Códigos) | `/proveedores/{id}` → tab | Implementada |
@@ -107,8 +107,10 @@ Implementado — migración `AddCatalogModule` (2026-05-28). Tarifas implementad
 - Datos de referencia para dropdowns en pedidos/albaranes/facturas
 - Tarifas de precio (`PriceList` + `ItemPrice`) — CRUD completo con UI
 - Códigos de artículo por proveedor y cliente — upsert/delete con UI en fichas
+- `MinimumStock` en `Item` — campo nullable con alerta "Bajo mínimo" en SaldosStock y Dashboard
+- `ItemDetail.razor` con 3 tabs: Información, Movimientos (historial con saldo acumulado), Saldos por almacén
+- `GetItemPriceHandler` con 6 tests: resolución desde tarifa, fallback a precio venta, tarifa sin entrada para el artículo, tarifa no encontrada
 
 ## Lo que falta
 
-- Control de stock mínimo y máximo
-- Aplicación de tarifas en líneas de pedido/presupuesto
+- (sin pendientes de primer nivel)

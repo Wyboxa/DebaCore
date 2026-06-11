@@ -26,7 +26,7 @@ public sealed class UpdateItemHandler
         item.Update(
             command.Code, command.Name, command.Description,
             command.IsService, command.UnitOfMeasureId, command.FamilyId, command.TaxTypeId,
-            command.SalePrice, command.PurchasePrice, command.UpdatedBy);
+            command.SalePrice, command.PurchasePrice, command.UpdatedBy, command.MinimumStock);
 
         _items.Update(item);
         await _uow.SaveChangesAsync(cancellationToken);
@@ -54,5 +54,6 @@ public sealed class UpdateItemHandler
         item.CreatedAt,
         item.CreatedBy,
         item.UpdatedAt,
-        item.UpdatedBy);
+        item.UpdatedBy,
+        item.MinimumStock);
 }

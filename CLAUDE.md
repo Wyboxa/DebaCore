@@ -224,8 +224,8 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-06-09:** NumberSeries cableado en los **13 handlers** de creación de documentos (PRE/PV/ALV/FV/RV/PC/ALC/FC/RC). Migración seed `AddNumberSeriesSeed` con 9 series por defecto. `GetNextNumberAsync` eliminado de las 9 interfaces y repositorios de documentos. API REST para NumberSeries (`NumberSeriesController`). Middleware de licencias: `RequiresModuleAttribute` (API, 15 controllers) + `ModuleRouteGuard` (Web, `MainLayout`). Módulo Tarifas: `PriceList`, `ItemPrice`, `SupplierItemCode`, `CustomerItemCode` — Domain + Application (12 handlers) + Infrastructure + API + UI completos. Migración `20260609163530_AddPriceListModule`. 65 tests pasando. Repositorio GitHub: `https://github.com/Wyboxa/DebaCore`.
-> 15 migraciones (seed `AddNumberSeriesSeed` pendiente de `database update`). 65 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
+> **Actualización 2026-06-11 (sesión 3h):** Tab "Pedidos" en `CustomerDetail.razor` (historial lazy de pedidos de venta del cliente) + tab "Pedidos" en `SupplierDetail.razor` (historial lazy de pedidos de compra del proveedor). Tests `GetItemPriceHandler` (6) + `ConvertQuoteToOrderHandler` (9). Obsidian sincronizado.
+> 21 migraciones aplicadas. 224 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
 El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada sobre ERP.
@@ -252,7 +252,7 @@ Lo que ya existe (no asumir como propuesta):
 - Sistema de auditoría automática: `ApplicationDbContext.SaveChangesAsync` escribe `AuditEntry` para todas las entidades del dominio (excepto líneas y tablas de control). `ICurrentUserService` / `CurrentUserService` para captura del usuario activo.
 - Módulo NumberSeries: `NumberSeries.Consume()` genera y consume numeración; `GetNextFormatted()` previsualiza. UI en `/configuracion/series`. **Cableado completo en los 13 handlers de creación de documentos** (PRE, PV, ALV, FV, RV, PC, ALC, FC, RC). Migración seed `AddNumberSeriesSeed` con 9 series por defecto (pendiente de aplicar con `database update`).
 - UI con paleta teal `#6B9CA9`, sidebar oscuro.
-- **65 tests automatizados pasando** (Domain: 31, Application: 33, Integration: 1).
+- **72 tests automatizados pasando** (Domain: 31, Application: 40, Integration: 1).
 - Vault Obsidian en `docs/obsidian/` — actualizado en cada sesión de desarrollo.
 
 Lo que aún no existe y debe tratarse como propuesta:
@@ -2549,3 +2549,19 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 | API REST NumberSeries (`NumberSeriesController` GET/POST/PUT) | Completo — 2026-06-09 | sin migración |
 | Middleware licencias API (`RequiresModuleAttribute`, 15 controllers) + Web (`ModuleRouteGuard` en MainLayout) | Completo — 2026-06-09 | sin migración |
 | Tarifas y códigos de artículo por tercero (`PriceList`, `ItemPrice`, `SupplierItemCode`, `CustomerItemCode`) — Domain + 12 handlers + API (PriceListsController, sub-rutas en Suppliers/Customers) + UI (Tarifas.razor, TarifaDetalle.razor, tabs Códigos en Proveedor/Cliente) | Completo — 2026-06-09 | `20260609163530_AddPriceListModule` |
+| `PaymentTerm` + `PaymentTermLine` (condiciones de pago) — Domain + Application (5 handlers) + Infrastructure + API + UI `/configuracion/condiciones-pago` + seed 7 condiciones | Completo — 2026-06-10 | `20260609223341_AddPaymentMethodModule` |
+| `PaymentMethod` (formas de pago) — Domain + Application (5 handlers + 7 tests) + Infrastructure + API + UI `/configuracion/formas-pago` + seed 6 formas; FK en Customer/Supplier | Completo — 2026-06-10 | `20260609225012_AddPaymentTermAndMethodSeed` |
+| `BankAccount` (cuentas bancarias) — Domain + Application (5 handlers) + Infrastructure + API (`BankAccountsController`) + UI `/contabilidad/cuentas-bancarias`; FK opcional a Account | Completo — 2026-06-10 | `20260609225537_AddBankAccountModule` |
+| `AdjustStock` command+handler — ajusta stock a cantidad objetivo, calcula delta, genera `StockMovement` de tipo Adjustment; botón "Ajustar" en UI de Saldos de stock | Completo — 2026-06-10 | sin migración |
+| `Item.MinimumStock` (decimal nullable) — campo en Domain + Application + Infrastructure (HasPrecision) + API + UI (ficha + lista); badge "Bajo mínimo" en SaldosStock; alerta KPI en Dashboard | Completo — 2026-06-10 | `20260610194228_AddMinimumStockToItems` |
+| `InventoryCount` + `InventoryCountLine` — sesión de recuento físico: crear → añadir artículos (con stock sistema) → registrar cantidades contadas → cerrar (genera ajustes automáticos para diferencias). Domain + Application (6 handlers) + Infrastructure + API (`InventoryCountsController`) + UI (`ConteoInventario.razor` + `ConteoInventarioDetalle.razor`) | Completo — 2026-06-10 | `20260610201622_AddInventoryCountModule` |
+| `MinimumStock` en `Item` — campo nullable decimal en Domain + Application (DTOs, Commands) + Infrastructure + migración + API; alerta "Bajo mínimo" en `SaldosStock.razor`; KPI en Dashboard | Completo — 2026-06-10 | `20260610194228_AddMinimumStockToItems` |
+| `CashAccount` (cajas) — Domain + Application (5 handlers) + Infrastructure + API (`CashAccountsController`) + UI `/contabilidad/cajas`; FK opcional a Account | Completo — 2026-06-10 | `20260610203401_AddCashAccountModule` |
+| `Remittance` + `RemittanceLine` (remesas bancarias) — Domain (estado: Draft→Sent→Confirmed/Failed) + Application (8 commands + 2 queries + handlers) + Infrastructure + API (`RemittancesController`) + UI (`Remesas.razor` + `RemesaDetalle.razor`); liquida Receivables/Payables al confirmar | Completo — 2026-06-11 | `20260611141125_AddRemittanceModule` |
+| Informe vencimientos aging (`GetReceivablesAgingHandler` + `GetPayablesAgingHandler`) — buckets Corriente/1-30/31-60/61-90/+90; `AgingReportDto` en `Application.Common`; API `ReportsController` (`/api/reports/receivables-aging`, `/api/reports/payables-aging`); UI `/contabilidad/vencimientos` (2 tabs, 5 bucket cards, tabla coloreada por vencimiento) | Completo — 2026-06-11 | sin migración |
+| Posición de tesorería (`GetTreasuryPositionHandler`) — suma saldos de `BankAccount` + `CashAccount`; `TreasuryPositionDto` en `AccountingDtos`; API `ReportsController` (`/api/reports/treasury-position`); UI `/contabilidad/tesoreria` (3 KPIs, tablas banco/caja); KPI tesorería en Dashboard `Home.razor` | Completo — 2026-06-11 | sin migración |
+| Estado de cuenta cliente/proveedor (`GetCustomerStatementHandler` + `GetSupplierStatementHandler`) — movimientos ordenados por fecha (facturas, rectificativas, cobros/pagos) con saldo acumulado; `StatementDto` + `StatementLineDto` en `Application.Common`; `GetByCustomerForStatementAsync`/`GetBySupplierForStatementAsync` en 6 repos; API `ReportsController`; UI `/contabilidad/estado-cuenta-clientes` + `/contabilidad/estado-cuenta-proveedores`; tab "Estado de cuenta" en `CustomerDetail.razor` + `SupplierDetail.razor`; tests (7+5+4) | Completo — 2026-06-11 | sin migración |
+| `ItemDetail.razor` tabs — "Información" (layout existente), "Movimientos" (historial stock con saldo acumulado, lazy, usa `GetStockMovementsHandler` con `ItemId`), "Saldos por almacén" (saldos por almacén, lazy, usa `GetStockBalanceHandler`) | Completo — 2026-06-11 | sin migración |
+| Tests `GetItemPriceHandler` (6) + `ConvertQuoteToOrderHandler` (9) — cobertura resolución precios y ciclo presupuesto→pedido | Completo — 2026-06-11 | sin migración |
+| Tab "Pedidos" en `CustomerDetail.razor` — historial lazy de `SalesOrder` por cliente (badge estado, link a ficha) | Completo — 2026-06-11 | sin migración |
+| Tab "Pedidos" en `SupplierDetail.razor` — historial lazy de `PurchaseOrder` por proveedor (badge estado, link a ficha) | Completo — 2026-06-11 | sin migración |

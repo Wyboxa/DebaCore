@@ -6,4 +6,5 @@ public sealed record StockBalanceDto(
     string ItemName,
     Guid WarehouseId,
     string WarehouseName,
-    decimal Quantity);
+    decimal Quantity,
+    decimal? MinimumStock = null);

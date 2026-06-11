@@ -76,7 +76,9 @@ using Debales.Application.Purchasing.Queries.GetPurchaseInvoiceById;
 using Debales.Application.Purchasing.Queries.GetPurchaseCreditNotes;
 using Debales.Application.Purchasing.Queries.GetPurchaseCreditNoteById;
 using Debales.Application.Purchasing.Queries.GetPayables;
+using Debales.Application.Purchasing.Queries.GetPayablesAging;
 using Debales.Application.Purchasing.Queries.GetSupplierPayments;
+using Debales.Application.Purchasing.Queries.GetSupplierStatement;
 using Debales.Application.Sales.Commands.CreatePaymentTerm;
 using Debales.Application.Sales.Commands.UpdatePaymentTerm;
 using Debales.Application.Sales.Commands.DeletePaymentTerm;
@@ -98,6 +100,8 @@ using Debales.Application.Sales.Queries.GetSalesInvoiceById;
 using Debales.Application.Sales.Queries.GetSalesCreditNotes;
 using Debales.Application.Sales.Queries.GetSalesCreditNoteById;
 using Debales.Application.Sales.Queries.GetReceivables;
+using Debales.Application.Sales.Queries.GetReceivablesAging;
+using Debales.Application.Sales.Queries.GetCustomerStatement;
 using Debales.Application.Sales.Queries.GetCustomerPayments;
 using Debales.Application.AI.ERP;
 using Debales.Application.Accounting.Commands.CloseFiscalPeriod;
@@ -116,6 +120,27 @@ using Debales.Application.Accounting.Queries.GetJournalBook;
 using Debales.Application.Accounting.Queries.GetBalanceSheet;
 using Debales.Application.Accounting.Queries.GetAccountingJournals;
 using Debales.Application.Accounting.Queries.GetFiscalYears;
+using Debales.Application.Accounting.Commands.CreateBankAccount;
+using Debales.Application.Accounting.Commands.UpdateBankAccount;
+using Debales.Application.Accounting.Commands.DeleteBankAccount;
+using Debales.Application.Accounting.Queries.GetBankAccounts;
+using Debales.Application.Accounting.Queries.GetTreasuryPosition;
+using Debales.Application.Accounting.Queries.GetBankAccountById;
+using Debales.Application.Accounting.Commands.CreateCashAccount;
+using Debales.Application.Accounting.Commands.UpdateCashAccount;
+using Debales.Application.Accounting.Commands.DeleteCashAccount;
+using Debales.Application.Accounting.Queries.GetCashAccounts;
+using Debales.Application.Accounting.Queries.GetCashAccountById;
+using Debales.Application.Accounting.Commands.CreateRemittance;
+using Debales.Application.Accounting.Commands.UpdateRemittance;
+using Debales.Application.Accounting.Commands.DeleteRemittance;
+using Debales.Application.Accounting.Commands.AddRemittanceLine;
+using Debales.Application.Accounting.Commands.RemoveRemittanceLine;
+using Debales.Application.Accounting.Commands.SendRemittance;
+using Debales.Application.Accounting.Commands.ConfirmRemittance;
+using Debales.Application.Accounting.Commands.FailRemittance;
+using Debales.Application.Accounting.Queries.GetRemittances;
+using Debales.Application.Accounting.Queries.GetRemittanceById;
 using Debales.Application.Accounting.Services;
 using Debales.Application.Licensing;
 using Debales.Application.Licensing.Commands.ActivateLicense;
@@ -124,6 +149,13 @@ using Debales.Application.Licensing.Queries.GetSubscriptionPlans;
 using Debales.Application.Inventory.Commands.CreateWarehouse;
 using Debales.Application.Inventory.Commands.AddWarehouseLocation;
 using Debales.Application.Inventory.Commands.CreateStockMovement;
+using Debales.Application.Inventory.Commands.AdjustStock;
+using Debales.Application.Inventory.Commands.CreateInventoryCount;
+using Debales.Application.Inventory.Commands.AddInventoryCountLine;
+using Debales.Application.Inventory.Commands.SetCountedQuantity;
+using Debales.Application.Inventory.Commands.CloseInventoryCount;
+using Debales.Application.Inventory.Queries.GetInventoryCounts;
+using Debales.Application.Inventory.Queries.GetInventoryCountById;
 using Debales.Application.Inventory.Queries.GetWarehouses;
 using Debales.Application.Inventory.Queries.GetWarehouseById;
 using Debales.Application.Inventory.Queries.GetStockMovements;
@@ -323,9 +355,16 @@ public static class DependencyInjection
         services.AddScoped<GetWarehousesHandler>();
         services.AddScoped<GetWarehouseByIdHandler>();
         services.AddScoped<CreateStockMovementHandler>();
+        services.AddScoped<AdjustStockHandler>();
         services.AddScoped<GetStockMovementsHandler>();
         services.AddScoped<GetStockMovementByIdHandler>();
         services.AddScoped<GetStockBalanceHandler>();
+        services.AddScoped<CreateInventoryCountHandler>();
+        services.AddScoped<AddInventoryCountLineHandler>();
+        services.AddScoped<SetCountedQuantityHandler>();
+        services.AddScoped<CloseInventoryCountHandler>();
+        services.AddScoped<GetInventoryCountsHandler>();
+        services.AddScoped<GetInventoryCountByIdHandler>();
 
         // AI — ERP-6
         services.AddScoped<ChatWithERPHandler>();
@@ -353,6 +392,39 @@ public static class DependencyInjection
         services.AddScoped<GetTrialBalanceHandler>();
         services.AddScoped<GetJournalBookHandler>();
         services.AddScoped<GetBalanceSheetHandler>();
+
+        // Accounting — BankAccounts
+        services.AddScoped<CreateBankAccountHandler>();
+        services.AddScoped<UpdateBankAccountHandler>();
+        services.AddScoped<DeleteBankAccountHandler>();
+        services.AddScoped<GetBankAccountsHandler>();
+        services.AddScoped<GetBankAccountByIdHandler>();
+
+        // Accounting — CashAccounts
+        services.AddScoped<CreateCashAccountHandler>();
+        services.AddScoped<UpdateCashAccountHandler>();
+        services.AddScoped<DeleteCashAccountHandler>();
+        services.AddScoped<GetCashAccountsHandler>();
+        services.AddScoped<GetCashAccountByIdHandler>();
+
+        // Reports — Aging + Statement
+        services.AddScoped<GetReceivablesAgingHandler>();
+        services.AddScoped<GetPayablesAgingHandler>();
+        services.AddScoped<GetTreasuryPositionHandler>();
+        services.AddScoped<GetCustomerStatementHandler>();
+        services.AddScoped<GetSupplierStatementHandler>();
+
+        // Accounting — Remittances
+        services.AddScoped<CreateRemittanceHandler>();
+        services.AddScoped<UpdateRemittanceHandler>();
+        services.AddScoped<DeleteRemittanceHandler>();
+        services.AddScoped<AddRemittanceLineHandler>();
+        services.AddScoped<RemoveRemittanceLineHandler>();
+        services.AddScoped<SendRemittanceHandler>();
+        services.AddScoped<ConfirmRemittanceHandler>();
+        services.AddScoped<FailRemittanceHandler>();
+        services.AddScoped<GetRemittancesHandler>();
+        services.AddScoped<GetRemittanceByIdHandler>();
 
         // Licensing — Fase 6
         services.AddScoped<GetCurrentLicenseHandler>();

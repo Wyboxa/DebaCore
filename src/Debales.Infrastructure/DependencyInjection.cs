@@ -108,6 +108,9 @@ public static class DependencyInjection
         services.AddScoped<IAccountingJournalRepository, AccountingJournalRepository>();
         services.AddScoped<IAccountingEntryRepository, AccountingEntryRepository>();
         services.AddScoped<IAccountingTemplateRepository, AccountingTemplateRepository>();
+        services.AddScoped<IBankAccountRepository, BankAccountRepository>();
+        services.AddScoped<ICashAccountRepository, CashAccountRepository>();
+        services.AddScoped<IRemittanceRepository, RemittanceRepository>();
 
         // Licensing — Fase 6
         services.AddScoped<ILicenseRepository, LicenseRepository>();
@@ -119,6 +122,7 @@ public static class DependencyInjection
         services.AddScoped<IWarehouseLocationRepository, WarehouseLocationRepository>();
         services.AddScoped<IStockMovementRepository, StockMovementRepository>();
         services.AddScoped<IStockBalanceRepository, StockBalanceRepository>();
+        services.AddScoped<IInventoryCountRepository, InventoryCountRepository>();
 
         return services;
     }

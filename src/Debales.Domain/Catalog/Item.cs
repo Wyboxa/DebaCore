@@ -14,6 +14,8 @@ public sealed class Item : AuditableEntity
     public decimal SalePrice { get; private set; }
     public decimal PurchasePrice { get; private set; }
 
+    public decimal? MinimumStock { get; private set; }
+
     public Guid? FamilyId { get; private set; }
     public Guid UnitOfMeasureId { get; private set; }
     public Guid? TaxTypeId { get; private set; }
@@ -26,12 +28,14 @@ public sealed class Item : AuditableEntity
     public static Item Create(
         string code, string name, string? description,
         bool isService, Guid unitOfMeasureId, Guid? familyId, Guid? taxTypeId,
-        decimal salePrice, decimal purchasePrice, string createdBy)
+        decimal salePrice, decimal purchasePrice, string createdBy,
+        decimal? minimumStock = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         if (salePrice < 0) throw new ArgumentException("Sale price cannot be negative.", nameof(salePrice));
         if (purchasePrice < 0) throw new ArgumentException("Purchase price cannot be negative.", nameof(purchasePrice));
+        if (minimumStock < 0) throw new ArgumentException("Minimum stock cannot be negative.", nameof(minimumStock));
 
         return new Item
         {
@@ -44,6 +48,7 @@ public sealed class Item : AuditableEntity
             TaxTypeId = taxTypeId,
             SalePrice = salePrice,
             PurchasePrice = purchasePrice,
+            MinimumStock = minimumStock,
             CreatedBy = createdBy
         };
     }
@@ -51,12 +56,14 @@ public sealed class Item : AuditableEntity
     public void Update(
         string code, string name, string? description,
         bool isService, Guid unitOfMeasureId, Guid? familyId, Guid? taxTypeId,
-        decimal salePrice, decimal purchasePrice, string updatedBy)
+        decimal salePrice, decimal purchasePrice, string updatedBy,
+        decimal? minimumStock = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         if (salePrice < 0) throw new ArgumentException("Sale price cannot be negative.", nameof(salePrice));
         if (purchasePrice < 0) throw new ArgumentException("Purchase price cannot be negative.", nameof(purchasePrice));
+        if (minimumStock < 0) throw new ArgumentException("Minimum stock cannot be negative.", nameof(minimumStock));
 
         Code = code.Trim().ToUpper();
         Name = name.Trim();
@@ -67,6 +74,7 @@ public sealed class Item : AuditableEntity
         TaxTypeId = taxTypeId;
         SalePrice = salePrice;
         PurchasePrice = purchasePrice;
+        MinimumStock = minimumStock;
         SetUpdated(updatedBy);
     }
 

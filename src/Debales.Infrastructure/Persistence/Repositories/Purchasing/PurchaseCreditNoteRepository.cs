@@ -44,4 +44,12 @@ internal sealed class PurchaseCreditNoteRepository : BaseRepository<PurchaseCred
         return new PagedResult<PurchaseCreditNote>(items, total, page, pageSize);
     }
 
+    public async Task<IReadOnlyList<PurchaseCreditNote>> GetBySupplierForStatementAsync(
+        Guid supplierId, DateOnly? from, DateOnly? to, CancellationToken cancellationToken = default)
+    {
+        var query = DbSet.Include(n => n.Lines).Where(n => n.SupplierId == supplierId);
+        if (from.HasValue) query = query.Where(n => n.Date >= from.Value);
+        if (to.HasValue) query = query.Where(n => n.Date <= to.Value);
+        return await query.OrderBy(n => n.Date).ThenBy(n => n.Number).ToListAsync(cancellationToken);
+    }
 }

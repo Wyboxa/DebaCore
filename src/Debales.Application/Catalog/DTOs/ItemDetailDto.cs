@@ -19,4 +19,5 @@ public sealed record ItemDetailDto(
     DateTime CreatedAt,
     string? CreatedBy,
     DateTime? UpdatedAt,
-    string? UpdatedBy);
+    string? UpdatedBy,
+    decimal? MinimumStock = null);

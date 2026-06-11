@@ -1,0 +1,284 @@
+@page "/contabilidad/cuentas-bancarias"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetBankAccountsHandler GetAll
+@inject GetAccountsHandler GetAccounts
+@inject CreateBankAccountHandler CreateHandler
+@inject UpdateBankAccountHandler UpdateHandler
+@inject DeleteBankAccountHandler DeleteHandler
+@inject ToastService Toast
+
+<PageTitle>Cuentas bancarias — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Cuentas bancarias</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nueva cuenta</button>
+</div>
+
+<p class="text-muted small mb-3">
+    Gestiona las cuentas bancarias de la empresa. Puedes vincular cada cuenta a una cuenta contable del plan de cuentas.
+</p>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Banco</th>
+                        <th>IBAN</th>
+                        <th>Moneda</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ba in _items)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@ba.Name</td>
+                            <td class="text-muted">@(ba.BankName ?? "—")</td>
+                            <td>
+                                @if (ba.Iban is not null)
+                                {
+                                    <code class="small">@FormatIban(ba.Iban)</code>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td><span class="badge bg-light text-dark border">@(ba.CurrencyCode ?? "EUR")</span></td>
+                            <td><span class="badge @(ba.IsActive ? "bg-success" : "bg-secondary")">@(ba.IsActive ? "Activa" : "Inactiva")</span></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenEdit(ba)">Editar</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(ba.Id, ba.Name)">Eliminar</button>
+                            </td>
+                        </tr>
+                    }
+                    @if (_items.Count == 0)
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">No hay cuentas bancarias configuradas.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (_showForm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editId.HasValue ? "Editar cuenta bancaria" : "Nueva cuenta bancaria")</h5>
+                    <button class="btn-close" @onclick="CloseForm"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre *</label>
+                            <input class="form-control" @bind="_form.Name" placeholder="Ej: Cuenta principal Santander" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Banco</label>
+                            <input class="form-control" @bind="_form.BankName" placeholder="Ej: Banco Santander" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">IBAN</label>
+                            <input class="form-control text-uppercase" @bind="_form.Iban" placeholder="ES00 0000 0000 0000 0000 0000" maxlength="34" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">BIC / SWIFT</label>
+                            <input class="form-control text-uppercase" @bind="_form.Bic" placeholder="BSCHESMMXXX" maxlength="11" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Moneda</label>
+                            <input class="form-control" @bind="_form.CurrencyCode" placeholder="EUR" maxlength="3" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Cuenta contable</label>
+                            <select class="form-select" @bind="_form.AccountIdStr" @onfocus="LoadAccountsIfNeeded">
+                                <option value="">— Sin vincular —</option>
+                                @foreach (var acc in _accounts)
+                                {
+                                    <option value="@acc.Id">@acc.Code — @acc.Name</option>
+                                }
+                            </select>
+                        </div>
+                        @if (_editId.HasValue)
+                        {
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isActive" @bind="_form.IsActive" />
+                                    <label class="form-check-label" for="isActive">Cuenta activa</label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="alert alert-danger py-2 mt-3">@_error</div>
+                    }
+
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseForm">Cancelar</button>
+                        <button type="button" class="btn btn-primary" disabled="@_saving" @onclick="Save">
+                            @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_confirmDeleteId.HasValue)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar cuenta bancaria</h5>
+                    <button class="btn-close" @onclick="() => _confirmDeleteId = null"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Eliminar <strong>@_confirmDeleteName</strong>?
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _confirmDeleteId = null">Cancelar</button>
+                    <button class="btn btn-danger" disabled="@_saving" @onclick="ExecuteDelete">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    bool _loading = true;
+    bool _showForm;
+    bool _saving;
+    string? _error;
+    Guid? _editId;
+    Guid? _confirmDeleteId;
+    string? _confirmDeleteName;
+    List<BankAccountSummaryDto> _items = [];
+    List<AccountSummaryDto> _accounts = [];
+    FormModel _form = new();
+
+    sealed class FormModel
+    {
+        public string Name { get; set; } = "";
+        public string? BankName { get; set; }
+        public string? Iban { get; set; }
+        public string? Bic { get; set; }
+        public string? CurrencyCode { get; set; } = "EUR";
+        public string AccountIdStr { get; set; } = "";
+        public bool IsActive { get; set; } = true;
+
+        public Guid? AccountId => Guid.TryParse(AccountIdStr, out var id) ? id : null;
+    }
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await GetAll.Handle(new GetBankAccountsQuery(Page: 1, PageSize: 200));
+        _items = result.Items.ToList();
+        _loading = false;
+    }
+
+    async Task LoadAccountsIfNeeded()
+    {
+        if (_accounts.Any()) return;
+        var result = await GetAccounts.Handle(new GetAccountsQuery(Search: null, Page: 1, PageSize: 500));
+        _accounts = result.Items.ToList();
+    }
+
+    void OpenCreate()
+    {
+        _editId = null;
+        _form = new FormModel();
+        _error = null;
+        _showForm = true;
+    }
+
+    void OpenEdit(BankAccountSummaryDto ba)
+    {
+        _editId = ba.Id;
+        _error = null;
+        _form = new FormModel
+        {
+            Name = ba.Name,
+            BankName = ba.BankName,
+            Iban = ba.Iban,
+            CurrencyCode = ba.CurrencyCode ?? "EUR",
+            IsActive = ba.IsActive
+        };
+        _showForm = true;
+    }
+
+    void CloseForm() => _showForm = false;
+
+    async Task Save()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_form.Name)) { _error = "El nombre es obligatorio."; return; }
+
+        _saving = true;
+        try
+        {
+            if (_editId.HasValue)
+            {
+                await UpdateHandler.Handle(new UpdateBankAccountCommand(
+                    _editId.Value, _form.Name, _form.BankName, _form.Iban, _form.Bic,
+                    _form.CurrencyCode, _form.AccountId, _form.IsActive, "web"));
+                Toast.Show("Cuenta bancaria actualizada.");
+            }
+            else
+            {
+                await CreateHandler.Handle(new CreateBankAccountCommand(
+                    _form.Name, _form.BankName, _form.Iban, _form.Bic,
+                    _form.CurrencyCode, _form.AccountId, "web"));
+                Toast.Show("Cuenta bancaria creada.");
+            }
+            _showForm = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    void ConfirmDelete(Guid id, string name) { _confirmDeleteId = id; _confirmDeleteName = name; }
+
+    async Task ExecuteDelete()
+    {
+        _saving = true;
+        try
+        {
+            await DeleteHandler.Handle(new DeleteBankAccountCommand(_confirmDeleteId!.Value, "web"));
+            Toast.Show("Cuenta bancaria eliminada.");
+            _confirmDeleteId = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    static string FormatIban(string iban) =>
+        string.Join(" ", Enumerable.Range(0, (iban.Length + 3) / 4)
+            .Select(i => iban.Substring(i * 4, Math.Min(4, iban.Length - i * 4))));
+}

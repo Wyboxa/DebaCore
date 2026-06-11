@@ -1,0 +1,143 @@
+@page "/contabilidad/tesoreria"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetTreasuryPositionHandler TreasuryHandler
+
+<PageTitle>Posición de tesorería — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Posición de tesorería</h1>
+    @if (_data is not null)
+    {
+        <span class="text-muted small">A fecha: @_data.AsOf.ToString("dd/MM/yyyy")</span>
+    }
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_data is not null)
+{
+    @* KPIs principales *@
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Total disponible</div>
+                    <div class="fw-bold fs-3 text-success">@_data.TotalBalance.ToString("N2") €</div>
+                    <div class="text-muted small">Bancos + Cajas</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Saldo en bancos</div>
+                    <div class="fw-bold fs-4">@_data.TotalBankBalance.ToString("N2") €</div>
+                    <div class="text-muted small">@_data.BankAccounts.Count cuenta(s)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Saldo en cajas</div>
+                    <div class="fw-bold fs-4">@_data.TotalCashBalance.ToString("N2") €</div>
+                    <div class="text-muted small">@_data.CashAccounts.Count caja(s)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Bancos *@
+    @if (_data.BankAccounts.Any())
+    {
+        <h5 class="mb-2">Cuentas bancarias</h5>
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Cuenta</th>
+                            <th>Moneda</th>
+                            <th class="text-end">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ba in _data.BankAccounts)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@ba.Name</td>
+                                <td><span class="badge bg-light text-dark border">@(ba.CurrencyCode ?? "EUR")</span></td>
+                                <td class="text-end">@ba.Balance.ToString("N2") €</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="2" class="text-end fw-semibold small">TOTAL BANCOS</td>
+                            <td class="text-end fw-bold">@_data.TotalBankBalance.ToString("N2") €</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    }
+
+    @* Cajas *@
+    @if (_data.CashAccounts.Any())
+    {
+        <h5 class="mb-2">Cajas</h5>
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Caja</th>
+                            <th>Moneda</th>
+                            <th class="text-end">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ca in _data.CashAccounts)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@ca.Name</td>
+                                <td><span class="badge bg-light text-dark border">@(ca.CurrencyCode ?? "EUR")</span></td>
+                                <td class="text-end @(ca.Balance < 0 ? "text-danger" : "")">@ca.Balance.ToString("N2") €</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="2" class="text-end fw-semibold small">TOTAL CAJAS</td>
+                            <td class="text-end fw-bold">@_data.TotalCashBalance.ToString("N2") €</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (!_data.BankAccounts.Any() && !_data.CashAccounts.Any())
+    {
+        <div class="alert alert-info">
+            No hay cuentas bancarias ni cajas configuradas.
+            <a href="/contabilidad/cuentas-bancarias">Crear cuenta bancaria</a> o
+            <a href="/contabilidad/cajas">crear caja</a>.
+        </div>
+    }
+}
+
+@code {
+    bool _loading = true;
+    TreasuryPositionDto? _data;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        _data = await TreasuryHandler.Handle(new GetTreasuryPositionQuery());
+        _loading = false;
+    }
+}

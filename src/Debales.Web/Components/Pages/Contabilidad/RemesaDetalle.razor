@@ -1,0 +1,538 @@
+@page "/contabilidad/remesas/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetRemittanceByIdHandler GetById
+@inject UpdateRemittanceHandler UpdateHandler
+@inject AddRemittanceLineHandler AddLineHandler
+@inject RemoveRemittanceLineHandler RemoveLineHandler
+@inject SendRemittanceHandler SendHandler
+@inject ConfirmRemittanceHandler ConfirmHandler
+@inject FailRemittanceHandler FailHandler
+@inject GetReceivablesHandler GetReceivables
+@inject GetPayablesHandler GetPayables
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Remesa — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_remittance is null)
+{
+    <div class="alert alert-warning">Remesa no encontrada.</div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/contabilidad/remesas">Remesas</a></li>
+            <li class="breadcrumb-item active">@_remittance.Number</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h1 class="h3 mb-1">@_remittance.Number</h1>
+            <span class="badge @StatusCss(_remittance.Status) me-2">@_remittance.StatusLabel</span>
+            <span class="badge @TypeCss(_remittance.Type)">@_remittance.TypeLabel</span>
+        </div>
+        <div class="d-flex gap-2">
+            @if (_remittance.Status == RemittanceStatus.Draft)
+            {
+                <button class="btn btn-outline-secondary btn-sm" @onclick="OpenEditNotes">Editar notas</button>
+                <button class="btn btn-warning btn-sm" @onclick="ConfirmSend"
+                        disabled="@(!_remittance.Lines.Any())">
+                    Enviar
+                </button>
+            }
+            @if (_remittance.Status == RemittanceStatus.Sent)
+            {
+                <button class="btn btn-success btn-sm" @onclick="ConfirmConfirm">Confirmar</button>
+                <button class="btn btn-danger btn-sm" @onclick="OpenFail">Marcar como fallida</button>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_actionError))
+    {
+        <div class="alert alert-danger py-2 mb-3">@_actionError</div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Fecha</div>
+                    <div class="fw-semibold">@_remittance.Date.ToString("dd/MM/yyyy")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Cuenta bancaria</div>
+                    <div class="fw-semibold">@_remittance.BankAccountName</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Total</div>
+                    <div class="fw-semibold fs-5">@_remittance.Total.ToString("N2") €</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Documentos</div>
+                    <div class="fw-semibold fs-5">@_remittance.Lines.Count</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_remittance.Notes))
+    {
+        <div class="alert alert-info py-2 mb-3 small">
+            <strong>Notas:</strong> @_remittance.Notes
+        </div>
+    }
+
+    @if (_remittance.Status == RemittanceStatus.Failed && _remittance.FailReason is not null)
+    {
+        <div class="alert alert-danger py-2 mb-3 small">
+            <strong>Motivo de fallo:</strong> @_remittance.FailReason
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Líneas</h5>
+        @if (_remittance.Status == RemittanceStatus.Draft)
+        {
+            <button class="btn btn-sm btn-outline-primary" @onclick="OpenAddLine">+ Añadir vencimiento</button>
+        }
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Documento</th>
+                        @if (_remittance.Type == RemittanceType.Collection)
+                        {
+                            <th>Cliente</th>
+                        }
+                        else
+                        {
+                            <th>Proveedor</th>
+                        }
+                        <th>Vencimiento</th>
+                        <th class="text-end">Pendiente</th>
+                        <th class="text-end">Importe remesa</th>
+                        @if (_remittance.Status == RemittanceStatus.Draft)
+                        {
+                            <th></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in _remittance.Lines)
+                    {
+                        var doc = GetDocumentInfo(line.DocumentId);
+                        <tr>
+                            <td><code class="small">@(doc?.Number ?? line.DocumentId.ToString()[..8])</code></td>
+                            <td class="text-muted small">@(doc?.ThirdParty ?? "—")</td>
+                            <td class="small">@(doc?.DueDate.ToString("dd/MM/yyyy") ?? "—")</td>
+                            <td class="text-end small">@(doc?.PendingAmount.ToString("N2") ?? "—") €</td>
+                            <td class="text-end fw-semibold">@line.Amount.ToString("N2") €</td>
+                            @if (_remittance.Status == RemittanceStatus.Draft)
+                            {
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => ConfirmRemoveLine(line.DocumentId)">
+                                        Quitar
+                                    </button>
+                                </td>
+                            }
+                        </tr>
+                    }
+                    @if (!_remittance.Lines.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">Sin líneas. Añade vencimientos.</td></tr>
+                    }
+                </tbody>
+                @if (_remittance.Lines.Any())
+                {
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="@(_remittance.Status == RemittanceStatus.Draft ? 4 : 3)" class="text-end fw-semibold small">TOTAL</td>
+                            <td class="text-end fw-bold">@_remittance.Total.ToString("N2") €</td>
+                            @if (_remittance.Status == RemittanceStatus.Draft) { <td></td> }
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+}
+
+@* Modal — Añadir línea *@
+@if (_showAddLine)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Añadir vencimiento</h5>
+                    <button class="btn-close" @onclick="() => _showAddLine = false"></button>
+                </div>
+                <div class="modal-body">
+                    @if (_loadingDocs)
+                    {
+                        <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive" style="max-height:360px;overflow-y:auto">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Número</th>
+                                        <th>@(_remittance!.Type == RemittanceType.Collection ? "Cliente" : "Proveedor")</th>
+                                        <th>Vencimiento</th>
+                                        <th class="text-end">Pendiente</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var doc in _availableDocs)
+                                    {
+                                        var alreadyAdded = _remittance!.Lines.Any(l => l.DocumentId == doc.Id);
+                                        <tr class="@(alreadyAdded ? "table-secondary text-muted" : "")">
+                                            <td><code class="small">@doc.Number</code></td>
+                                            <td class="small">@doc.ThirdParty</td>
+                                            <td class="small">@doc.DueDate.ToString("dd/MM/yyyy")</td>
+                                            <td class="text-end">@doc.PendingAmount.ToString("N2") €</td>
+                                            <td>
+                                                @if (!alreadyAdded)
+                                                {
+                                                    <button class="btn btn-sm btn-primary"
+                                                            @onclick="() => AddLine(doc.Id, doc.PendingAmount)">
+                                                        Añadir
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Ya incluido</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                    @if (!_availableDocs.Any())
+                                    {
+                                        <tr><td colspan="5" class="text-center text-muted py-3">No hay vencimientos pendientes.</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(_lineError))
+                    {
+                        <div class="alert alert-danger py-2 mt-2">@_lineError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _showAddLine = false">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Modal — Editar notas *@
+@if (_showEditNotes)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar notas</h5>
+                    <button class="btn-close" @onclick="() => _showEditNotes = false"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea class="form-control" rows="3" @bind="_editNotes"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _showEditNotes = false">Cancelar</button>
+                    <button class="btn btn-primary" disabled="@_saving" @onclick="SaveNotes">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Modal — Marcar fallida *@
+@if (_showFail)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-danger">
+                    <h5 class="modal-title text-danger">Marcar remesa como fallida</h5>
+                    <button class="btn-close" @onclick="() => _showFail = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">Esta acción revertirá el estado de los vencimientos incluidos.</p>
+                    <label class="form-label">Motivo *</label>
+                    <textarea class="form-control" rows="3" @bind="_failReason" placeholder="Indica el motivo del fallo..."></textarea>
+                    @if (!string.IsNullOrEmpty(_actionError))
+                    {
+                        <div class="alert alert-danger py-2 mt-2">@_actionError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _showFail = false">Cancelar</button>
+                    <button class="btn btn-danger" disabled="@_saving" @onclick="ExecuteFail">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Confirmar fallo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Confirm dialogs *@
+@if (_confirmSend)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body py-3">
+                    <p>¿Enviar la remesa <strong>@_remittance?.Number</strong> al banco?</p>
+                    <p class="text-muted small">Una vez enviada no podrás modificar ni añadir líneas.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _confirmSend = false">Cancelar</button>
+                    <button class="btn btn-warning" disabled="@_saving" @onclick="ExecuteSend">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Enviar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_confirmConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body py-3">
+                    <p>¿Confirmar la remesa <strong>@_remittance?.Number</strong>?</p>
+                    <p class="text-muted small">Los vencimientos incluidos quedarán como cobrados/pagados.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _confirmConfirm = false">Cancelar</button>
+                    <button class="btn btn-success" disabled="@_saving" @onclick="ExecuteConfirm">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_confirmRemoveLineId.HasValue)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body py-3">¿Quitar este vencimiento de la remesa?</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _confirmRemoveLineId = null">Cancelar</button>
+                    <button class="btn btn-danger" disabled="@_saving" @onclick="ExecuteRemoveLine">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Quitar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    bool _loading = true;
+    bool _saving;
+    bool _loadingDocs;
+    bool _showAddLine;
+    bool _showEditNotes;
+    bool _showFail;
+    bool _confirmSend;
+    bool _confirmConfirm;
+    string? _actionError;
+    string? _lineError;
+    string? _editNotes;
+    string? _failReason;
+    Guid? _confirmRemoveLineId;
+
+    RemittanceDetailDto? _remittance;
+    List<DocumentInfo> _availableDocs = [];
+
+    sealed record DocumentInfo(Guid Id, string Number, string ThirdParty, DateOnly DueDate, decimal PendingAmount);
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    async Task LoadAsync()
+    {
+        _loading = true;
+        _remittance = await GetById.Handle(new GetRemittanceByIdQuery(Id));
+        _loading = false;
+    }
+
+    DocumentInfo? GetDocumentInfo(Guid documentId) =>
+        _availableDocs.FirstOrDefault(d => d.Id == documentId);
+
+    async Task OpenAddLine()
+    {
+        _lineError = null;
+        _showAddLine = true;
+        _loadingDocs = true;
+
+        if (_remittance!.Type == RemittanceType.Collection)
+        {
+            var result = await GetReceivables.Handle(
+                new GetReceivablesQuery(null, null, ReceivableStatus.Pending, 1, 200));
+            _availableDocs = result.Items
+                .Select(r => new DocumentInfo(r.Id, r.Number, r.CustomerName, r.DueDate, r.PendingAmount))
+                .ToList();
+        }
+        else
+        {
+            var result = await GetPayables.Handle(
+                new GetPayablesQuery(null, null, PayableStatus.Pending, 1, 200));
+            _availableDocs = result.Items
+                .Select(p => new DocumentInfo(p.Id, p.Number, p.SupplierName, p.DueDate, p.PendingAmount))
+                .ToList();
+        }
+
+        _loadingDocs = false;
+    }
+
+    async Task AddLine(Guid documentId, decimal amount)
+    {
+        _lineError = null;
+        _saving = true;
+        try
+        {
+            var updated = await AddLineHandler.Handle(new AddRemittanceLineCommand(Id, documentId, amount, "web"));
+            _remittance = await GetById.Handle(new GetRemittanceByIdQuery(Id));
+            Toast.Show("Vencimiento añadido.");
+        }
+        catch (Exception ex) { _lineError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    void ConfirmRemoveLine(Guid documentId) => _confirmRemoveLineId = documentId;
+
+    async Task ExecuteRemoveLine()
+    {
+        _saving = true;
+        try
+        {
+            await RemoveLineHandler.Handle(new RemoveRemittanceLineCommand(Id, _confirmRemoveLineId!.Value, "web"));
+            _confirmRemoveLineId = null;
+            _remittance = await GetById.Handle(new GetRemittanceByIdQuery(Id));
+            Toast.Show("Vencimiento eliminado de la remesa.");
+        }
+        catch (Exception ex) { _actionError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    void OpenEditNotes() { _editNotes = _remittance?.Notes; _showEditNotes = true; }
+
+    async Task SaveNotes()
+    {
+        _saving = true;
+        try
+        {
+            _remittance = await UpdateHandler.Handle(new UpdateRemittanceCommand(Id, _editNotes, "web"));
+            _showEditNotes = false;
+            Toast.Show("Notas guardadas.");
+        }
+        catch (Exception ex) { _actionError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    void ConfirmSend() { _actionError = null; _confirmSend = true; }
+    void ConfirmConfirm() { _actionError = null; _confirmConfirm = true; }
+    void OpenFail() { _actionError = null; _failReason = null; _showFail = true; }
+
+    async Task ExecuteSend()
+    {
+        _saving = true;
+        try
+        {
+            _remittance = await SendHandler.Handle(new SendRemittanceCommand(Id, "web"));
+            _confirmSend = false;
+            Toast.Show("Remesa enviada.");
+        }
+        catch (Exception ex) { _actionError = ex.Message; _confirmSend = false; }
+        finally { _saving = false; }
+    }
+
+    async Task ExecuteConfirm()
+    {
+        _saving = true;
+        try
+        {
+            _remittance = await ConfirmHandler.Handle(new ConfirmRemittanceCommand(Id, "web"));
+            _confirmConfirm = false;
+            Toast.Show("Remesa confirmada. Vencimientos liquidados.");
+        }
+        catch (Exception ex) { _actionError = ex.Message; _confirmConfirm = false; }
+        finally { _saving = false; }
+    }
+
+    async Task ExecuteFail()
+    {
+        if (string.IsNullOrWhiteSpace(_failReason)) { _actionError = "El motivo es obligatorio."; return; }
+        _saving = true;
+        try
+        {
+            _remittance = await FailHandler.Handle(new FailRemittanceCommand(Id, _failReason, "web"));
+            _showFail = false;
+            Toast.Show("Remesa marcada como fallida.");
+        }
+        catch (Exception ex) { _actionError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    static string StatusCss(RemittanceStatus status) => status switch
+    {
+        RemittanceStatus.Draft => "bg-secondary",
+        RemittanceStatus.Sent => "bg-warning text-dark",
+        RemittanceStatus.Confirmed => "bg-success",
+        RemittanceStatus.Failed => "bg-danger",
+        _ => "bg-light text-dark"
+    };
+
+    static string TypeCss(RemittanceType type) => type switch
+    {
+        RemittanceType.Collection => "bg-success-subtle text-success-emphasis",
+        RemittanceType.Payment => "bg-primary-subtle text-primary-emphasis",
+        _ => "bg-light text-dark"
+    };
+}

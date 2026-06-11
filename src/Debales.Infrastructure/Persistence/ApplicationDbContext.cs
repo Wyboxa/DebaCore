@@ -103,6 +103,8 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<WarehouseLocation> WarehouseLocations => Set<WarehouseLocation>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockBalance> StockBalances => Set<StockBalance>();
+    public DbSet<InventoryCount> InventoryCounts => Set<InventoryCount>();
+    public DbSet<InventoryCountLine> InventoryCountLines => Set<InventoryCountLine>();
 
     // Licensing — Fase 6
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
@@ -118,6 +120,10 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<AccountingEntryLine> AccountingEntryLines => Set<AccountingEntryLine>();
     public DbSet<AccountingTemplate> AccountingTemplates => Set<AccountingTemplate>();
     public DbSet<AccountingTemplateLine> AccountingTemplateLines => Set<AccountingTemplateLine>();
+    public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
+    public DbSet<CashAccount> CashAccounts => Set<CashAccount>();
+    public DbSet<Remittance> Remittances => Set<Remittance>();
+    public DbSet<RemittanceLine> RemittanceLines => Set<RemittanceLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

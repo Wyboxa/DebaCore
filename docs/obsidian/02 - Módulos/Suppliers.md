@@ -66,9 +66,9 @@ Implementado — migración `AddSuppliersModule` (2026-05-28).
 - Soft-delete (`IsActive = false`)
 - Dirección embebida como value object
 - Código contable de proveedor (`AccountCode`) para integración contable
-- Ficha de proveedor en UI
+- Ficha de proveedor con tabs (info, notas, códigos, pedidos, estado de cuenta)
+- Tab "Pedidos" — historial lazy de pedidos de compra del proveedor, con badge estado y navegación a ficha
 
 ## Lo que falta
 
-- Historial de compras desde la ficha del proveedor
 - Contactos múltiples de proveedor (solo hay `ContactName` como string)

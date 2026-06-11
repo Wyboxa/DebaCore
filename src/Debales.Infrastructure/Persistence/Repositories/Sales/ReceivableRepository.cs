@@ -53,6 +53,14 @@ internal sealed class ReceivableRepository : BaseRepository<Receivable>, IReceiv
         return new PagedResult<Receivable>(items, total, page, pageSize);
     }
 
+    public async Task<IReadOnlyList<Receivable>> GetForAgingAsync(Guid? customerId = null, CancellationToken ct = default)
+    {
+        var query = DbSet.Include(r => r.Customer).AsQueryable();
+        query = query.Where(r => r.Status == ReceivableStatus.Pending || r.Status == ReceivableStatus.Partial);
+        if (customerId.HasValue) query = query.Where(r => r.CustomerId == customerId);
+        return await query.OrderBy(r => r.DueDate).ToListAsync(ct);
+    }
+
     public async Task<string> GetNextNumberAsync(CancellationToken cancellationToken = default)
     {
         var year = DateTime.UtcNow.Year;

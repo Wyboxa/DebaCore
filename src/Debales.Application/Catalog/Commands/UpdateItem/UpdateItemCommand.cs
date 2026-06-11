@@ -11,4 +11,5 @@ public sealed record UpdateItemCommand(
     Guid? TaxTypeId,
     decimal SalePrice,
     decimal PurchasePrice,
-    string UpdatedBy);
+    string UpdatedBy,
+    decimal? MinimumStock = null);

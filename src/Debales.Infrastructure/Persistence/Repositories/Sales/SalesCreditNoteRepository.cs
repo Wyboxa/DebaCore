@@ -45,4 +45,12 @@ internal sealed class SalesCreditNoteRepository : BaseRepository<SalesCreditNote
         return new PagedResult<SalesCreditNote>(items, total, page, pageSize);
     }
 
+    public async Task<IReadOnlyList<SalesCreditNote>> GetByCustomerForStatementAsync(
+        Guid customerId, DateOnly? from, DateOnly? to, CancellationToken cancellationToken = default)
+    {
+        var query = DbSet.Include(n => n.Lines).Where(n => n.CustomerId == customerId);
+        if (from.HasValue) query = query.Where(n => n.Date >= from.Value);
+        if (to.HasValue) query = query.Where(n => n.Date <= to.Value);
+        return await query.OrderBy(n => n.Date).ThenBy(n => n.Number).ToListAsync(cancellationToken);
+    }
 }

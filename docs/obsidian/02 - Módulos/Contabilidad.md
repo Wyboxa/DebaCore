@@ -19,6 +19,10 @@ related:
   - AccountingEntryLine
   - AccountingTemplate
   - AccountingTemplateLine
+  - BankAccount
+  - CashAccount
+  - Remittance
+  - RemittanceLine
 ---
 
 # Módulo Contabilidad
@@ -132,8 +136,176 @@ Implementado — migración `AddAccountingModule` (2026-06-02).
 - Asientos manuales con validación de cuadre
 - Plantillas de asiento para automatización
 - Motor de generación automática desde facturas
+- `BankAccount` — cuentas bancarias con IBAN, BIC, vinculación a cuenta contable (2026-06-10)
+- `CashAccount` — cajas con código, nombre, moneda, saldo actual, vinculación a cuenta contable (2026-06-10)
+
+## CashAccount
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `Code` | string | Código único de la caja |
+| `Name` | string | Nombre descriptivo |
+| `CurrencyCode` | string | Moneda (default EUR) |
+| `CurrentBalance` | decimal | Saldo actual |
+| `AccountId` | Guid? | FK opcional a Account |
+| `IsActive` | bool | Activa/inactiva |
+
+### Handlers CashAccount
+
+| Handler | Descripción |
+|---------|-------------|
+| `CreateCashAccountHandler` | Crea caja, valida código único |
+| `UpdateCashAccountHandler` | Actualiza, contiene `ToDto()` reutilizado |
+| `DeleteCashAccountHandler` | Soft-delete |
+| `GetCashAccountsHandler` | Lista con búsqueda y filtro IsActive |
+| `GetCashAccountByIdHandler` | Detalle con Account incluido |
+
+### Páginas Blazor CashAccount
+
+| Página | Ruta |
+|--------|------|
+| `CajasCuentas.razor` | `/contabilidad/cajas` |
+
+## Remesas (`Remittance` + `RemittanceLine`)
+
+Módulo completo implementado 2026-06-11.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `Number` | string | Numeración automática REM-C-YYYY-NNNN / REM-P-YYYY-NNNN |
+| `Date` | DateOnly | Fecha de la remesa |
+| `BankAccountId` | Guid | Cuenta bancaria asociada |
+| `Type` | `RemittanceType` | Collection (cobros) / Payment (pagos) |
+| `Status` | `RemittanceStatus` | Draft → Sent → Confirmed / Failed |
+| `Notes` | string? | Observaciones |
+| `FailReason` | string? | Motivo si falla |
+
+### Máquina de estados
+
+`Draft → Sent` (requiere líneas) → `Confirmed` (liquida vencimientos) / `Failed`
+
+### RemittanceLine
+
+- `DocumentId` — FK a `Receivable.Id` (Collection) o `Payable.Id` (Payment)
+- `Amount` — importe incluido en la remesa
+- Índice único `(RemittanceId, DocumentId)` — no duplicados
+
+### Handlers Remittance
+
+| Handler | Descripción |
+|---------|-------------|
+| `CreateRemittanceHandler` | Crea remesa, genera número automático |
+| `UpdateRemittanceHandler` | Actualiza notas (solo Draft) |
+| `DeleteRemittanceHandler` | Soft-delete (bloquea Confirmed) |
+| `AddRemittanceLineHandler` | Añade vencimiento a la remesa |
+| `RemoveRemittanceLineHandler` | Quita vencimiento |
+| `SendRemittanceHandler` | Draft → Sent |
+| `ConfirmRemittanceHandler` | Sent → Confirmed + aplica `ApplyPayment()` en vencimientos |
+| `FailRemittanceHandler` | Sent → Failed |
+| `GetRemittancesHandler` | Lista con filtros tipo/estado |
+| `GetRemittanceByIdHandler` | Detalle con líneas y BankAccount |
+
+### Páginas Blazor
+
+| Página | Ruta |
+|--------|------|
+| `Remesas.razor` | `/contabilidad/remesas` — lista + modal crear + filtros |
+| `RemesaDetalle.razor` | `/contabilidad/remesas/{id}` — ficha + añadir/quitar líneas + transiciones |
+
+### API
+
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `api/remittances` | GET | Lista con filtros |
+| `api/remittances/{id}` | GET | Detalle |
+| `api/remittances` | POST | Crear |
+| `api/remittances/{id}` | PUT | Editar notas |
+| `api/remittances/{id}` | DELETE | Eliminar |
+| `api/remittances/{id}/lines` | POST | Añadir línea |
+| `api/remittances/{id}/lines/{documentId}` | DELETE | Quitar línea |
+| `api/remittances/{id}/send` | POST | Enviar |
+| `api/remittances/{id}/confirm` | POST | Confirmar |
+| `api/remittances/{id}/fail` | POST | Marcar fallida |
+
+## Informe de vencimientos aging
+
+Implementado 2026-06-11. `AgingReportDto` en `Debales.Application.Common`.
+
+Buckets: **Corriente** (sin vencer) / **1-30** / **31-60** / **61-90** / **+90** días.
+
+`DaysOverdue = Math.Max(0, today.DayNumber - dueDate.DayNumber)` — los no vencidos van al bucket Corriente.
+
+| Handler | Repositorio | Descripción |
+|---------|-------------|-------------|
+| `GetReceivablesAgingHandler` | `IReceivableRepository.GetForAgingAsync` | Cobros pendientes/parciales por antigüedad |
+| `GetPayablesAgingHandler` | `IPayableRepository.GetForAgingAsync` | Pagos pendientes/parciales por antigüedad |
+
+### API — ReportsController
+
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `api/reports/receivables-aging` | GET | Informe aging cobros (`?customerId=`) |
+| `api/reports/payables-aging` | GET | Informe aging pagos (`?supplierId=`) |
+| `api/reports/treasury-position` | GET | Posición de tesorería |
+
+### Páginas Blazor
+
+| Página | Ruta |
+|--------|------|
+| `Vencimientos.razor` | `/contabilidad/vencimientos` — 2 tabs (Cobros/Pagos), 5 bucket cards, tabla coloreada |
+
+## Posición de tesorería
+
+Implementado 2026-06-11.
+
+`GetTreasuryPositionHandler` — lee todos los `BankAccount` + `CashAccount` activos y suma saldos.
+
+`TreasuryPositionDto` en `AccountingDtos`: `(AsOf, TotalBankBalance, TotalCashBalance, TotalBalance, BankAccounts, CashAccounts)`.
+
+> Nota: `BankAccount` no tiene campo `Balance` en dominio — muestra 0 hasta que se implemente conciliación bancaria. `CashAccount.CurrentBalance` se usa directamente.
+
+### Páginas Blazor
+
+| Página | Ruta |
+|--------|------|
+| `Tesoreria.razor` | `/contabilidad/tesoreria` — 3 KPIs + tabla bancos + tabla cajas |
+
+El Dashboard (`Home.razor`) incluye una card de tesorería con link a `/contabilidad/tesoreria`.
+
+## Estado de cuenta cliente/proveedor
+
+Implementado 2026-06-11. `StatementDto` + `StatementLineDto` en `Debales.Application.Common`.
+
+Muestra todos los movimientos de un tercero (facturas, rectificativas, cobros/pagos) ordenados por fecha con **saldo acumulado progresivo**.
+
+| Handler | Descripción |
+|---------|-------------|
+| `GetCustomerStatementHandler` | Facturas + rectificativas venta + cobros de un cliente |
+| `GetSupplierStatementHandler` | Facturas + rectificativas compra + pagos de un proveedor |
+
+Lógica de saldo:
+- **Cliente**: `Debit = factura`, `Credit = rectificativa + cobro`, saldo = Σ(Debit - Credit)
+- **Proveedor**: `Debit = rectificativa + pago`, `Credit = factura`, saldo = Σ(Credit - Debit)
+
+Cada repositorio tiene nuevo método `GetByCustomerForStatementAsync` / `GetBySupplierForStatementAsync` con filtro por rango de fechas.
+
+### API
+
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `api/reports/customer-statement/{customerId}` | GET | Estado de cuenta cliente (`?from=&to=`) |
+| `api/reports/supplier-statement/{supplierId}` | GET | Estado de cuenta proveedor (`?from=&to=`) |
+
+### Páginas Blazor
+
+| Página | Ruta |
+|--------|------|
+| `EstadoCuentaClientes.razor` | `/contabilidad/estado-cuenta-clientes` — selector de cliente + rango fechas |
+| `EstadoCuentaProveedores.razor` | `/contabilidad/estado-cuenta-proveedores` — selector de proveedor + rango fechas |
+| Tab "Estado de cuenta" | `CustomerDetail.razor` — tab integrado en ficha de cliente |
+| Tab "Estado de cuenta" | `SupplierDetail.razor` — tab integrado en ficha de proveedor |
 
 ## Lo que falta
 
 - Cierre contable con asiento de regularización
-- Remesas bancarias
+- Conciliación bancaria (balance real en BankAccount)

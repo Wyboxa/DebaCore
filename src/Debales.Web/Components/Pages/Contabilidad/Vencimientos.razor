@@ -1,0 +1,181 @@
+@page "/contabilidad/vencimientos"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetReceivablesAgingHandler ReceivablesAging
+@inject GetPayablesAgingHandler PayablesAging
+
+<PageTitle>Vencimientos — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Vencimientos</h1>
+    <span class="text-muted small">A fecha: @_asOf.ToString("dd/MM/yyyy")</span>
+</div>
+
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <button class="nav-link @(_tab == "cobros" ? "active" : "")" @onclick='() => SwitchTab("cobros")'>
+            Cobros
+            @if (_cobros is not null && _cobros.TotalOverdue > 0)
+            {
+                <span class="badge bg-danger ms-1">@_cobros.TotalOverdue.ToString("N0") €</span>
+            }
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(_tab == "pagos" ? "active" : "")" @onclick='() => SwitchTab("pagos")'>
+            Pagos
+            @if (_pagos is not null && _pagos.TotalOverdue > 0)
+            {
+                <span class="badge bg-warning text-dark ms-1">@_pagos.TotalOverdue.ToString("N0") €</span>
+            }
+        </button>
+    </li>
+</ul>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    var report = _tab == "cobros" ? _cobros : _pagos;
+    var thirdPartyLabel = _tab == "cobros" ? "Cliente" : "Proveedor";
+
+    @if (report is not null)
+    {
+        @* Resumen buckets *@
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl">
+                @BucketCard(report.Current, "bg-success", "Al corriente")
+            </div>
+            <div class="col-sm-6 col-xl">
+                @BucketCard(report.Bucket1_30, "bg-warning", "1-30 días")
+            </div>
+            <div class="col-sm-6 col-xl">
+                @BucketCard(report.Bucket31_60, "bg-orange", "31-60 días")
+            </div>
+            <div class="col-sm-6 col-xl">
+                @BucketCard(report.Bucket61_90, "bg-danger", "61-90 días")
+            </div>
+            <div class="col-sm-6 col-xl">
+                @BucketCard(report.BucketOver90, "bg-dark", "+90 días")
+            </div>
+        </div>
+
+        @* Totales resumen *@
+        <div class="d-flex gap-4 mb-3 small text-muted">
+            <span>Total pendiente: <strong class="text-body">@report.TotalPending.ToString("N2") €</strong></span>
+            @if (report.TotalOverdue > 0)
+            {
+                <span>Total vencido: <strong class="text-danger">@report.TotalOverdue.ToString("N2") €</strong></span>
+            }
+            <span>Documentos: <strong class="text-body">@report.Items.Count</strong></span>
+        </div>
+
+        @* Tabla de detalle *@
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Número</th>
+                            <th>@thirdPartyLabel</th>
+                            <th>Vencimiento</th>
+                            <th class="text-end">Original</th>
+                            <th class="text-end">Pendiente</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in report.Items.OrderByDescending(i => i.DaysOverdue).ThenBy(i => i.DueDate))
+                        {
+                            <tr class="@(item.DaysOverdue > 90 ? "table-danger" : item.DaysOverdue > 0 ? "table-warning" : "")">
+                                <td><code>@item.Number</code></td>
+                                <td>@item.ThirdPartyName</td>
+                                <td>
+                                    @item.DueDate.ToString("dd/MM/yyyy")
+                                    @if (item.DaysOverdue > 0)
+                                    {
+                                        <span class="badge bg-danger ms-1">@item.DaysOverdue d</span>
+                                    }
+                                </td>
+                                <td class="text-end">@item.OriginalAmount.ToString("N2") €</td>
+                                <td class="text-end fw-semibold">@item.PendingAmount.ToString("N2") €</td>
+                                <td>
+                                    @if (item.DaysOverdue == 0)
+                                    {
+                                        <span class="badge bg-success">Al corriente</span>
+                                    }
+                                    else if (item.DaysOverdue <= 30)
+                                    {
+                                        <span class="badge bg-warning text-dark">1-30 días</span>
+                                    }
+                                    else if (item.DaysOverdue <= 60)
+                                    {
+                                        <span class="badge" style="background:#fd7e14">31-60 días</span>
+                                    }
+                                    else if (item.DaysOverdue <= 90)
+                                    {
+                                        <span class="badge bg-danger">61-90 días</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-dark">+90 días</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (!report.Items.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-muted py-4">Sin vencimientos pendientes.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    string _tab = "cobros";
+    bool _loading = true;
+    DateOnly _asOf = DateOnly.FromDateTime(DateTime.Today);
+    AgingReportDto? _cobros;
+    AgingReportDto? _pagos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        var t1 = ReceivablesAging.Handle(new GetReceivablesAgingQuery());
+        var t2 = PayablesAging.Handle(new GetPayablesAgingQuery());
+        await Task.WhenAll(t1, t2);
+        _cobros = t1.Result;
+        _pagos = t2.Result;
+        _asOf = _cobros.AsOf;
+        _loading = false;
+    }
+
+    void SwitchTab(string tab) => _tab = tab;
+
+    static RenderFragment BucketCard(AgingBucketDto bucket, string bgClass, string label) => __builder =>
+    {
+        __builder.OpenElement(0, "div");
+        __builder.AddAttribute(1, "class", "card border-0 shadow-sm text-center h-100");
+        __builder.OpenElement(2, "div");
+        __builder.AddAttribute(3, "class", $"card-body py-3");
+        __builder.OpenElement(4, "div");
+        __builder.AddAttribute(5, "class", $"badge {bgClass} mb-1 px-2 py-1");
+        __builder.AddContent(6, label);
+        __builder.CloseElement();
+        __builder.OpenElement(7, "div");
+        __builder.AddAttribute(8, "class", "fw-bold fs-5 mt-1");
+        __builder.AddContent(9, bucket.Amount.ToString("N2") + " €");
+        __builder.CloseElement();
+        __builder.OpenElement(10, "div");
+        __builder.AddAttribute(11, "class", "text-muted small");
+        __builder.AddContent(12, bucket.Count + " docs.");
+        __builder.CloseElement();
+        __builder.CloseElement();
+        __builder.CloseElement();
+    };
+}
