@@ -224,8 +224,8 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
-> **Actualización 2026-06-11 (sesión 3h):** Tab "Pedidos" en `CustomerDetail.razor` (historial lazy de pedidos de venta del cliente) + tab "Pedidos" en `SupplierDetail.razor` (historial lazy de pedidos de compra del proveedor). Tests `GetItemPriceHandler` (6) + `ConvertQuoteToOrderHandler` (9). Obsidian sincronizado.
-> 21 migraciones aplicadas. 224 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
+> **Actualización 2026-06-12:** Tutorial mejorado a 12 pasos con Tips. Analítica ampliada (evolución mensual, top proveedores, conversión presupuestos). `SupplierContact` — módulo completo 7 capas: Domain + Application (4 handlers) + Infrastructure + API + Web (tab "Contactos" en ficha proveedor). Migración `20260612141224_AddSupplierContactModule`.
+> 22 migraciones aplicadas. 223 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
 
 El proyecto cuenta con la plataforma ERP completa y la capa de IA supervisada sobre ERP.
@@ -2565,3 +2565,4 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 | Tests `GetItemPriceHandler` (6) + `ConvertQuoteToOrderHandler` (9) — cobertura resolución precios y ciclo presupuesto→pedido | Completo — 2026-06-11 | sin migración |
 | Tab "Pedidos" en `CustomerDetail.razor` — historial lazy de `SalesOrder` por cliente (badge estado, link a ficha) | Completo — 2026-06-11 | sin migración |
 | Tab "Pedidos" en `SupplierDetail.razor` — historial lazy de `PurchaseOrder` por proveedor (badge estado, link a ficha) | Completo — 2026-06-11 | sin migración |
+| `SupplierContact` (contactos de proveedor) — Domain + Application (4 handlers: Add/Update/Deactivate/GetBySupplier) + Infrastructure + API (sub-rutas GET/POST/PUT/DELETE en `SuppliersController`) + Web (tab "Contactos" lazy en `SupplierDetail.razor`, modal añadir/editar, confirmación baja) | Completo — 2026-06-12 | `20260612141224_AddSupplierContactModule` |
