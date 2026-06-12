@@ -5,6 +5,8 @@ using Debales.Application.CRM.Activities.Commands.CompleteActivity;
 using Debales.Application.CRM.Activities.Commands.LogActivity;
 using Debales.Application.CRM.Activities.Queries.GetActivitiesByCustomer;
 using Debales.Application.CRM.Contacts.Commands.AddContact;
+using Debales.Application.CRM.Contacts.Commands.UpdateContact;
+using Debales.Application.CRM.Contacts.Commands.DeactivateContact;
 using Debales.Application.CRM.Contacts.Queries.GetContactsByCustomer;
 using Debales.Application.CRM.Customers.Commands.CreateCustomer;
 using Debales.Application.CRM.Customers.Commands.UpdateCustomer;
@@ -32,6 +34,8 @@ public sealed class CustomersController : ControllerBase
     private readonly GetCustomerByIdHandler _getById;
     private readonly GetCustomersHandler _getAll;
     private readonly AddContactHandler _addContact;
+    private readonly UpdateContactHandler _updateContact;
+    private readonly DeactivateContactHandler _deactivateContact;
     private readonly GetContactsByCustomerHandler _getContacts;
     private readonly LogActivityHandler _logActivity;
     private readonly CompleteActivityHandler _completeActivity;
@@ -48,7 +52,8 @@ public sealed class CustomersController : ControllerBase
     public CustomersController(
         CreateCustomerHandler create, UpdateCustomerHandler update,
         GetCustomerByIdHandler getById, GetCustomersHandler getAll,
-        AddContactHandler addContact, GetContactsByCustomerHandler getContacts,
+        AddContactHandler addContact, UpdateContactHandler updateContact, DeactivateContactHandler deactivateContact,
+        GetContactsByCustomerHandler getContacts,
         LogActivityHandler logActivity, CompleteActivityHandler completeActivity, GetActivitiesByCustomerHandler getActivities,
         AddNoteHandler addNote, GetNotesByCustomerHandler getNotes,
         CreateOpportunityHandler createOpportunity, UpdateOpportunityStatusHandler updateOpportunityStatus,
@@ -58,7 +63,8 @@ public sealed class CustomersController : ControllerBase
         DeleteCustomerItemCodeHandler deleteItemCode)
     {
         _create = create; _update = update; _getById = getById; _getAll = getAll;
-        _addContact = addContact; _getContacts = getContacts;
+        _addContact = addContact; _updateContact = updateContact; _deactivateContact = deactivateContact;
+        _getContacts = getContacts;
         _logActivity = logActivity; _completeActivity = completeActivity; _getActivities = getActivities;
         _addNote = addNote; _getNotes = getNotes;
         _createOpportunity = createOpportunity; _updateOpportunityStatus = updateOpportunityStatus;
@@ -114,7 +120,7 @@ public sealed class CustomersController : ControllerBase
         => Ok(await _getContacts.Handle(new GetContactsByCustomerQuery(id), ct));
 
     [HttpPost("{id:guid}/contacts")]
-    public async Task<IActionResult> AddContact(Guid id, [FromBody] AddContactRequest req, CancellationToken ct)
+    public async Task<IActionResult> AddContact(Guid id, [FromBody] ContactRequest req, CancellationToken ct)
     {
         try
         {
@@ -123,6 +129,29 @@ public sealed class CustomersController : ControllerBase
         }
         catch (KeyNotFoundException) { return NotFound(); }
         catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    [HttpPut("{id:guid}/contacts/{contactId:guid}")]
+    public async Task<IActionResult> UpdateContact(Guid id, Guid contactId, [FromBody] ContactRequest req, CancellationToken ct)
+    {
+        try
+        {
+            var contact = await _updateContact.Handle(new UpdateContactCommand(contactId, req.FirstName, req.LastName, req.JobTitle, req.Email, req.Phone, "api"), ct);
+            return Ok(contact);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    [HttpDelete("{id:guid}/contacts/{contactId:guid}")]
+    public async Task<IActionResult> DeactivateContact(Guid id, Guid contactId, CancellationToken ct)
+    {
+        try
+        {
+            await _deactivateContact.Handle(new DeactivateContactCommand(contactId, "api"), ct);
+            return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
     }
 
     // ── Activities ────────────────────────────────────────────────────────────
@@ -242,7 +271,7 @@ public sealed record CreateCustomerRequest(string Name, string? Sector, string? 
 public sealed record UpdateCustomerRequest(
     string Name, string? Sector, string? TaxId, string? Phone, string? Email, string? Website,
     string? AddressStreet, string? AddressCity, string? AddressPostalCode, string? AddressCountry);
-public sealed record AddContactRequest(string FirstName, string LastName, string? JobTitle, string? Email, string? Phone);
+public sealed record ContactRequest(string FirstName, string LastName, string? JobTitle, string? Email, string? Phone);
 public sealed record LogActivityRequest(ActivityType Type, string Subject, DateTime ScheduledAt, Guid? ContactId, string? Notes, string? AssignedTo);
 public sealed record AddNoteRequest(string Content);
 public sealed record CreateOpportunityRequest(string Title, decimal? EstimatedValue, DateTime? ExpectedCloseDate);

@@ -4,6 +4,8 @@
 @inject GetCustomerByIdHandler GetById
 @inject UpdateCustomerHandler UpdateHandler
 @inject AddContactHandler AddContactHandler
+@inject UpdateContactHandler UpdateContactHandler
+@inject DeactivateContactHandler DeactivateContactHandler
 @inject GetContactsByCustomerHandler GetContacts
 @inject LogActivityHandler LogActivity
 @inject GetActivitiesByCustomerHandler GetActivities
@@ -160,68 +162,60 @@ else
 
     @if (_tab == "contactos")
     {
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">Contactos (@_contacts.Count)</h5>
-            <button class="btn btn-sm btn-primary" @onclick="OpenAddContact">+ Añadir contacto</button>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr><th>Nombre</th><th>Cargo</th><th>Email</th><th>Teléfono</th><th>Estado</th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var c in _contacts)
-                    {
-                        <tr>
-                            <td>@c.FullName</td>
-                            <td>@(c.JobTitle ?? "—")</td>
-                            <td>@(c.Email ?? "—")</td>
-                            <td>@(c.Phone ?? "—")</td>
-                            <td>@(c.IsActive ? "Activo" : "Inactivo")</td>
-                        </tr>
-                    }
-                    @if (!_contacts.Any()) { <tr><td colspan="5" class="text-center text-muted py-3">Sin contactos.</td></tr> }
-                </tbody>
-            </table>
-        </div>
-
-        @if (_showAddContact)
-        {
-            <div class="card mt-3">
-                <div class="card-header">Nuevo contacto</div>
-                <div class="card-body">
-                    <EditForm Model="_contactForm" OnValidSubmit="SaveContact">
-                        <div class="row g-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Nombre *</label>
-                                <InputText class="form-control" @bind-Value="_contactForm.FirstName" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Apellidos *</label>
-                                <InputText class="form-control" @bind-Value="_contactForm.LastName" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Cargo</label>
-                                <InputText class="form-control" @bind-Value="_contactForm.JobTitle" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Email</label>
-                                <InputText class="form-control" @bind-Value="_contactForm.Email" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Teléfono</label>
-                                <InputText class="form-control" @bind-Value="_contactForm.Phone" />
-                            </div>
-                        </div>
-                        @if (_contactError is not null) { <div class="alert alert-danger mt-2">@_contactError</div> }
-                        <div class="d-flex gap-2 justify-content-end mt-3">
-                            <button type="button" class="btn btn-secondary" @onclick="() => _showAddContact = false">Cancelar</button>
-                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
-                        </div>
-                    </EditForm>
-                </div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Contactos del cliente</span>
+                <button class="btn btn-sm btn-primary" @onclick="OpenAddContact">+ Añadir contacto</button>
             </div>
-        }
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Nombre</th>
+                            <th>Cargo</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in _contacts)
+                        {
+                            <tr>
+                                <td class="ps-3 fw-semibold">@c.FullName</td>
+                                <td class="text-muted small">@(c.JobTitle ?? "—")</td>
+                                <td class="small">
+                                    @if (c.Email is not null)
+                                    { <a href="mailto:@c.Email">@c.Email</a> }
+                                    else { <span class="text-muted">—</span> }
+                                </td>
+                                <td class="small">@(c.Phone ?? "—")</td>
+                                <td>
+                                    @if (c.IsActive)
+                                    { <span class="badge bg-success">Activo</span> }
+                                    else
+                                    { <span class="badge bg-secondary">Inactivo</span> }
+                                </td>
+                                <td class="text-end pe-3">
+                                    <button class="btn btn-sm btn-outline-secondary me-1"
+                                            @onclick="() => OpenEditContact(c)">Editar</button>
+                                    @if (c.IsActive)
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => ConfirmDeactivateContact(c)">Dar de baja</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (!_contacts.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-muted py-3">Sin contactos registrados. Añade el primero con el botón superior.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     }
 
     @if (_tab == "actividades")
@@ -705,6 +699,71 @@ else
     }
 }
 
+@* ── Contact modals ── *@
+@if (_showContactModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editingContact is not null ? "Editar contacto" : "Nuevo contacto")</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showContactModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre *</label>
+                            <InputText class="form-control" @bind-Value="_contactForm.FirstName" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Apellidos *</label>
+                            <InputText class="form-control" @bind-Value="_contactForm.LastName" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Cargo</label>
+                            <InputText class="form-control" @bind-Value="_contactForm.JobTitle" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <InputText class="form-control" @bind-Value="_contactForm.Email" type="email" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Teléfono</label>
+                            <InputText class="form-control" @bind-Value="_contactForm.Phone" />
+                        </div>
+                    </div>
+                    @if (_contactError is not null) { <div class="alert alert-danger mt-2">@_contactError</div> }
+                    <div class="d-flex gap-2 justify-content-end mt-3">
+                        <button type="button" class="btn btn-secondary" @onclick="() => _showContactModal = false">Cancelar</button>
+                        <button type="button" class="btn btn-primary" @onclick="SaveContact" disabled="@_saving">
+                            @(_saving ? "Guardando…" : "Guardar")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_deactivatingContact is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar</h5>
+                    <button type="button" class="btn-close" @onclick="() => _deactivatingContact = null"></button>
+                </div>
+                <div class="modal-body">¿Dar de baja a <strong>@_deactivatingContact.FullName</strong>?</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary btn-sm" @onclick="() => _deactivatingContact = null">Cancelar</button>
+                    <button class="btn btn-danger btn-sm" @onclick="ExecuteDeactivateContact" disabled="@_saving">Dar de baja</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @* ── Customer item code modals ── *@
 @if (_showCustomerCodeModal)
 {
@@ -898,8 +957,10 @@ else
     private string? _editError;
     private EditFormModel _editForm = new();
 
-    // Add contact
-    private bool _showAddContact;
+    // Contacts (add / edit / deactivate)
+    private bool _showContactModal;
+    private Debales.Application.CRM.Contacts.DTOs.ContactDto? _editingContact;
+    private Debales.Application.CRM.Contacts.DTOs.ContactDto? _deactivatingContact;
     private string? _contactError;
     private ContactFormModel _contactForm = new();
 
@@ -1234,25 +1295,76 @@ else
         finally { _saving = false; }
     }
 
-    // ── Add contact ──────────────────────────────────────────────────────────────
+    // ── Contacts ─────────────────────────────────────────────────────────────────
 
-    private void OpenAddContact() { _contactError = null; _contactForm = new(); _showAddContact = true; }
+    private void OpenAddContact()
+    {
+        _editingContact = null;
+        _contactForm = new();
+        _contactError = null;
+        _showContactModal = true;
+    }
+
+    private void OpenEditContact(Debales.Application.CRM.Contacts.DTOs.ContactDto c)
+    {
+        _editingContact = c;
+        _contactForm = new ContactFormModel
+        {
+            FirstName = c.FirstName, LastName = c.LastName,
+            JobTitle = c.JobTitle, Email = c.Email, Phone = c.Phone
+        };
+        _contactError = null;
+        _showContactModal = true;
+    }
 
     private async Task SaveContact()
     {
+        if (string.IsNullOrWhiteSpace(_contactForm.FirstName)) { _contactError = "El nombre es obligatorio."; return; }
+        if (string.IsNullOrWhiteSpace(_contactForm.LastName)) { _contactError = "Los apellidos son obligatorios."; return; }
+
         _saving = true;
         _contactError = null;
         try
         {
-            await AddContactHandler.Handle(new AddContactCommand(
-                Id, _contactForm.FirstName!, _contactForm.LastName!, _contactForm.JobTitle,
-                _contactForm.Email, _contactForm.Phone, "web"));
-            _showAddContact = false;
-            await LoadContactsAsync();
-            Toast.Show("Contacto añadido");
+            if (_editingContact is null)
+            {
+                var result = await AddContactHandler.Handle(new AddContactCommand(
+                    Id, _contactForm.FirstName!, _contactForm.LastName!, _contactForm.JobTitle,
+                    _contactForm.Email, _contactForm.Phone, "web"));
+                _contacts = [.. _contacts, result];
+            }
+            else
+            {
+                var result = await UpdateContactHandler.Handle(new UpdateContactCommand(
+                    _editingContact.Id, _contactForm.FirstName!, _contactForm.LastName!,
+                    _contactForm.JobTitle, _contactForm.Email, _contactForm.Phone, "web"));
+                _contacts = _contacts.Select(c => c.Id == result.Id ? result : c).ToList();
+            }
+            _showContactModal = false;
+            Toast.Show(_editingContact is null ? "Contacto añadido" : "Contacto actualizado");
         }
         catch (ArgumentException ex) { _contactError = ex.Message; }
-        catch (KeyNotFoundException) { _contactError = "Cliente no encontrado."; }
+        catch (KeyNotFoundException) { _contactError = "Contacto no encontrado."; }
+        finally { _saving = false; }
+    }
+
+    private void ConfirmDeactivateContact(Debales.Application.CRM.Contacts.DTOs.ContactDto c) => _deactivatingContact = c;
+
+    private async Task ExecuteDeactivateContact()
+    {
+        if (_deactivatingContact is null) return;
+        _saving = true;
+        try
+        {
+            await DeactivateContactHandler.Handle(new DeactivateContactCommand(_deactivatingContact.Id, "web"));
+            _contacts = _contacts.Select(c => c.Id == _deactivatingContact.Id
+                ? new Debales.Application.CRM.Contacts.DTOs.ContactDto(c.Id, c.CustomerId, c.FirstName, c.LastName,
+                    c.FullName, c.JobTitle, c.Email, c.Phone, false, c.CreatedAt)
+                : c).ToList();
+            _deactivatingContact = null;
+            Toast.Show("Contacto dado de baja");
+        }
+        catch (Exception ex) { Toast.Show(ex.Message); }
         finally { _saving = false; }
     }
 

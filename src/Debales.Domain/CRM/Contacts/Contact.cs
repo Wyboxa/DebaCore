@@ -44,6 +44,28 @@ public sealed class Contact : AuditableEntity
         };
     }
 
+    public void Update(
+        string firstName,
+        string lastName,
+        string? jobTitle,
+        string? email,
+        string? phone,
+        string updatedBy)
+    {
+        if (string.IsNullOrWhiteSpace(firstName))
+            throw new ArgumentException("El nombre no puede estar vacío.", nameof(firstName));
+
+        if (string.IsNullOrWhiteSpace(lastName))
+            throw new ArgumentException("El apellido no puede estar vacío.", nameof(lastName));
+
+        FirstName = firstName.Trim();
+        LastName = lastName.Trim();
+        JobTitle = jobTitle?.Trim();
+        Email = email?.Trim().ToLowerInvariant();
+        Phone = phone?.Trim();
+        SetUpdated(updatedBy);
+    }
+
     public void Deactivate(string updatedBy)
     {
         IsActive = false;

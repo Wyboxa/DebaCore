@@ -36,6 +36,8 @@ using Debales.Application.CRM.Activities.Commands.CompleteActivity;
 using Debales.Application.CRM.Activities.Commands.LogActivity;
 using Debales.Application.CRM.Activities.Queries.GetActivitiesByCustomer;
 using Debales.Application.CRM.Contacts.Commands.AddContact;
+using Debales.Application.CRM.Contacts.Commands.UpdateContact;
+using Debales.Application.CRM.Contacts.Commands.DeactivateContact;
 using Debales.Application.CRM.Contacts.Queries.GetContactsByCustomer;
 using Debales.Application.CRM.Customers.Commands.CreateCustomer;
 using Debales.Application.CRM.Customers.Commands.UpdateCustomer;
@@ -217,6 +219,8 @@ public static class DependencyInjection
 
         // CRM — Contacts
         services.AddScoped<AddContactHandler>();
+        services.AddScoped<UpdateContactHandler>();
+        services.AddScoped<DeactivateContactHandler>();
         services.AddScoped<GetContactsByCustomerHandler>();
 
         // CRM — Activities
