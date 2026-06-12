@@ -3,6 +3,10 @@ using Debales.Application.Catalog.Commands.UpsertSupplierItemCode;
 using Debales.Application.Catalog.Queries.GetSupplierItemCodes;
 using Debales.Application.Suppliers.Commands.CreateSupplier;
 using Debales.Application.Suppliers.Commands.UpdateSupplier;
+using Debales.Application.Suppliers.Contacts.Commands.AddSupplierContact;
+using Debales.Application.Suppliers.Contacts.Commands.DeactivateSupplierContact;
+using Debales.Application.Suppliers.Contacts.Commands.UpdateSupplierContact;
+using Debales.Application.Suppliers.Contacts.Queries.GetContactsBySupplier;
 using Debales.Application.Suppliers.Queries.GetSupplierById;
 using Debales.Application.Suppliers.Queries.GetSuppliers;
 using Microsoft.AspNetCore.Authorization;
@@ -22,6 +26,10 @@ public sealed class SuppliersController : ControllerBase
     private readonly GetSupplierItemCodesHandler _getItemCodes;
     private readonly UpsertSupplierItemCodeHandler _upsertItemCode;
     private readonly DeleteSupplierItemCodeHandler _deleteItemCode;
+    private readonly AddSupplierContactHandler _addContact;
+    private readonly UpdateSupplierContactHandler _updateContact;
+    private readonly DeactivateSupplierContactHandler _deactivateContact;
+    private readonly GetContactsBySupplierHandler _getContacts;
 
     public SuppliersController(
         CreateSupplierHandler create,
@@ -30,7 +38,11 @@ public sealed class SuppliersController : ControllerBase
         GetSuppliersHandler getAll,
         GetSupplierItemCodesHandler getItemCodes,
         UpsertSupplierItemCodeHandler upsertItemCode,
-        DeleteSupplierItemCodeHandler deleteItemCode)
+        DeleteSupplierItemCodeHandler deleteItemCode,
+        AddSupplierContactHandler addContact,
+        UpdateSupplierContactHandler updateContact,
+        DeactivateSupplierContactHandler deactivateContact,
+        GetContactsBySupplierHandler getContacts)
     {
         _create = create;
         _update = update;
@@ -39,6 +51,10 @@ public sealed class SuppliersController : ControllerBase
         _getItemCodes = getItemCodes;
         _upsertItemCode = upsertItemCode;
         _deleteItemCode = deleteItemCode;
+        _addContact = addContact;
+        _updateContact = updateContact;
+        _deactivateContact = deactivateContact;
+        _getContacts = getContacts;
     }
 
     [HttpGet]
@@ -118,4 +134,50 @@ public sealed class SuppliersController : ControllerBase
     }
 
     public sealed record UpsertSupplierItemCodeRequest(Guid ItemId, string SupplierCode, string? Description);
+
+    // ── Contacts ──────────────────────────────────────────────────────────────
+
+    [HttpGet("{id:guid}/contacts")]
+    public async Task<IActionResult> GetContacts(Guid id, CancellationToken ct)
+        => Ok(await _getContacts.Handle(new GetContactsBySupplierQuery(id), ct));
+
+    [HttpPost("{id:guid}/contacts")]
+    public async Task<IActionResult> AddContact(Guid id, [FromBody] SupplierContactRequest req, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _addContact.Handle(
+                new AddSupplierContactCommand(id, req.FirstName, req.LastName, req.JobTitle, req.Email, req.Phone, "api"), ct);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    [HttpPut("{id:guid}/contacts/{contactId:guid}")]
+    public async Task<IActionResult> UpdateContact(Guid id, Guid contactId, [FromBody] SupplierContactRequest req, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _updateContact.Handle(
+                new UpdateSupplierContactCommand(contactId, req.FirstName, req.LastName, req.JobTitle, req.Email, req.Phone, "api"), ct);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    [HttpDelete("{id:guid}/contacts/{contactId:guid}")]
+    public async Task<IActionResult> DeactivateContact(Guid id, Guid contactId, CancellationToken ct)
+    {
+        try
+        {
+            await _deactivateContact.Handle(new DeactivateSupplierContactCommand(contactId, "api"), ct);
+            return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+    }
+
+    public sealed record SupplierContactRequest(
+        string FirstName, string LastName, string? JobTitle, string? Email, string? Phone);
 }

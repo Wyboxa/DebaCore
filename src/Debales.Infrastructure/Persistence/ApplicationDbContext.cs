@@ -52,6 +52,7 @@ public sealed class ApplicationDbContext : DbContext
 
     // Suppliers
     public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<SupplierContact> SupplierContacts => Set<SupplierContact>();
 
     // Catalog
     public DbSet<Item> Items => Set<Item>();

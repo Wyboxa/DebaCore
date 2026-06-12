@@ -25,6 +25,10 @@ using Debales.Application.Suppliers.Commands.CreateSupplier;
 using Debales.Application.Suppliers.Commands.UpdateSupplier;
 using Debales.Application.Suppliers.Queries.GetSuppliers;
 using Debales.Application.Suppliers.Queries.GetSupplierById;
+using Debales.Application.Suppliers.Contacts.Commands.AddSupplierContact;
+using Debales.Application.Suppliers.Contacts.Commands.UpdateSupplierContact;
+using Debales.Application.Suppliers.Contacts.Commands.DeactivateSupplierContact;
+using Debales.Application.Suppliers.Contacts.Queries.GetContactsBySupplier;
 using Debales.Application.Core.Auth.Commands.Login;
 using Debales.Application.Core.Users.Commands.CreateUser;
 using Debales.Application.Core.Users.Queries.GetUserById;
@@ -258,6 +262,12 @@ public static class DependencyInjection
         services.AddScoped<UpdateSupplierHandler>();
         services.AddScoped<GetSuppliersHandler>();
         services.AddScoped<GetSupplierByIdHandler>();
+
+        // Suppliers — Contacts
+        services.AddScoped<AddSupplierContactHandler>();
+        services.AddScoped<UpdateSupplierContactHandler>();
+        services.AddScoped<DeactivateSupplierContactHandler>();
+        services.AddScoped<GetContactsBySupplierHandler>();
 
         // Sales — Quotes
         services.AddScoped<CreateSalesQuoteHandler>();

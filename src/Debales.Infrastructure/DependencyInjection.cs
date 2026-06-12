@@ -18,6 +18,7 @@ using Debales.Application.Inventory;
 using Debales.Application.Purchasing;
 using Debales.Application.Sales;
 using Debales.Application.Suppliers;
+using Debales.Application.Suppliers.Contacts;
 using Debales.Infrastructure.Persistence;
 using Debales.Infrastructure.Persistence.Repositories;
 using Debales.Infrastructure.Persistence.Repositories.Accounting;
@@ -73,6 +74,7 @@ public static class DependencyInjection
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<IContactRepository, ContactRepository>();
+        services.AddScoped<ISupplierContactRepository, SupplierContactRepository>();
         services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddScoped<INoteRepository, NoteRepository>();
         services.AddScoped<IOpportunityRepository, OpportunityRepository>();
