@@ -183,6 +183,14 @@ using Debales.Application.Sales.Commands.RejectSalesQuote;
 using Debales.Application.Sales.Commands.ConvertQuoteToOrder;
 using Debales.Application.Sales.Queries.GetSalesQuotes;
 using Debales.Application.Sales.Queries.GetSalesQuoteById;
+using Debales.Application.Documents.Commands.CreateDocument;
+using Debales.Application.Documents.Commands.UpdateDocument;
+using Debales.Application.Documents.Commands.DeactivateDocument;
+using Debales.Application.Documents.Commands.CreateDocumentType;
+using Debales.Application.Documents.Commands.UpdateDocumentType;
+using Debales.Application.Documents.Queries.GetDocuments;
+using Debales.Application.Documents.Queries.GetDocumentById;
+using Debales.Application.Documents.Queries.GetDocumentTypes;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Debales.Application;
@@ -444,6 +452,16 @@ public static class DependencyInjection
         services.AddScoped<GetCurrentLicenseHandler>();
         services.AddScoped<GetSubscriptionPlansHandler>();
         services.AddScoped<ActivateLicenseHandler>();
+
+        // Documents
+        services.AddScoped<CreateDocumentTypeHandler>();
+        services.AddScoped<UpdateDocumentTypeHandler>();
+        services.AddScoped<GetDocumentTypesHandler>();
+        services.AddScoped<CreateDocumentHandler>();
+        services.AddScoped<UpdateDocumentHandler>();
+        services.AddScoped<DeactivateDocumentHandler>();
+        services.AddScoped<GetDocumentsHandler>();
+        services.AddScoped<GetDocumentByIdHandler>();
 
         // Audit
         services.AddScoped<GetAuditEntriesHandler>();

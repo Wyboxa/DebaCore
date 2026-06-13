@@ -9,6 +9,7 @@ using Debales.Application.Core.Roles;
 using Debales.Application.Core.Users;
 using Debales.Application.Documents;
 using Debales.Infrastructure.Documents;
+using Debales.Infrastructure.Persistence.Repositories.Documents;
 using Debales.Application.CRM.Activities;
 using Debales.Application.CRM.Contacts;
 using Debales.Application.CRM.Customers;
@@ -51,8 +52,12 @@ public static class DependencyInjection
         services.AddScoped<IAuditEntryRepository, AuditEntryRepository>();
         services.AddScoped<INumberSeriesRepository, NumberSeriesRepository>();
 
-        // Documents
+        // Documents — PDF export
         services.AddSingleton<IInvoicePdfGenerator, InvoicePdfGenerator>();
+
+        // Documents — Module
+        services.AddScoped<IDocumentTypeRepository, DocumentTypeRepository>();
+        services.AddScoped<IDocumentRepository, DocumentRepository>();
 
         // Core
         services.AddScoped<IUserRepository, UserRepository>();

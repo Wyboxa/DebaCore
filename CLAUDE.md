@@ -224,6 +224,7 @@ He ejecutado `dotnet test` y el resultado ha sido...
 
 # 6. Estado actual del proyecto
 
+> **Actualización 2026-06-13:** Módulo `Documents` completo 7 capas — Domain (`Document`, `DocumentType`) + Application (8 handlers) + Infrastructure + API (`DocumentsController`, `DocumentTypesController`) + Web (`Documentos.razor`, `DocumentoDetalle.razor`, `TiposDocumento.razor`) + NavMenu. Migración manual `20260613120000_AddDocumentsModule` (regenerar con `dotnet ef migrations add` tras instalar .NET).
 > **Actualización 2026-06-12:** Tutorial mejorado a 12 pasos con Tips. Analítica ampliada (evolución mensual, top proveedores, conversión presupuestos). `SupplierContact` — módulo completo 7 capas: Domain + Application (4 handlers) + Infrastructure + API + Web (tab "Contactos" en ficha proveedor). Migración `20260612141224_AddSupplierContactModule`.
 > 22 migraciones aplicadas. 223 tests pasando. Vault Obsidian activo en `docs/obsidian/` — se actualiza en cada sesión.
 > Las secciones siguientes describen la arquitectura objetivo completa del producto, no solo lo ya implementado.
@@ -2566,3 +2567,4 @@ Validar argumentos al inicio del método. Lanzar `ArgumentException` o `InvalidO
 | Tab "Pedidos" en `CustomerDetail.razor` — historial lazy de `SalesOrder` por cliente (badge estado, link a ficha) | Completo — 2026-06-11 | sin migración |
 | Tab "Pedidos" en `SupplierDetail.razor` — historial lazy de `PurchaseOrder` por proveedor (badge estado, link a ficha) | Completo — 2026-06-11 | sin migración |
 | `SupplierContact` (contactos de proveedor) — Domain + Application (4 handlers: Add/Update/Deactivate/GetBySupplier) + Infrastructure + API (sub-rutas GET/POST/PUT/DELETE en `SuppliersController`) + Web (tab "Contactos" lazy en `SupplierDetail.razor`, modal añadir/editar, confirmación baja) | Completo — 2026-06-12 | `20260612141224_AddSupplierContactModule` |
+| `Documents` module — Domain (`Document`, `DocumentType`) + Application (8 handlers: Create/Update/Deactivate/GetAll/GetById para Document + Create/Update/GetAll para DocumentType) + Infrastructure (2 configuraciones + 2 repositorios) + API (`DocumentsController`, `DocumentTypesController`) + Web (`Documentos.razor` `/documentos`, `DocumentoDetalle.razor` `/documentos/{id}`, `TiposDocumento.razor` `/configuracion/tipos-documento`) + NavMenu (sección Documentos + sublink Tipos de documento en Configuración) | Completo — 2026-06-13 | `20260613120000_AddDocumentsModule` (manual) |

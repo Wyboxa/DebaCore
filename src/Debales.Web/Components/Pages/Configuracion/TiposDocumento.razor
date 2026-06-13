@@ -1,0 +1,141 @@
+@page "/configuracion/tipos-documento"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetDocumentTypesHandler GetAll
+@inject CreateDocumentTypeHandler CreateHandler
+@inject UpdateDocumentTypeHandler UpdateHandler
+
+<PageTitle>Tipos de documento — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Tipos de documento</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nuevo tipo</button>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in _types)
+                    {
+                        <tr>
+                            <td><strong>@t.Name</strong></td>
+                            <td class="text-muted">@(t.Description ?? "—")</td>
+                            <td>
+                                @if (t.IsActive) { <span class="badge bg-success">Activo</span> }
+                                else { <span class="badge bg-secondary">Inactivo</span> }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenEdit(t)">Editar</button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_types.Any())
+                    {
+                        <tr><td colspan="4" class="text-center text-muted py-4">No hay tipos de documento.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (_showModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editId.HasValue ? "Editar tipo" : "Nuevo tipo")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_form" OnValidSubmit="SaveType">
+                        <div class="mb-2">
+                            <label class="form-label">Nombre *</label>
+                            <InputText class="form-control" @bind-Value="_form.Name" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Descripción</label>
+                            <InputTextArea class="form-control" @bind-Value="_form.Description" rows="2" />
+                        </div>
+                        @if (_error is not null)
+                        {
+                            <div class="alert alert-danger">@_error</div>
+                        }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">
+                                @(_saving ? "Guardando…" : "Guardar")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<DocumentTypeDto> _types = [];
+    private bool _loading = true;
+    private bool _showModal;
+    private bool _saving;
+    private string? _error;
+    private Guid? _editId;
+    private TypeForm _form = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _types = await GetAll.Handle();
+        _loading = false;
+    }
+
+    private void OpenCreate() { _editId = null; _form = new(); _error = null; _showModal = true; }
+    private void OpenEdit(DocumentTypeDto t) { _editId = t.Id; _form = new() { Name = t.Name, Description = t.Description }; _error = null; _showModal = true; }
+    private void CloseModal() => _showModal = false;
+
+    private async Task SaveType()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Name)) { _error = "El nombre es obligatorio."; return; }
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            if (_editId.HasValue)
+                await UpdateHandler.Handle(new UpdateDocumentTypeCommand(_editId.Value, _form.Name!, _form.Description, "web"));
+            else
+                await CreateHandler.Handle(new CreateDocumentTypeCommand(_form.Name!, _form.Description, "web"));
+
+            _showModal = false;
+            await LoadAsync();
+        }
+        catch (ArgumentException ex) { _error = ex.Message; }
+        catch (InvalidOperationException ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private sealed class TypeForm
+    {
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+    }
+}

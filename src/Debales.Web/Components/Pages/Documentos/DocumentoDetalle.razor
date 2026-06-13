@@ -1,0 +1,296 @@
+@page "/documentos/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetDocumentByIdHandler GetById
+@inject GetDocumentTypesHandler GetDocumentTypes
+@inject UpdateDocumentHandler UpdateHandler
+@inject DeactivateDocumentHandler DeactivateHandler
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Documento — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_doc is null)
+{
+    <div class="alert alert-warning">Documento no encontrado.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="/documentos">Documentos</a></li>
+                    <li class="breadcrumb-item active">@_doc.Title</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0">@_doc.Title</h1>
+        </div>
+        <div class="d-flex gap-2">
+            @if (_doc.IsActive)
+            {
+                <button class="btn btn-outline-secondary" @onclick="OpenEdit">Editar</button>
+                <button class="btn btn-outline-danger" @onclick="ConfirmDeactivate">Desactivar</button>
+            }
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-3">Información del documento</h6>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Tipo</dt>
+                        <dd class="col-sm-8"><span class="badge bg-info text-dark">@_doc.DocumentTypeName</span></dd>
+
+                        <dt class="col-sm-4">Fecha</dt>
+                        <dd class="col-sm-8">@_doc.DocumentDate.ToString("dd/MM/yyyy")</dd>
+
+                        @if (_doc.Description is not null)
+                        {
+                            <dt class="col-sm-4">Descripción</dt>
+                            <dd class="col-sm-8">@_doc.Description</dd>
+                        }
+
+                        @if (_doc.FileName is not null)
+                        {
+                            <dt class="col-sm-4">Archivo</dt>
+                            <dd class="col-sm-8">
+                                <span class="font-monospace">@_doc.FileName</span>
+                                @if (_doc.MimeType is not null)
+                                {
+                                    <span class="text-muted ms-2 small">(@_doc.MimeType)</span>
+                                }
+                                @if (_doc.FileSizeBytes.HasValue)
+                                {
+                                    <span class="text-muted ms-2 small">@FormatSize(_doc.FileSizeBytes.Value)</span>
+                                }
+                            </dd>
+                        }
+
+                        @if (_doc.CustomerName is not null)
+                        {
+                            <dt class="col-sm-4">Cliente</dt>
+                            <dd class="col-sm-8">@_doc.CustomerName</dd>
+                        }
+
+                        @if (_doc.SupplierName is not null)
+                        {
+                            <dt class="col-sm-4">Proveedor</dt>
+                            <dd class="col-sm-8">@_doc.SupplierName</dd>
+                        }
+
+                        @if (_doc.Notes is not null)
+                        {
+                            <dt class="col-sm-4">Notas</dt>
+                            <dd class="col-sm-8">@_doc.Notes</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-3">Estado</h6>
+                    <div class="mb-2">
+                        @if (_doc.IsActive)
+                        {
+                            <span class="badge bg-success fs-6">Activo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary fs-6">Inactivo</span>
+                        }
+                    </div>
+                    <small class="text-muted">Creado: @_doc.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showEdit && _doc is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar documento</h5>
+                    <button type="button" class="btn-close" @onclick="CloseEdit"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_editForm" OnValidSubmit="SaveEdit">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label">Título *</label>
+                                <InputText class="form-control" @bind-Value="_editForm.Title" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo *</label>
+                                <InputSelect class="form-select" @bind-Value="_editForm.DocumentTypeId">
+                                    @foreach (var t in _types)
+                                    {
+                                        <option value="@t.Id">@t.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha del documento *</label>
+                                <InputDate class="form-control" @bind-Value="_editForm.DocumentDate" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Descripción</label>
+                                <InputTextArea class="form-control" @bind-Value="_editForm.Description" rows="2" />
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Nombre de archivo</label>
+                                <InputText class="form-control" @bind-Value="_editForm.FileName" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo MIME</label>
+                                <InputText class="form-control" @bind-Value="_editForm.MimeType" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Notas internas</label>
+                                <InputTextArea class="form-control" @bind-Value="_editForm.Notes" rows="2" />
+                            </div>
+                        </div>
+                        @if (_editError is not null)
+                        {
+                            <div class="alert alert-danger mt-2">@_editError</div>
+                        }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseEdit">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">
+                                @(_saving ? "Guardando…" : "Guardar cambios")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showDeactivate)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Desactivar documento</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showDeactivate = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Seguro que quieres desactivar <strong>@_doc?.Title</strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => _showDeactivate = false">Cancelar</button>
+                    <button class="btn btn-danger" @onclick="DoDeactivate" disabled="@_saving">
+                        @(_saving ? "Desactivando…" : "Desactivar")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private DocumentDto? _doc;
+    private IReadOnlyList<DocumentTypeDto> _types = [];
+    private bool _loading = true;
+    private bool _showEdit;
+    private bool _showDeactivate;
+    private bool _saving;
+    private string? _editError;
+    private EditForm_Model _editForm = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _types = await GetDocumentTypes.Handle();
+        _doc = await GetById.Handle(new GetDocumentByIdQuery(Id));
+        _loading = false;
+    }
+
+    private void OpenEdit()
+    {
+        if (_doc is null) return;
+        _editForm = new()
+        {
+            Title = _doc.Title,
+            Description = _doc.Description,
+            DocumentTypeId = _doc.DocumentTypeId,
+            DocumentDate = _doc.DocumentDate,
+            FileName = _doc.FileName,
+            MimeType = _doc.MimeType,
+            Notes = _doc.Notes
+        };
+        _editError = null;
+        _showEdit = true;
+    }
+
+    private void CloseEdit() => _showEdit = false;
+
+    private async Task SaveEdit()
+    {
+        if (string.IsNullOrWhiteSpace(_editForm.Title)) { _editError = "El título es obligatorio."; return; }
+
+        _saving = true;
+        _editError = null;
+        try
+        {
+            _doc = await UpdateHandler.Handle(new UpdateDocumentCommand(
+                Id, _editForm.Title!, _editForm.Description, _editForm.DocumentTypeId,
+                _doc!.CustomerId, _doc.SupplierId,
+                _editForm.FileName, _doc.FileSizeBytes, _editForm.MimeType,
+                _editForm.Notes, _editForm.DocumentDate, "web"));
+            _showEdit = false;
+            Toast.Show("Documento actualizado");
+        }
+        catch (KeyNotFoundException ex) { _editError = ex.Message; }
+        catch (ArgumentException ex) { _editError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private void ConfirmDeactivate() => _showDeactivate = true;
+
+    private async Task DoDeactivate()
+    {
+        _saving = true;
+        try
+        {
+            await DeactivateHandler.Handle(new DeactivateDocumentCommand(Id, "web"));
+            _showDeactivate = false;
+            Toast.Show("Documento desactivado");
+            Nav.NavigateTo("/documentos");
+        }
+        finally { _saving = false; }
+    }
+
+    private static string FormatSize(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => $"{bytes / 1024} KB",
+        _ => $"{bytes / (1024 * 1024)} MB"
+    };
+
+    private sealed class EditForm_Model
+    {
+        public string? Title { get; set; }
+        public string? Description { get; set; }
+        public Guid DocumentTypeId { get; set; }
+        public DateTime DocumentDate { get; set; } = DateTime.Today;
+        public string? FileName { get; set; }
+        public string? MimeType { get; set; }
+        public string? Notes { get; set; }
+    }
+}
