@@ -1,6 +1,6 @@
 using Debales.Application.Common;
 
-namespace Debales.Domain.Tests.Common;
+namespace Debales.Application.Tests.Common;
 
 public sealed class CsvParserTests
 {

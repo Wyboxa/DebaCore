@@ -46,7 +46,8 @@ else
                 <tbody>
                     @foreach (var p in _proposals.Items)
                     {
-                        <tr style="cursor:pointer" @onclick="() => Nav.NavigateTo($\"/ai/propuestas/{p.Id}\")">
+                        var url = "/ai/propuestas/" + p.Id;
+                        <tr style="cursor:pointer" @onclick="() => Nav.NavigateTo(url)">
                             <td><strong>@p.Title</strong></td>
                             <td class="text-muted small">@p.ActionType</td>
                             <td class="text-muted small">@(p.ProposedByModel ?? "—")</td>
@@ -191,7 +192,7 @@ else
             await ApproveHandler.Handle(new ApproveAIActionProposalCommand(id, "web", null));
             await LoadAsync();
         }
-        catch (Exception ex) { Toast.ShowError(ex.Message); }
+        catch (Exception ex) { Toast.Show("Error: " + ex.Message); }
         finally { _saving = false; }
     }
 

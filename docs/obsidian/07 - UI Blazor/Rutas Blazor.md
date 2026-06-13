@@ -84,6 +84,7 @@ Mapa de todas las rutas `@page` encontradas en componentes Razor.
 | `/licencia` | Licencia/Licencia.razor | Implementada — gestión de licencia y plan |
 | `/ai/propuestas` | AI/Propuestas.razor | Implementada — propuestas IA con flujo de aprobación |
 | `/ai/propuestas/{id:guid}` | AI/PropuestaDetalle.razor | Implementada — detalle con payload y historial de revisiones |
+| `/configuracion/importacion` | Configuracion/Importacion.razor | Implementada — importación CSV de clientes, proveedores y artículos |
 
 ## Componentes compartidos (Shared/)
 
@@ -91,6 +92,7 @@ Mapa de todas las rutas `@page` encontradas en componentes Razor.
 |------------|-------------|
 | `ModuleRequired.razor` | Guard de licencia: si hay licencia pero el módulo no está activo, bloquea con mensaje. Si no hay licencia (nueva instalación), deja pasar. |
 | `BlazorCookieAuthStateProvider.cs` | Lee el HttpContext en el arranque del circuito para proporcionar el estado de autenticación |
+| `ImportResultCard.razor` | Resumen de importación CSV: badge éxito/fallo + accordion con errores |
 
 ## Endpoints de descarga (minimal API en Web/Program.cs)
 

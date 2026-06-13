@@ -149,6 +149,14 @@ related:
 | POST | `/api/document-types` | Crear tipo |
 | PUT | `/api/document-types/{id}` | Actualizar tipo |
 
+## Importación CSV
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/import/customers` | Importar clientes desde CSV (multipart/form-data) |
+| POST | `/api/import/suppliers` | Importar proveedores desde CSV (multipart/form-data) |
+| POST | `/api/import/items` | Importar artículos desde CSV (multipart/form-data) |
+
 ## AI Governance
 
 | Método | Ruta | Descripción |
