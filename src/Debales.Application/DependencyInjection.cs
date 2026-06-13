@@ -196,6 +196,9 @@ using Debales.Application.Sales.Commands.RejectSalesQuote;
 using Debales.Application.Sales.Commands.ConvertQuoteToOrder;
 using Debales.Application.Sales.Queries.GetSalesQuotes;
 using Debales.Application.Sales.Queries.GetSalesQuoteById;
+using Debales.Application.CRM.Customers.Commands.ImportCustomers;
+using Debales.Application.Suppliers.Commands.ImportSuppliers;
+using Debales.Application.Catalog.Commands.ImportItems;
 using Debales.Application.Documents.Commands.CreateDocument;
 using Debales.Application.Documents.Commands.UpdateDocument;
 using Debales.Application.Documents.Commands.DeactivateDocument;
@@ -232,6 +235,11 @@ public static class DependencyInjection
         services.AddScoped<GetNumberSeriesHandler>();
         services.AddScoped<CreateNumberSeriesHandler>();
         services.AddScoped<UpdateNumberSeriesHandler>();
+
+        // Import — CSV
+        services.AddScoped<ImportCustomersHandler>();
+        services.AddScoped<ImportSuppliersHandler>();
+        services.AddScoped<ImportItemsHandler>();
 
         // CRM — Customers
         services.AddScoped<CreateCustomerHandler>();

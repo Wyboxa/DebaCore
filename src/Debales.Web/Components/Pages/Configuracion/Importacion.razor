@@ -1,0 +1,125 @@
+@page "/configuracion/importacion"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject ImportCustomersHandler ImportarClientes
+@inject ImportSuppliersHandler ImportarProveedores
+@inject ImportItemsHandler ImportarArticulos
+@inject ToastService Toast
+
+<PageTitle>Importación CSV — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h1 class="h4 fw-bold mb-0">Importación masiva</h1>
+        <small class="text-muted">Carga inicial de datos desde ficheros CSV</small>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <!-- ── CLIENTES ─────────────────────────────────────────────── -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom">
+                <strong>Clientes</strong>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Formato esperado de columnas (con cabecera):</p>
+                <pre class="bg-light p-2 rounded small mb-3" style="font-size:0.72rem">Nombre,Sector,CIF,Teléfono,Email</pre>
+                <InputFile OnChange="@(e => OnFile(e, "customers"))" class="form-control form-control-sm mb-2"
+                           accept=".csv,.txt" disabled="@_loading" />
+                @if (_result is not null && _active == "customers")
+                {
+                    <ImportResultCard Result="_result" />
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ── PROVEEDORES ───────────────────────────────────────────── -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom">
+                <strong>Proveedores</strong>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Formato esperado de columnas (con cabecera):</p>
+                <pre class="bg-light p-2 rounded small mb-3" style="font-size:0.72rem">Nombre,CIF,Teléfono,Email,Contacto</pre>
+                <InputFile OnChange="@(e => OnFile(e, "suppliers"))" class="form-control form-control-sm mb-2"
+                           accept=".csv,.txt" disabled="@_loading" />
+                @if (_result is not null && _active == "suppliers")
+                {
+                    <ImportResultCard Result="_result" />
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ARTÍCULOS ─────────────────────────────────────────────── -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom">
+                <strong>Artículos</strong>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Formato esperado de columnas (con cabecera):</p>
+                <pre class="bg-light p-2 rounded small mb-3" style="font-size:0.72rem">Código,Nombre,Descripción,Servicio,
+UnidadMedida,Familia,IVA,
+PrecioVenta,PrecioCompra,StockMínimo</pre>
+                <p class="small text-muted mb-2">
+                    <em>Servicio</em>: true/false &nbsp;·&nbsp;
+                    <em>UnidadMedida</em>: código (UND, KG…) &nbsp;·&nbsp;
+                    <em>IVA</em>: nombre o % (21, 10, 4)
+                </p>
+                <InputFile OnChange="@(e => OnFile(e, "items"))" class="form-control form-control-sm mb-2"
+                           accept=".csv,.txt" disabled="@_loading" />
+                @if (_result is not null && _active == "items")
+                {
+                    <ImportResultCard Result="_result" />
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@if (_loading)
+{
+    <div class="text-center mt-4">
+        <div class="spinner-border text-primary"></div>
+        <div class="mt-2 text-muted">Importando…</div>
+    </div>
+}
+
+@code {
+    ImportResult? _result;
+    string _active = "";
+    bool _loading;
+
+    async Task OnFile(InputFileChangeEventArgs e, string type)
+    {
+        _result = null;
+        _active = type;
+        _loading = true;
+        try
+        {
+            using var reader = new StreamReader(e.File.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+            var csv = await reader.ReadToEndAsync();
+
+            _result = type switch
+            {
+                "customers" => await ImportarClientes.Handle(new ImportCustomersCommand(csv, "web")),
+                "suppliers" => await ImportarProveedores.Handle(new ImportSuppliersCommand(csv, "web")),
+                "items"     => await ImportarArticulos.Handle(new ImportItemsCommand(csv, "web")),
+                _ => throw new InvalidOperationException()
+            };
+
+            Toast.Show($"Importación finalizada: {_result.Success} registros importados, {_result.Failed} errores.");
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Error al leer el archivo: {ex.Message}");
+        }
+        finally { _loading = false; }
+    }
+}

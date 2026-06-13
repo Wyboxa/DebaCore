@@ -1,0 +1,41 @@
+@using Debales.Application.Common
+
+<div class="mt-2">
+    <div class="d-flex gap-3 mb-2">
+        <span class="badge bg-success fs-6">@Result.Success importados</span>
+        @if (Result.Failed > 0)
+        {
+            <span class="badge bg-danger fs-6">@Result.Failed errores</span>
+        }
+    </div>
+
+    @if (Result.HasErrors)
+    {
+        <div class="accordion" id="errorsAccordion">
+            <div class="accordion-item border-0">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed py-1 px-2 small bg-light" type="button"
+                            @onclick="() => _open = !_open">
+                        Ver @Result.Errors.Count error(es)
+                    </button>
+                </h2>
+                @if (_open)
+                {
+                    <div class="accordion-body p-2 bg-light">
+                        <ul class="list-unstyled mb-0 small text-danger">
+                            @foreach (var err in Result.Errors)
+                            {
+                                <li>• @err</li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ImportResult Result { get; set; } = null!;
+    bool _open;
+}
