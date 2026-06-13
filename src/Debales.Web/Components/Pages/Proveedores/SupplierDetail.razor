@@ -17,6 +17,7 @@
 @inject DeactivateSupplierContactHandler DeactivateContact
 @inject ToastService Toast
 @inject NavigationManager Nav
+@inject GetDocumentsHandler GetDocuments
 
 <PageTitle>@(_supplier?.Name ?? "Proveedor") — Debales</PageTitle>
 
@@ -59,7 +60,7 @@ else
     </div>
 
     <ul class="nav nav-tabs mb-3">
-        @foreach (var tab in new[] { "info", "notas", "contactos", "codigos", "pedidos", "cuenta" })
+        @foreach (var tab in new[] { "info", "notas", "contactos", "codigos", "pedidos", "cuenta", "documentos" })
         {
             <li class="nav-item">
                 <button class="nav-link @(_tab == tab ? "active" : "")" @onclick="() => OnTabChange(tab)">
@@ -637,6 +638,52 @@ else
     </div>
 }
 
+@if (_tab == "documentos")
+{
+    @if (_docsLoading)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="fw-semibold text-muted">@_docs.Count documento(s)</span>
+            <a class="btn btn-sm btn-primary" href="/documentos">+ Nuevo documento</a>
+        </div>
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Título</th>
+                            <th>Tipo</th>
+                            <th>Fecha</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in _docs)
+                        {
+                            <tr>
+                                <td><strong>@d.Title</strong></td>
+                                <td class="text-muted small">@d.DocumentTypeName</td>
+                                <td class="text-muted small">@d.DocumentDate.ToString("dd/MM/yyyy")</td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-secondary" href="/documentos/@d.Id">Ver</a>
+                                </td>
+                            </tr>
+                        }
+                        @if (!_docs.Any())
+                        {
+                            <tr><td colspan="4" class="text-center text-muted py-4">No hay documentos vinculados a este proveedor.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
 @code {
     [Parameter] public Guid Id { get; set; }
 
@@ -683,14 +730,17 @@ else
         "contactos" => "Contactos",
         "codigos"   => "Códigos",
         "pedidos"   => "Pedidos",
-        "cuenta"    => "Estado de cuenta",
-        _           => tab
+        "cuenta"        => "Estado de cuenta",
+        "documentos"    => "Documentos",
+        _               => tab
     };
 
     Debales.Application.Common.StatementDto? _statement;
     bool _stmtLoading;
     List<PurchaseOrderSummaryDto> _pedidos = [];
     bool _pedidosLoading;
+    List<DocumentDto> _docs = [];
+    bool _docsLoading;
 
     private async Task OnTabChange(string tab)
     {
@@ -703,6 +753,8 @@ else
             _ = LoadStatementAsync();
         if (tab == "pedidos" && !_pedidos.Any() && !_pedidosLoading)
             _ = LoadPedidosAsync();
+        if (tab == "documentos" && !_docs.Any() && !_docsLoading)
+            _ = LoadDocsAsync();
     }
 
     private async Task LoadContactsAsync()
@@ -798,6 +850,15 @@ else
         var result = await GetOrders.Handle(new GetPurchaseOrdersQuery(null, Id, null, 1, 200));
         _pedidos = result.Items.ToList();
         _pedidosLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadDocsAsync()
+    {
+        _docsLoading = true;
+        var result = await GetDocuments.Handle(new GetDocumentsQuery(null, null, null, Id, 1, 200));
+        _docs = result.Items.ToList();
+        _docsLoading = false;
         StateHasChanged();
     }
 
