@@ -1,4 +1,5 @@
 using Debales.Application.AIGovernance.DTOs;
+using Debales.Application.Common;
 using Debales.Domain.AI;
 
 namespace Debales.Application.AIGovernance.Commands.CreateAIExecutionLog;
@@ -6,8 +7,13 @@ namespace Debales.Application.AIGovernance.Commands.CreateAIExecutionLog;
 public sealed class CreateAIExecutionLogHandler
 {
     private readonly IAIExecutionLogRepository _repo;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CreateAIExecutionLogHandler(IAIExecutionLogRepository repo) => _repo = repo;
+    public CreateAIExecutionLogHandler(IAIExecutionLogRepository repo, IUnitOfWork unitOfWork)
+    {
+        _repo = repo;
+        _unitOfWork = unitOfWork;
+    }
 
     public async Task<AIExecutionLogDto> Handle(CreateAIExecutionLogCommand command, CancellationToken ct = default)
     {
@@ -16,6 +22,7 @@ public sealed class CreateAIExecutionLogHandler
             command.Success, command.ResultSummary, command.ErrorMessage, command.AIActionProposalId);
 
         await _repo.AddAsync(log, ct);
+        await _unitOfWork.SaveChangesAsync(ct);
         return ToDto(log);
     }
 

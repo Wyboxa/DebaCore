@@ -1,4 +1,5 @@
 using Debales.Application.AIGovernance.DTOs;
+using Debales.Application.Common;
 using Debales.Domain.AI;
 
 namespace Debales.Application.AIGovernance.Commands.CreateAIActionProposal;
@@ -6,8 +7,13 @@ namespace Debales.Application.AIGovernance.Commands.CreateAIActionProposal;
 public sealed class CreateAIActionProposalHandler
 {
     private readonly IAIActionProposalRepository _repo;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CreateAIActionProposalHandler(IAIActionProposalRepository repo) => _repo = repo;
+    public CreateAIActionProposalHandler(IAIActionProposalRepository repo, IUnitOfWork unitOfWork)
+    {
+        _repo = repo;
+        _unitOfWork = unitOfWork;
+    }
 
     public async Task<AIActionProposalDto> Handle(CreateAIActionProposalCommand command, CancellationToken ct = default)
     {
@@ -17,6 +23,7 @@ public sealed class CreateAIActionProposalHandler
             command.ProposedByModel, command.CreatedBy);
 
         await _repo.AddAsync(proposal, ct);
+        await _unitOfWork.SaveChangesAsync(ct);
         return ToDto(proposal);
     }
 

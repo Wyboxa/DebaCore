@@ -1,5 +1,6 @@
 using Debales.Application.AIGovernance;
 using Debales.Application.AIGovernance.Commands.CreateAIRule;
+using Debales.Application.Common;
 using Debales.Domain.AI;
 using NSubstitute;
 
@@ -8,11 +9,12 @@ namespace Debales.Application.Tests.AIGovernance;
 public sealed class CreateAIRuleHandlerTests
 {
     private readonly IAIRuleRepository _repo = Substitute.For<IAIRuleRepository>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly CreateAIRuleHandler _handler;
 
     public CreateAIRuleHandlerTests()
     {
-        _handler = new CreateAIRuleHandler(_repo);
+        _handler = new CreateAIRuleHandler(_repo, _unitOfWork);
     }
 
     [Fact]
@@ -28,6 +30,7 @@ public sealed class CreateAIRuleHandlerTests
         Assert.True(result.RequiresApproval);
         Assert.True(result.IsActive);
         await _repo.Received(1).AddAsync(Arg.Any<AIRule>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
