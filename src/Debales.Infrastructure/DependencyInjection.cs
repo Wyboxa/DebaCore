@@ -51,6 +51,7 @@ public static class DependencyInjection
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<ITenantService, HttpContextTenantService>();
         services.AddScoped<IAuditEntryRepository, AuditEntryRepository>();
         services.AddScoped<INumberSeriesRepository, NumberSeriesRepository>();
 
@@ -60,6 +61,7 @@ public static class DependencyInjection
         // Documents — Module
         services.AddScoped<IDocumentTypeRepository, DocumentTypeRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
         // AI Governance
         services.AddScoped<IAIRuleRepository, AIRuleRepository>();

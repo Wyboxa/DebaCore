@@ -12,7 +12,15 @@ related:
 
 # Pendientes priorizados
 
-> Última actualización: 2026-06-14
+> Última actualización: 2026-06-14 (sesión 2)
+
+## Resueltos en sesión 2026-06-14 (sesión 2)
+
+| Item | Estado |
+|------|--------|
+| Multi-tenant estructural — `TenantId` (Guid?) en `AuditableEntity`, `ITenantService`, `HttpContextTenantService`, auto-set en DbContext | ✓ Resuelto — migración `20260614160000_AddTenantIdToBusinessEntities` |
+| Subida real de archivos — `IFileStorageService`, `LocalFileStorageService`, `UploadDocumentFileHandler`, endpoint API `POST /api/documents/{id}/upload`, UI en `DocumentoDetalle.razor` | ✓ Resuelto |
+| Integración IA→Propuesta — botón "Guardar como propuesta IA" en Chat ERP, usa `CreateAIActionProposalHandler` directamente | ✓ Resuelto |
 
 ## Resueltos en sesión 2026-06-14
 

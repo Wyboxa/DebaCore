@@ -115,4 +115,10 @@ Funcionalidades previstas en CLAUDE.md §42 y su estado real en el código.
 | `InventoryCount` / `InventoryCountLine` | ✓ Implementado (2026-06-10) |
 
 ## Multi-tenant
-Ninguna entidad tiene campo `TenantId`. La plataforma es mono-tenant en su estado actual. Decisión pendiente en CLAUDE.md §47.2.
+`TenantId` (Guid?) añadido a `AuditableEntity` — se auto-asigna en `SaveChangesAsync` vía `ITenantService`. Migración `20260614160000_AddTenantIdToBusinessEntities` añade la columna a ~50 tablas. En producción mono-tenant el campo queda en NULL (sin impacto funcional).
+
+## Subida de archivos
+`IFileStorageService` + `LocalFileStorageService` — guarda en `uploads/` relativo al `AppContext.BaseDirectory`. Path configurable con `FileStorage:BasePath`. Endpoint `POST /api/documents/{id}/upload` y UI en `DocumentoDetalle.razor`.
+
+## IA → Propuesta
+Botón "Guardar como propuesta IA" en Chat ERP — captura el último intercambio user/assistant y lo persiste como `AIActionProposal` con `ActionType = "ChatAnalysis"`. Visible en `/ai/propuestas` para revisión humana.

@@ -27,12 +27,15 @@ namespace Debales.Infrastructure.Persistence;
 public sealed class ApplicationDbContext : DbContext
 {
     private readonly ICurrentUserService? _currentUser;
+    private readonly ITenantService? _tenantService;
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
-        ICurrentUserService? currentUser = null) : base(options)
+        ICurrentUserService? currentUser = null,
+        ITenantService? tenantService = null) : base(options)
     {
         _currentUser = currentUser;
+        _tenantService = tenantService;
     }
 
     // Core
@@ -147,8 +150,19 @@ public sealed class ApplicationDbContext : DbContext
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        SetTenantIds();
         AddAuditEntries();
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void SetTenantIds()
+    {
+        if (_tenantService?.CurrentTenantId is not Guid tenantId) return;
+        foreach (var entry in ChangeTracker.Entries<AuditableEntity>()
+            .Where(e => e.State == EntityState.Added && e.Entity.TenantId is null))
+        {
+            entry.Entity.TenantId = tenantId;
+        }
     }
 
     // ── Audit ────────────────────────────────────────────────────────────

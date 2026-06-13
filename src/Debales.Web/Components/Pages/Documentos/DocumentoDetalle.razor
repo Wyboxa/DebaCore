@@ -5,6 +5,7 @@
 @inject GetDocumentTypesHandler GetDocumentTypes
 @inject UpdateDocumentHandler UpdateHandler
 @inject DeactivateDocumentHandler DeactivateHandler
+@inject UploadDocumentFileHandler UploadHandler
 @inject NavigationManager Nav
 @inject ToastService Toast
 
@@ -112,6 +113,35 @@ else
                     <small class="text-muted">Creado: @_doc.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
                 </div>
             </div>
+
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-3">Adjuntar archivo</h6>
+                    @if (_doc.FileName is not null)
+                    {
+                        <div class="alert alert-info py-2 mb-2">
+                            <small>Archivo actual: <strong>@_doc.FileName</strong>
+                                @if (_doc.FileSizeBytes.HasValue)
+                                {
+                                    <span class="ms-1">(@FormatSize(_doc.FileSizeBytes.Value))</span>
+                                }
+                            </small>
+                        </div>
+                    }
+                    <InputFile OnChange="OnFileSelected" class="form-control form-control-sm"
+                               disabled="@(_uploadLoading || !_doc.IsActive)" />
+                    @if (_uploadLoading)
+                    {
+                        <div class="mt-2 text-muted small">
+                            <span class="spinner-border spinner-border-sm me-1"></span> Subiendo…
+                        </div>
+                    }
+                    @if (_uploadError is not null)
+                    {
+                        <div class="alert alert-danger mt-2 py-2"><small>@_uploadError</small></div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 }
@@ -211,7 +241,9 @@ else
     private bool _showEdit;
     private bool _showDeactivate;
     private bool _saving;
+    private bool _uploadLoading;
     private string? _editError;
+    private string? _uploadError;
     private EditForm_Model _editForm = new();
 
     protected override async Task OnInitializedAsync()
@@ -274,6 +306,26 @@ else
             Nav.NavigateTo("/documentos");
         }
         finally { _saving = false; }
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _uploadLoading = true;
+        _uploadError = null;
+        try
+        {
+            const long maxSize = 50 * 1024 * 1024;
+            var file = e.File;
+            await using var stream = file.OpenReadStream(maxSize);
+            _doc = await UploadHandler.Handle(
+                new UploadDocumentFileCommand(_doc!.Id, file.Name, file.Size, file.ContentType, stream, "web"));
+            Toast.Show("Archivo subido correctamente.");
+        }
+        catch (Exception ex)
+        {
+            _uploadError = $"Error al subir: {ex.Message}";
+        }
+        finally { _uploadLoading = false; }
     }
 
     private static string FormatSize(long bytes) => bytes switch

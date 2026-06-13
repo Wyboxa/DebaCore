@@ -201,6 +201,7 @@ using Debales.Application.Documents.Commands.UpdateDocument;
 using Debales.Application.Documents.Commands.DeactivateDocument;
 using Debales.Application.Documents.Commands.CreateDocumentType;
 using Debales.Application.Documents.Commands.UpdateDocumentType;
+using Debales.Application.Documents.Commands.UploadDocumentFile;
 using Debales.Application.Documents.Queries.GetDocuments;
 using Debales.Application.Documents.Queries.GetDocumentById;
 using Debales.Application.Documents.Queries.GetDocumentTypes;
@@ -473,6 +474,7 @@ public static class DependencyInjection
         services.AddScoped<CreateDocumentHandler>();
         services.AddScoped<UpdateDocumentHandler>();
         services.AddScoped<DeactivateDocumentHandler>();
+        services.AddScoped<UploadDocumentFileHandler>();
         services.AddScoped<GetDocumentsHandler>();
         services.AddScoped<GetDocumentByIdHandler>();
 

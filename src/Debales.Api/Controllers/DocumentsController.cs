@@ -1,6 +1,7 @@
 using Debales.Application.Documents.Commands.CreateDocument;
 using Debales.Application.Documents.Commands.DeactivateDocument;
 using Debales.Application.Documents.Commands.UpdateDocument;
+using Debales.Application.Documents.Commands.UploadDocumentFile;
 using Debales.Application.Documents.Queries.GetDocumentById;
 using Debales.Application.Documents.Queries.GetDocuments;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +17,7 @@ public sealed class DocumentsController : ControllerBase
     private readonly CreateDocumentHandler _create;
     private readonly UpdateDocumentHandler _update;
     private readonly DeactivateDocumentHandler _deactivate;
+    private readonly UploadDocumentFileHandler _upload;
     private readonly GetDocumentsHandler _getAll;
     private readonly GetDocumentByIdHandler _getById;
 
@@ -23,12 +25,14 @@ public sealed class DocumentsController : ControllerBase
         CreateDocumentHandler create,
         UpdateDocumentHandler update,
         DeactivateDocumentHandler deactivate,
+        UploadDocumentFileHandler upload,
         GetDocumentsHandler getAll,
         GetDocumentByIdHandler getById)
     {
         _create = create;
         _update = update;
         _deactivate = deactivate;
+        _upload = upload;
         _getAll = getAll;
         _getById = getById;
     }
@@ -96,6 +100,21 @@ public sealed class DocumentsController : ControllerBase
         {
             await _deactivate.Handle(new DeactivateDocumentCommand(id, "api"), ct);
             return NoContent();
+        }
+        catch (KeyNotFoundException) { return NotFound(); }
+    }
+
+    [HttpPost("{id:guid}/upload")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> Upload(Guid id, IFormFile file, CancellationToken ct)
+    {
+        if (file is null || file.Length == 0) return BadRequest(new { error = "El archivo está vacío." });
+        try
+        {
+            var result = await _upload.Handle(
+                new UploadDocumentFileCommand(id, file.FileName, file.Length, file.ContentType,
+                    file.OpenReadStream(), User.Identity?.Name ?? "api"), ct);
+            return Ok(result);
         }
         catch (KeyNotFoundException) { return NotFound(); }
     }

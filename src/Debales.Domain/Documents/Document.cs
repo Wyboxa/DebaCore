@@ -80,6 +80,14 @@ public sealed class Document : AuditableEntity
         SetUpdated(updatedBy);
     }
 
+    public void AttachFile(string fileName, long fileSizeBytes, string mimeType, string updatedBy)
+    {
+        FileName = fileName;
+        FileSizeBytes = fileSizeBytes;
+        MimeType = mimeType;
+        SetUpdated(updatedBy);
+    }
+
     public void Deactivate(string updatedBy)
     {
         IsActive = false;

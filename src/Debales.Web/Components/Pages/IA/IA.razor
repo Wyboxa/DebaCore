@@ -7,6 +7,7 @@
 @inject GetSupplierERPSummaryHandler GetSupplierSummary
 @inject GetCustomersHandler GetCustomers
 @inject GetSuppliersHandler GetSuppliers
+@inject CreateAIActionProposalHandler CreateProposal
 @inject ToastService Toast
 
 <PageTitle>Asistente IA ERP — Debales</PageTitle>
@@ -105,6 +106,15 @@
             </div>
         </div>
     </div>
+
+    @if (_erpMessages.Any(m => m.Role == "assistant"))
+    {
+        <div class="mt-2 d-flex justify-content-end">
+            <button class="btn btn-sm btn-outline-primary" @onclick="SaveAsProposal" disabled="@_savingProposal">
+                @(_savingProposal ? "Guardando…" : "Guardar como propuesta IA")
+            </button>
+        </div>
+    }
 }
 
 <!-- ══════════════════════════════════════════════════
@@ -227,6 +237,7 @@
     List<ChatMessage> _erpMessages = [];
     string _erpInput = "";
     bool _erpLoading;
+    bool _savingProposal;
     readonly string[] _erpHints = [
         "¿Cuánto hemos facturado este mes?",
         "¿Qué cobros están vencidos?",
@@ -293,6 +304,30 @@
             _erpMessages.Add(new ChatMessage("assistant", $"Error al procesar la consulta: {ex.Message}"));
         }
         finally { _erpLoading = false; }
+    }
+
+    async Task SaveAsProposal()
+    {
+        var lastUser = _erpMessages.LastOrDefault(m => m.Role == "user");
+        var lastAssistant = _erpMessages.LastOrDefault(m => m.Role == "assistant");
+        if (lastUser is null || lastAssistant is null) return;
+        _savingProposal = true;
+        try
+        {
+            var title = lastUser.Content.Length > 80 ? lastUser.Content[..80] + "…" : lastUser.Content;
+            var payload = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                pregunta = lastUser.Content,
+                respuesta = lastAssistant.Content
+            });
+            await CreateProposal.Handle(new CreateAIActionProposalCommand(
+                title, "ChatAnalysis", payload,
+                $"Consulta: {lastUser.Content}\n\nRespuesta IA: {lastAssistant.Content}",
+                null, null, "ChatERP", "web"));
+            Toast.Show("Propuesta guardada — revísala en /ai/propuestas");
+        }
+        catch (Exception ex) { Toast.Show($"Error: {ex.Message}"); }
+        finally { _savingProposal = false; }
     }
 
     async Task LoadAnomalies()
