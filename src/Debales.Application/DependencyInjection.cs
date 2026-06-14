@@ -1,5 +1,18 @@
 using Debales.Application.Core.Audit.Queries.GetAuditEntries;
 using Debales.Application.AI.Briefing;
+using Debales.Application.AIGovernance.Commands.CreateAIRule;
+using Debales.Application.AIGovernance.Commands.UpdateAIRule;
+using Debales.Application.AIGovernance.Queries.GetAIRules;
+using Debales.Application.AIGovernance.Commands.CreateAIKnowledgeBase;
+using Debales.Application.AIGovernance.Commands.UpdateAIKnowledgeBase;
+using Debales.Application.AIGovernance.Queries.GetAIKnowledgeBases;
+using Debales.Application.AIGovernance.Commands.CreateAIActionProposal;
+using Debales.Application.AIGovernance.Commands.ApproveAIActionProposal;
+using Debales.Application.AIGovernance.Commands.RejectAIActionProposal;
+using Debales.Application.AIGovernance.Queries.GetAIActionProposals;
+using Debales.Application.AIGovernance.Queries.GetAIActionProposalById;
+using Debales.Application.AIGovernance.Commands.CreateAIExecutionLog;
+using Debales.Application.AIGovernance.Queries.GetAIExecutionLogs;
 using Debales.Application.AI.Chat;
 using Debales.Application.AI.Summary;
 using Debales.Application.Catalog.Commands.CreateItem;
@@ -473,6 +486,21 @@ public static class DependencyInjection
         services.AddScoped<ChatWithCustomerHandler>();
         services.AddScoped<GetCustomerSummaryHandler>();
         services.AddScoped<GetDashboardBriefingHandler>();
+
+        // AI Governance
+        services.AddScoped<CreateAIRuleHandler>();
+        services.AddScoped<UpdateAIRuleHandler>();
+        services.AddScoped<GetAIRulesHandler>();
+        services.AddScoped<CreateAIKnowledgeBaseHandler>();
+        services.AddScoped<UpdateAIKnowledgeBaseHandler>();
+        services.AddScoped<GetAIKnowledgeBasesHandler>();
+        services.AddScoped<CreateAIActionProposalHandler>();
+        services.AddScoped<ApproveAIActionProposalHandler>();
+        services.AddScoped<RejectAIActionProposalHandler>();
+        services.AddScoped<GetAIActionProposalsHandler>();
+        services.AddScoped<GetAIActionProposalByIdHandler>();
+        services.AddScoped<CreateAIExecutionLogHandler>();
+        services.AddScoped<GetAIExecutionLogsHandler>();
 
         return services;
     }

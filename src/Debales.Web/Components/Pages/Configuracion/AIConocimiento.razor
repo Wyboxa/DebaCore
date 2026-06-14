@@ -1,0 +1,154 @@
+@page "/configuracion/ai-conocimiento"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetAIKnowledgeBasesHandler GetAll
+@inject CreateAIKnowledgeBaseHandler CreateHandler
+@inject UpdateAIKnowledgeBaseHandler UpdateHandler
+
+<PageTitle>Base de conocimiento IA — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Base de conocimiento IA</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nueva entrada</button>
+</div>
+
+<p class="text-muted small mb-3">Información sobre la empresa que la IA usará como contexto en sus respuestas.</p>
+
+<div class="mb-3">
+    <input type="text" class="form-control" placeholder="Buscar…" @bind="_search" @bind:event="oninput" @onkeyup="() => LoadAsync()" />
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Título</th>
+                        <th>Categoría</th>
+                        <th>Revisada</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var k in _result.Items)
+                    {
+                        <tr>
+                            <td><strong>@k.Title</strong></td>
+                            <td class="text-muted small">@(k.Category ?? "—")</td>
+                            <td class="text-muted small">@(k.LastReviewedAt?.ToString("dd/MM/yyyy") ?? "—")</td>
+                            <td>
+                                @if (k.IsActive) { <span class="badge bg-success">Activa</span> }
+                                else { <span class="badge bg-secondary">Inactiva</span> }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenEdit(k)">Editar</button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_result.Items.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">No hay entradas de conocimiento.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (_showModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editId.HasValue ? "Editar entrada" : "Nueva entrada")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_form" OnValidSubmit="SaveKb">
+                        <div class="mb-2">
+                            <label class="form-label">Título *</label>
+                            <InputText class="form-control" @bind-Value="_form.Title" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Categoría</label>
+                            <InputText class="form-control" @bind-Value="_form.Category" placeholder="Ej: Procesos, Clientes, Productos…" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Contenido *</label>
+                            <InputTextArea class="form-control" @bind-Value="_form.Content" rows="8" />
+                        </div>
+                        @if (_error is not null) { <div class="alert alert-danger">@_error</div> }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private PagedResult<AIKnowledgeBaseDto> _result = new([], 0, 1, 20);
+    private bool _loading = true;
+    private bool _showModal;
+    private bool _saving;
+    private string? _error;
+    private Guid? _editId;
+    private string? _search;
+    private KbForm _form = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _result = await GetAll.Handle(new GetAIKnowledgeBasesQuery(_search, 1, 50));
+        _loading = false;
+    }
+
+    private void OpenCreate() { _editId = null; _form = new(); _error = null; _showModal = true; }
+    private void OpenEdit(AIKnowledgeBaseDto k)
+    {
+        _editId = k.Id;
+        _form = new() { Title = k.Title, Category = k.Category, Content = k.Content };
+        _error = null; _showModal = true;
+    }
+    private void CloseModal() => _showModal = false;
+
+    private async Task SaveKb()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Title)) { _error = "El título es obligatorio."; return; }
+        if (string.IsNullOrWhiteSpace(_form.Content)) { _error = "El contenido es obligatorio."; return; }
+
+        _saving = true; _error = null;
+        try
+        {
+            if (_editId.HasValue)
+                await UpdateHandler.Handle(new UpdateAIKnowledgeBaseCommand(_editId.Value, _form.Title!, _form.Content!, _form.Category, "web"));
+            else
+                await CreateHandler.Handle(new CreateAIKnowledgeBaseCommand(_form.Title!, _form.Content!, _form.Category, "web"));
+
+            _showModal = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private sealed class KbForm
+    {
+        public string? Title { get; set; }
+        public string? Category { get; set; }
+        public string? Content { get; set; }
+    }
+}

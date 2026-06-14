@@ -17,6 +17,7 @@ using Debales.Domain.Inventory;
 using Debales.Domain.Licensing;
 using Debales.Domain.Purchasing;
 using Debales.Domain.Sales;
+using Debales.Domain.AI;
 using Debales.Domain.Documents;
 using Debales.Domain.Suppliers;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +51,13 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<Activity> Activities => Set<Activity>();
     public DbSet<Note> Notes => Set<Note>();
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
+
+    // AI Governance
+    public DbSet<AIRule> AIRules => Set<AIRule>();
+    public DbSet<AIKnowledgeBase> AIKnowledgeBases => Set<AIKnowledgeBase>();
+    public DbSet<AIActionProposal> AIActionProposals => Set<AIActionProposal>();
+    public DbSet<AIActionApproval> AIActionApprovals => Set<AIActionApproval>();
+    public DbSet<AIExecutionLog> AIExecutionLogs => Set<AIExecutionLog>();
 
     // Documents
     public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();

@@ -1,0 +1,241 @@
+@page "/ai/propuestas/{Id:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetAIActionProposalByIdHandler GetById
+@inject ApproveAIActionProposalHandler ApproveHandler
+@inject RejectAIActionProposalHandler RejectHandler
+@inject NavigationManager Nav
+
+<PageTitle>Propuesta IA — Debales</PageTitle>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else if (_proposal is null)
+{
+    <div class="alert alert-warning">Propuesta no encontrada. <a href="/ai/propuestas">Volver</a></div>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/ai/propuestas">Propuestas IA</a></li>
+            <li class="breadcrumb-item active">@_proposal.Title</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="h3 mb-1">@_proposal.Title</h1>
+            <div class="d-flex gap-2 align-items-center">
+                <span class="badge @StatusBadge(_proposal.Status)">@StatusLabel(_proposal.Status)</span>
+                <span class="text-muted small">@_proposal.ActionType</span>
+                @if (_proposal.ProposedByModel is not null)
+                {
+                    <span class="text-muted small">· @_proposal.ProposedByModel</span>
+                }
+            </div>
+        </div>
+        @if (_proposal.Status == "Pending")
+        {
+            <div class="d-flex gap-2">
+                <button class="btn btn-success" @onclick="OpenApprove" disabled="@_saving">Aprobar</button>
+                <button class="btn btn-outline-danger" @onclick="OpenReject" disabled="@_saving">Rechazar</button>
+            </div>
+        }
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold">Detalle</div>
+                <div class="card-body">
+                    @if (_proposal.Description is not null)
+                    {
+                        <p style="white-space:pre-wrap">@_proposal.Description</p>
+                    }
+                    @if (_proposal.TargetEntity is not null)
+                    {
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Entidad objetivo</dt>
+                            <dd class="col-sm-8">@_proposal.TargetEntity @(_proposal.TargetEntityId.HasValue ? $"({_proposal.TargetEntityId})" : "")</dd>
+                        </dl>
+                    }
+                    @if (_proposal.RejectionReason is not null)
+                    {
+                        <div class="alert alert-danger mt-2"><strong>Motivo de rechazo:</strong> @_proposal.RejectionReason</div>
+                    }
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold">Payload</div>
+                <div class="card-body">
+                    <pre class="mb-0 small" style="max-height:300px;overflow-y:auto">@_proposal.Payload</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold">Metadatos</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5 small text-muted">Propuesta</dt>
+                        <dd class="col-sm-7 small">@_proposal.ProposedAt.ToString("dd/MM/yyyy HH:mm")</dd>
+                        <dt class="col-sm-5 small text-muted">Creada</dt>
+                        <dd class="col-sm-7 small">@_proposal.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd>
+                    </dl>
+                </div>
+            </div>
+
+            @if (_approvals.Any())
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-semibold">Historial de revisiones</div>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var a in _approvals)
+                        {
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span class="badge @(a.Decision == "Approved" ? "bg-success" : "bg-danger")">
+                                        @(a.Decision == "Approved" ? "Aprobada" : "Rechazada")
+                                    </span>
+                                    <span class="text-muted small">@a.ReviewedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                                <div class="small mt-1">por <strong>@a.ReviewedBy</strong></div>
+                                @if (a.Notes is not null) { <p class="small text-muted mb-0 mt-1">@a.Notes</p> }
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (_showApprove)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Aprobar propuesta</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showApprove = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Notas (opcional)</label>
+                        <InputTextArea class="form-control" @bind-Value="_notes" rows="2" />
+                    </div>
+                    @if (_error is not null) { <div class="alert alert-danger">@_error</div> }
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button class="btn btn-secondary" @onclick="() => _showApprove = false">Cancelar</button>
+                        <button class="btn btn-success" disabled="@_saving" @onclick="ConfirmApprove">@(_saving ? "Aprobando…" : "Aprobar")</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showReject)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rechazar propuesta</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showReject = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Motivo de rechazo *</label>
+                        <InputTextArea class="form-control" @bind-Value="_rejectReason" rows="3" />
+                    </div>
+                    @if (_error is not null) { <div class="alert alert-danger">@_error</div> }
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button class="btn btn-secondary" @onclick="() => _showReject = false">Cancelar</button>
+                        <button class="btn btn-danger" disabled="@_saving" @onclick="ConfirmReject">@(_saving ? "Rechazando…" : "Rechazar")</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private AIActionProposalDto? _proposal;
+    private IReadOnlyList<AIActionApprovalDto> _approvals = [];
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+    private bool _showApprove;
+    private bool _showReject;
+    private string? _notes;
+    private string? _rejectReason;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await GetById.Handle(new GetAIActionProposalByIdQuery(Id));
+        if (result.HasValue)
+        {
+            _proposal = result.Value.Proposal;
+            _approvals = result.Value.Approvals;
+        }
+        _loading = false;
+    }
+
+    private void OpenApprove() { _notes = null; _error = null; _showApprove = true; }
+    private void OpenReject() { _rejectReason = null; _error = null; _showReject = true; }
+
+    private async Task ConfirmApprove()
+    {
+        _saving = true; _error = null;
+        try
+        {
+            await ApproveHandler.Handle(new ApproveAIActionProposalCommand(Id, "web", _notes));
+            _showApprove = false;
+            Nav.NavigateTo($"/ai/propuestas/{Id}", forceLoad: true);
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private async Task ConfirmReject()
+    {
+        if (string.IsNullOrWhiteSpace(_rejectReason)) { _error = "El motivo es obligatorio."; return; }
+        _saving = true; _error = null;
+        try
+        {
+            await RejectHandler.Handle(new RejectAIActionProposalCommand(Id, _rejectReason!, "web", null));
+            _showReject = false;
+            Nav.NavigateTo($"/ai/propuestas/{Id}", forceLoad: true);
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private static string StatusLabel(string s) => s switch
+    {
+        "Pending"   => "Pendiente",
+        "Approved"  => "Aprobada",
+        "Rejected"  => "Rechazada",
+        "Executed"  => "Ejecutada",
+        "Cancelled" => "Cancelada",
+        _ => s
+    };
+
+    private static string StatusBadge(string s) => s switch
+    {
+        "Pending"   => "bg-warning text-dark",
+        "Approved"  => "bg-success",
+        "Rejected"  => "bg-danger",
+        "Executed"  => "bg-primary",
+        "Cancelled" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+}

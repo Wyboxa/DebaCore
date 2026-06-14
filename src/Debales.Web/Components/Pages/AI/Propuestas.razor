@@ -1,0 +1,258 @@
+@page "/ai/propuestas"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetAIActionProposalsHandler GetAll
+@inject CreateAIActionProposalHandler CreateHandler
+@inject ApproveAIActionProposalHandler ApproveHandler
+@inject RejectAIActionProposalHandler RejectHandler
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Propuestas IA — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Propuestas IA</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nueva propuesta</button>
+</div>
+
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    @foreach (var s in new[] { "", "Pending", "Approved", "Rejected", "Executed", "Cancelled" })
+    {
+        <button class="btn btn-sm @(_statusFilter == s ? "btn-primary" : "btn-outline-secondary")" @onclick="() => SetStatus(s)">
+            @(s == "" ? "Todas" : StatusLabel(s))
+        </button>
+    }
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Título</th>
+                        <th>Tipo</th>
+                        <th>Modelo</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in _proposals.Items)
+                    {
+                        <tr style="cursor:pointer" @onclick="() => Nav.NavigateTo($\"/ai/propuestas/{p.Id}\")">
+                            <td><strong>@p.Title</strong></td>
+                            <td class="text-muted small">@p.ActionType</td>
+                            <td class="text-muted small">@(p.ProposedByModel ?? "—")</td>
+                            <td><span class="badge @StatusBadge(p.Status)">@StatusLabel(p.Status)</span></td>
+                            <td class="text-muted small">@p.ProposedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-end" @onclick:stopPropagation="true">
+                                @if (p.Status == "Pending")
+                                {
+                                    <button class="btn btn-sm btn-success me-1" @onclick="() => QuickApprove(p.Id)">✓</button>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => OpenReject(p.Id)">✗</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (!_proposals.Items.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">No hay propuestas.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (_proposals.TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <span class="text-muted small">@_proposals.TotalCount resultado(s)</span>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" disabled="@(!_proposals.HasPreviousPage)" @onclick="() => ChangePage(_page - 1)">‹</button>
+                <span class="btn btn-outline-secondary disabled">@_page / @_proposals.TotalPages</span>
+                <button class="btn btn-outline-secondary" disabled="@(!_proposals.HasNextPage)" @onclick="() => ChangePage(_page + 1)">›</button>
+            </div>
+        </div>
+    }
+}
+
+@if (_showCreate)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nueva propuesta</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showCreate = false"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_form" OnValidSubmit="SaveProposal">
+                        <div class="mb-2">
+                            <label class="form-label">Título *</label>
+                            <InputText class="form-control" @bind-Value="_form.Title" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Tipo de acción *</label>
+                            <InputText class="form-control" @bind-Value="_form.ActionType" placeholder="Ej: DataChange, Configuration, Report…" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Descripción</label>
+                            <InputTextArea class="form-control" @bind-Value="_form.Description" rows="3" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Entidad objetivo</label>
+                            <InputText class="form-control" @bind-Value="_form.TargetEntity" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Payload (JSON)</label>
+                            <InputTextArea class="form-control font-monospace" @bind-Value="_form.Payload" rows="4" />
+                        </div>
+                        @if (_formError is not null)
+                        {
+                            <div class="alert alert-danger">@_formError</div>
+                        }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="() => _showCreate = false">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Crear")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showReject)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rechazar propuesta</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showReject = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Motivo de rechazo *</label>
+                        <InputTextArea class="form-control" @bind-Value="_rejectReason" rows="3" />
+                    </div>
+                    @if (_formError is not null) { <div class="alert alert-danger">@_formError</div> }
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button class="btn btn-secondary" @onclick="() => _showReject = false">Cancelar</button>
+                        <button class="btn btn-danger" disabled="@_saving" @onclick="ConfirmReject">@(_saving ? "Rechazando…" : "Rechazar")</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private PagedResult<AIActionProposalDto> _proposals = new([], 0, 1, 20);
+    private bool _loading = true;
+    private string _statusFilter = "Pending";
+    private int _page = 1;
+
+    private bool _showCreate;
+    private bool _showReject;
+    private bool _saving;
+    private string? _formError;
+    private Guid _rejectingId;
+    private string? _rejectReason;
+    private ProposalForm _form = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _proposals = await GetAll.Handle(new GetAIActionProposalsQuery(_statusFilter == "" ? null : _statusFilter, _page, 20));
+        _loading = false;
+    }
+
+    private async Task SetStatus(string s) { _statusFilter = s; _page = 1; await LoadAsync(); }
+    private async Task ChangePage(int p) { _page = p; await LoadAsync(); }
+
+    private void OpenCreate() { _form = new(); _formError = null; _showCreate = true; }
+    private void OpenReject(Guid id) { _rejectingId = id; _rejectReason = null; _formError = null; _showReject = true; }
+
+    private async Task QuickApprove(Guid id)
+    {
+        _saving = true;
+        try
+        {
+            await ApproveHandler.Handle(new ApproveAIActionProposalCommand(id, "web", null));
+            await LoadAsync();
+        }
+        catch (Exception ex) { Toast.ShowError(ex.Message); }
+        finally { _saving = false; }
+    }
+
+    private async Task ConfirmReject()
+    {
+        if (string.IsNullOrWhiteSpace(_rejectReason)) { _formError = "El motivo es obligatorio."; return; }
+        _saving = true; _formError = null;
+        try
+        {
+            await RejectHandler.Handle(new RejectAIActionProposalCommand(_rejectingId, _rejectReason!, "web", null));
+            _showReject = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _formError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private async Task SaveProposal()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Title)) { _formError = "El título es obligatorio."; return; }
+        if (string.IsNullOrWhiteSpace(_form.ActionType)) { _formError = "El tipo de acción es obligatorio."; return; }
+
+        _saving = true; _formError = null;
+        try
+        {
+            await CreateHandler.Handle(new CreateAIActionProposalCommand(
+                _form.Title!, _form.ActionType!, _form.Payload, _form.Description,
+                _form.TargetEntity, null, "manual", "web"));
+            _showCreate = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _formError = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private static string StatusLabel(string s) => s switch
+    {
+        "Pending"   => "Pendiente",
+        "Approved"  => "Aprobada",
+        "Rejected"  => "Rechazada",
+        "Executed"  => "Ejecutada",
+        "Cancelled" => "Cancelada",
+        _ => s
+    };
+
+    private static string StatusBadge(string s) => s switch
+    {
+        "Pending"   => "bg-warning text-dark",
+        "Approved"  => "bg-success",
+        "Rejected"  => "bg-danger",
+        "Executed"  => "bg-primary",
+        "Cancelled" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+
+    private sealed class ProposalForm
+    {
+        public string? Title { get; set; }
+        public string? ActionType { get; set; }
+        public string? Description { get; set; }
+        public string? TargetEntity { get; set; }
+        public string? Payload { get; set; }
+    }
+}

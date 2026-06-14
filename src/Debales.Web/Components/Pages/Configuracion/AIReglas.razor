@@ -1,0 +1,160 @@
+@page "/configuracion/ai-reglas"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject GetAIRulesHandler GetAll
+@inject CreateAIRuleHandler CreateHandler
+@inject UpdateAIRuleHandler UpdateHandler
+
+<PageTitle>Reglas IA — Debales</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Reglas IA</h1>
+    <button class="btn btn-primary" @onclick="OpenCreate">+ Nueva regla</button>
+</div>
+
+<p class="text-muted small mb-3">Define qué tipos de acciones requieren aprobación humana antes de ser ejecutadas.</p>
+
+@if (_loading)
+{
+    <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Tipo de acción</th>
+                        <th>Requiere aprobación</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in _rules)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@r.Name</strong>
+                                @if (r.Description is not null) { <div class="text-muted small">@r.Description</div> }
+                            </td>
+                            <td><span class="badge bg-light text-dark border">@r.ActionType</span></td>
+                            <td>
+                                @if (r.RequiresApproval) { <span class="badge bg-warning text-dark">Sí</span> }
+                                else { <span class="badge bg-success">No (auto)</span> }
+                            </td>
+                            <td>
+                                @if (r.IsActive) { <span class="badge bg-success">Activa</span> }
+                                else { <span class="badge bg-secondary">Inactiva</span> }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenEdit(r)">Editar</button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_rules.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">No hay reglas definidas.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (_showModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editId.HasValue ? "Editar regla" : "Nueva regla")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_form" OnValidSubmit="SaveRule">
+                        <div class="mb-2">
+                            <label class="form-label">Nombre *</label>
+                            <InputText class="form-control" @bind-Value="_form.Name" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Tipo de acción *</label>
+                            <InputText class="form-control" @bind-Value="_form.ActionType" placeholder="Ej: DataChange, Configuration…" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Descripción</label>
+                            <InputTextArea class="form-control" @bind-Value="_form.Description" rows="2" />
+                        </div>
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="_form.RequiresApproval" id="reqApproval" />
+                            <label class="form-check-label" for="reqApproval">Requiere aprobación humana</label>
+                        </div>
+                        @if (_error is not null) { <div class="alert alert-danger">@_error</div> }
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "Guardando…" : "Guardar")</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<AIRuleDto> _rules = [];
+    private bool _loading = true;
+    private bool _showModal;
+    private bool _saving;
+    private string? _error;
+    private Guid? _editId;
+    private RuleForm _form = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _rules = await GetAll.Handle();
+        _loading = false;
+    }
+
+    private void OpenCreate() { _editId = null; _form = new() { RequiresApproval = true }; _error = null; _showModal = true; }
+    private void OpenEdit(AIRuleDto r)
+    {
+        _editId = r.Id;
+        _form = new() { Name = r.Name, ActionType = r.ActionType, Description = r.Description, RequiresApproval = r.RequiresApproval };
+        _error = null; _showModal = true;
+    }
+    private void CloseModal() => _showModal = false;
+
+    private async Task SaveRule()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Name)) { _error = "El nombre es obligatorio."; return; }
+        if (string.IsNullOrWhiteSpace(_form.ActionType)) { _error = "El tipo de acción es obligatorio."; return; }
+
+        _saving = true; _error = null;
+        try
+        {
+            if (_editId.HasValue)
+                await UpdateHandler.Handle(new UpdateAIRuleCommand(_editId.Value, _form.Name!, _form.ActionType!, _form.Description, _form.RequiresApproval, "web"));
+            else
+                await CreateHandler.Handle(new CreateAIRuleCommand(_form.Name!, _form.ActionType!, _form.Description, _form.RequiresApproval, "web"));
+
+            _showModal = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private sealed class RuleForm
+    {
+        public string? Name { get; set; }
+        public string? ActionType { get; set; }
+        public string? Description { get; set; }
+        public bool RequiresApproval { get; set; }
+    }
+}
