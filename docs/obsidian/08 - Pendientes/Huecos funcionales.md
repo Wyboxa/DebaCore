@@ -23,10 +23,10 @@ Funcionalidades previstas en CLAUDE.md §42 y su estado real en el código.
 | Albarán compra → actualiza estado PurchaseOrder | ✓ Implementado | 2026-06-05 |
 | SalesInvoice → AccountingEntry automático | ✓ Implementado (AccountingTemplate) | 2026-06-02 |
 | PurchaseInvoice → AccountingEntry automático | ✓ Implementado (AccountingTemplate) | 2026-06-02 |
-| CustomerPayment → AccountingEntry (asiento de cobro) | Pendiente — sin plantilla en seeds | — |
-| SupplierPayment → AccountingEntry (asiento de pago) | Pendiente — sin plantilla en seeds | — |
+| CustomerPayment → AccountingEntry (asiento de cobro) | ✓ Implementado — AccountingTemplate seed (2026-06-07) | 2026-06-07 |
+| SupplierPayment → AccountingEntry (asiento de pago) | ✓ Implementado — AccountingTemplate seed (2026-06-07) | 2026-06-07 |
 | Licencia → guard en hubs de UI (ModuleRequired) | ✓ Implementado | 2026-06-05 |
-| Licencia → guard en páginas de lista/detalle | Pendiente | — |
+| Licencia → guard en páginas de lista/detalle | ✓ Implementado — `ModuleRouteGuard` en `MainLayout` | 2026-06-09 |
 
 ## Entidades de CLAUDE.md §42 — estado
 
@@ -75,16 +75,44 @@ Funcionalidades previstas en CLAUDE.md §42 y su estado real en el código.
 | Entidad | Estado |
 |---------|--------|
 | `AIContext` (en memoria) | Implementado como contexto ERP efímero |
-| `AIKnowledgeBase` | Pendiente — no persistente |
-| `AIRule` | Pendiente |
-| `AIActionProposal` / `AIActionApproval` / `AIExecutionLog` | Pendiente — flujo supervisado no persistido |
+| `AIKnowledgeBase` | ✓ Implementado — módulo AIGovernance (2026-06-14) |
+| `AIRule` | ✓ Implementado — módulo AIGovernance (2026-06-14) |
+| `AIActionProposal` / `AIActionApproval` / `AIExecutionLog` | ✓ Implementado — módulo AIGovernance (2026-06-14) |
+
+### Documents
+| Entidad | Estado |
+|---------|--------|
+| `Document` | ✓ Implementado — módulo Documents (2026-06-13) |
+| `DocumentType` | ✓ Implementado — módulo Documents (2026-06-13) |
+| `DocumentVersion` | Pendiente |
+| `DocumentTemplate` | Pendiente |
+| `DocumentAttachment` (subida real de ficheros) | Pendiente |
 
 ### Facturación
 | Entidad | Estado |
 |---------|--------|
-| `InvoiceSeries` | Pendiente — se usa numeración automática sin series configurables |
-| `PaymentTerm` | Pendiente |
-| `PaymentMethod` | Pendiente |
+| `NumberSeries` | ✓ Implementado — series documentales configurables (2026-06-07/09) |
+| `PaymentTerm` | ✓ Implementado — AddPaymentMethodModule (2026-06-09) |
+| `PaymentMethod` | ✓ Implementado — AddPaymentTermAndMethodSeed (2026-06-09) |
+
+### Contabilidad ampliada
+| Entidad | Estado |
+|---------|--------|
+| `BankAccount` | ✓ Implementado (2026-06-09) |
+| `CashAccount` | ✓ Implementado (2026-06-10) |
+| `Remittance` / `RemittanceLine` | ✓ Implementado (2026-06-11) |
+
+### Catálogo ampliado
+| Entidad | Estado |
+|---------|--------|
+| `PriceList` / `ItemPrice` | ✓ Implementado (2026-06-09) |
+| `SupplierItemCode` / `CustomerItemCode` | ✓ Implementado (2026-06-09) |
+| `Item.MinimumStock` | ✓ Implementado (2026-06-10) |
+
+### Inventario ampliado
+| Entidad | Estado |
+|---------|--------|
+| `InventoryCount` / `InventoryCountLine` | ✓ Implementado (2026-06-10) |
 
 ## Multi-tenant
 Ninguna entidad tiene campo `TenantId`. La plataforma es mono-tenant en su estado actual. Decisión pendiente en CLAUDE.md §47.2.

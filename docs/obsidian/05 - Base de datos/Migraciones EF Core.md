@@ -43,6 +43,18 @@ La API aplica migraciones automáticamente al arrancar mediante `context.Databas
 | 13 | `AddNumberSeriesModule` | 2026-06-07 | Core: NumberSeries |
 | 14 | `AddNumberSeriesSeed` | 2026-06-09 | Seed: 9 series documentales por defecto (pendiente `database update`) |
 | 15 | `AddPriceListModule` | 2026-06-09 | Catalog: PriceLists, ItemPrices, SupplierItemCodes, CustomerItemCodes |
+| 16 | `AddPaymentMethodModule` | 2026-06-09 | PaymentTerm + PaymentTermLine (condiciones de pago) |
+| 17 | `AddPaymentTermAndMethodSeed` | 2026-06-09 | Seed: 7 condiciones de pago + 6 formas de pago + FK en Customer/Supplier |
+| 18 | `AddBankAccountModule` | 2026-06-09 | Accounting: BankAccount con FK opcional a Account |
+| 19 | `AddMinimumStockToItems` | 2026-06-10 | Catalog: columna MinimumStock (decimal?) en Items |
+| 20 | `AddInventoryCountModule` | 2026-06-10 | Inventory: InventoryCount + InventoryCountLine |
+| 21 | `AddCashAccountModule` | 2026-06-10 | Accounting: CashAccount con FK opcional a Account |
+| 22 | `AddRemittanceModule` | 2026-06-11 | Accounting: Remittance + RemittanceLine |
+| 23 | `AddSupplierContactModule` | 2026-06-12 | Suppliers: SupplierContact |
+| 24 | `AddDocumentsModule` | 2026-06-13 | Documents: Documents + DocumentTypes (**manual**) |
+| 25 | `AddAIGovernanceModule` | 2026-06-14 | AI: AIRules, AIKnowledgeBases, AIActionProposals, AIActionApprovals, AIExecutionLogs (**manual**) |
+
+> **Nota migraciones manuales (24-25)**: Creadas a mano por falta de .NET SDK en el equipo actual. Funcionan para `database update` pero carecen de `Designer.cs` (snapshot). Regenerar con `dotnet ef migrations remove` + `dotnet ef migrations add` tras instalar .NET 8 SDK.
 
 ## Nota sobre AddERP3Module
 

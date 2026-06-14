@@ -135,3 +135,34 @@ related:
 | GET | `/api/licenses/current` | Licencia activa |
 | POST | `/api/licenses/activate` | Activar licencia |
 | GET | `/api/subscription-plans` | Lista planes |
+
+## Documents
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/documents` | Lista documentos (paginada, filtros: search/tipo/cliente/proveedor) |
+| GET | `/api/documents/{id}` | Obtener documento |
+| POST | `/api/documents` | Crear documento |
+| PUT | `/api/documents/{id}` | Actualizar documento |
+| DELETE | `/api/documents/{id}` | Desactivar documento |
+| GET | `/api/document-types` | Lista tipos de documento |
+| POST | `/api/document-types` | Crear tipo |
+| PUT | `/api/document-types/{id}` | Actualizar tipo |
+
+## AI Governance
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/ai/rules` | Lista reglas IA activas |
+| POST | `/api/ai/rules` | Crear regla |
+| PUT | `/api/ai/rules/{id}` | Actualizar regla |
+| GET | `/api/ai/knowledge` | Lista base de conocimiento (paginada) |
+| POST | `/api/ai/knowledge` | Crear entrada |
+| PUT | `/api/ai/knowledge/{id}` | Actualizar entrada |
+| GET | `/api/ai/proposals` | Lista propuestas (filtro por estado) |
+| GET | `/api/ai/proposals/{id}` | Propuesta + historial de aprobaciones |
+| POST | `/api/ai/proposals` | Crear propuesta |
+| POST | `/api/ai/proposals/{id}/approve` | Aprobar propuesta |
+| POST | `/api/ai/proposals/{id}/reject` | Rechazar propuesta |
+| GET | `/api/ai/execution-logs` | Lista logs de ejecución |
+| POST | `/api/ai/execution-logs` | Registrar ejecución |

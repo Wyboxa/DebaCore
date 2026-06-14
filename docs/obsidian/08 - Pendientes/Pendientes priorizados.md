@@ -12,7 +12,27 @@ related:
 
 # Pendientes priorizados
 
-> Última actualización: 2026-06-09
+> Última actualización: 2026-06-14
+
+## Resueltos en sesión 2026-06-14
+
+| Item | Estado |
+|------|--------|
+| Tab "Documentos" en CustomerDetail y SupplierDetail (lazy) | ✓ Resuelto — commit `1343246` |
+| Módulo AI Governance §42.12 completo (7 capas) | ✓ Resuelto — commit `bf17c08` |
+| AIRule, AIKnowledgeBase, AIActionProposal, AIActionApproval, AIExecutionLog | ✓ Resuelto — migración manual `20260614090000_AddAIGovernanceModule` |
+| Tests Domain: Document (8), AIActionProposal (13), AIRule (7) | ✓ Resuelto |
+| Tests Application: CreateDocumentHandler (4), CreateAIRuleHandler (4) | ✓ Resuelto |
+| Vault Obsidian sincronizado (Documentos.md + AIGovernance.md + índices) | ✓ Resuelto |
+
+## Resueltos en sesión 2026-06-13
+
+| Item | Estado |
+|------|--------|
+| Módulo Documents completo (7 capas) | ✓ Resuelto — commit `a62c926` |
+| Document, DocumentType — Domain + 8 handlers + 2 repos + API + UI | ✓ Resuelto — migración manual `20260613120000_AddDocumentsModule` |
+
+---
 
 ## Resueltos en sesión 2026-06-09
 

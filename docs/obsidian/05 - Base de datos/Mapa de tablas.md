@@ -114,7 +114,24 @@ Base de datos: `DebalesDb` (SQL Server LocalDB en desarrollo, SQL Server 2022 en
 | `Licenses` | [[License]] |
 | `LicenseModules` | [[LicenseModule]] |
 
-**Total tablas: ~48**
+### Documents
+
+| Tabla SQL | Entidad |
+|-----------|---------|
+| `Documents` | Document |
+| `DocumentTypes` | DocumentType |
+
+### AI Governance
+
+| Tabla SQL | Entidad | Tipo base |
+|-----------|---------|-----------|
+| `AIRules` | AIRule | AuditableEntity (soft-delete) |
+| `AIKnowledgeBases` | AIKnowledgeBase | AuditableEntity (soft-delete) |
+| `AIActionProposals` | AIActionProposal | AuditableEntity (soft-delete) |
+| `AIActionApprovals` | AIActionApproval | Entity (inmutable, sin soft-delete) |
+| `AIExecutionLogs` | AIExecutionLog | Entity (inmutable, sin soft-delete) |
+
+**Total tablas: ~63**
 
 ## Relaciones clave de trazabilidad (navegación)
 
@@ -142,3 +159,8 @@ Todas las entidades que heredan de `AuditableEntity` tienen:
 | `CreatedBy` | `nvarchar` | Usuario que creó |
 | `UpdatedAt` | `datetime2?` | Fecha última modificación |
 | `UpdatedBy` | `nvarchar?` | Usuario que modificó |
+| `IsDeleted` | `bit` | Soft-delete |
+| `DeletedAt` | `datetime2?` | Fecha de borrado lógico |
+| `DeletedBy` | `nvarchar?` | Usuario que borró |
+
+`AIActionApproval` y `AIExecutionLog` heredan de `Entity` (sin campos de soft-delete) — son registros inmutables de auditoría.

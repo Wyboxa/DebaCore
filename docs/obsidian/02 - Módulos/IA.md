@@ -90,7 +90,10 @@ La IA solo puede consultar y resumir datos. No puede:
 
 ## Lo que falta
 
-- Registro de conversaciones (AIExecutionLog)
-- Aprobación humana de propuestas IA (AIActionProposal, AIActionApproval)
-- RAG sobre documentación interna
-- Memoria semántica
+- Integración del chat ERP con el módulo [[AIGovernance]] para proponer acciones
+- RAG sobre documentación interna (`AIKnowledgeBase`)
+- Memoria semántica persistente
+
+## Módulo complementario
+
+[[AIGovernance]] — implementado en 2026-06-14. Añade persistencia del ciclo de propuestas IA y base de conocimiento.

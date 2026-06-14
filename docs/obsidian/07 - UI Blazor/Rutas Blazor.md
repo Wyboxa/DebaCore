@@ -57,6 +57,33 @@ Mapa de todas las rutas `@page` encontradas en componentes Razor.
 | `/configuracion` | Configuracion/Configuracion.razor | Implementada — datos reales del sistema |
 | `/configuracion/usuarios` | Configuracion/Usuarios/Usuarios.razor | Implementada — lista, búsqueda, crear usuario |
 | `/configuracion/usuarios/{id:guid}` | Configuracion/Usuarios/UsuarioDetalle.razor | Implementada — detalle, activar/desactivar, cambiar contraseña, asignar rol |
+| `/configuracion/series` | Configuracion/Series.razor | Implementada — series documentales configurables |
+| `/configuracion/formas-pago` | Configuracion/FormasPago.razor | Implementada — CRUD formas de pago |
+| `/configuracion/condiciones-pago` | Configuracion/CondicionesPago.razor | Implementada — CRUD condiciones de pago |
+| `/configuracion/auditoria` | Configuracion/Auditoria.razor | Implementada — log de auditoría con filtros |
+| `/configuracion/tipos-documento` | Configuracion/TiposDocumento.razor | Implementada — CRUD tipos de documento |
+| `/configuracion/ai-reglas` | Configuracion/AIReglas.razor | Implementada — CRUD reglas IA |
+| `/configuracion/ai-conocimiento` | Configuracion/AIConocimiento.razor | Implementada — CRUD base de conocimiento IA |
+| `/documentos` | Documentos/Documentos.razor | Implementada — lista paginada de documentos con búsqueda |
+| `/documentos/{id:guid}` | Documentos/DocumentoDetalle.razor | Implementada — ficha de documento |
+| `/ventas/presupuestos` | Ventas/Presupuestos.razor | Implementada — lista presupuestos de venta |
+| `/ventas/presupuestos/{id:guid}` | Ventas/PresupuestoDetalle.razor | Implementada — ciclo completo hasta pedido |
+| `/contabilidad/informes` | Contabilidad/Informes.razor | Implementada — balance comprobación, libro diario, balance situación |
+| `/contabilidad/cuentas-bancarias` | Contabilidad/CuentasBancarias.razor | Implementada — CRUD cuentas bancarias |
+| `/contabilidad/cajas` | Contabilidad/Cajas.razor | Implementada — CRUD cajas |
+| `/contabilidad/remesas` | Contabilidad/Remesas.razor | Implementada — lista remesas bancarias |
+| `/contabilidad/remesas/{id:guid}` | Contabilidad/RemesaDetalle.razor | Implementada — detalle + líneas + ciclo de vida |
+| `/contabilidad/vencimientos` | Contabilidad/Vencimientos.razor | Implementada — aging report cobros/pagos |
+| `/contabilidad/tesoreria` | Contabilidad/Tesoreria.razor | Implementada — posición tesorería |
+| `/contabilidad/estado-cuenta-clientes` | Contabilidad/EstadoCuentaClientes.razor | Implementada — estado de cuenta por cliente |
+| `/contabilidad/estado-cuenta-proveedores` | Contabilidad/EstadoCuentaProveedores.razor | Implementada — estado de cuenta por proveedor |
+| `/inventario/conteos` | Inventario/ConteosInventario.razor | Implementada — lista recuentos físicos |
+| `/inventario/conteos/{id:guid}` | Inventario/ConteoInventarioDetalle.razor | Implementada — sesión de recuento físico |
+| `/catalogo/tarifas` | Catalogo/Tarifas.razor | Implementada — CRUD tarifas de precio |
+| `/catalogo/tarifas/{id:guid}` | Catalogo/TarifaDetalle.razor | Implementada — detalle tarifa con precios por artículo |
+| `/licencia` | Licencia/Licencia.razor | Implementada — gestión de licencia y plan |
+| `/ai/propuestas` | AI/Propuestas.razor | Implementada — propuestas IA con flujo de aprobación |
+| `/ai/propuestas/{id:guid}` | AI/PropuestaDetalle.razor | Implementada — detalle con payload y historial de revisiones |
 
 ## Componentes compartidos (Shared/)
 
