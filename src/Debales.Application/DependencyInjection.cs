@@ -1,3 +1,6 @@
+using Debales.Application.Catalog.Queries.ExportItems;
+using Debales.Application.CRM.Customers.Queries.ExportCustomers;
+using Debales.Application.Suppliers.Queries.ExportSuppliers;
 using Debales.Application.Core.Audit.Queries.GetAuditEntries;
 using Debales.Application.AI.Briefing;
 using Debales.Application.AIGovernance.Commands.CreateAIRule;
@@ -240,6 +243,11 @@ public static class DependencyInjection
         services.AddScoped<ImportCustomersHandler>();
         services.AddScoped<ImportSuppliersHandler>();
         services.AddScoped<ImportItemsHandler>();
+
+        // Export — Excel
+        services.AddScoped<ExportCustomersHandler>();
+        services.AddScoped<ExportSuppliersHandler>();
+        services.AddScoped<ExportItemsHandler>();
 
         // CRM — Customers
         services.AddScoped<CreateCustomerHandler>();

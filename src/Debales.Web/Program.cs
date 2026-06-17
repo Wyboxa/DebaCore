@@ -6,6 +6,9 @@ using Debales.Application.Core.Auth.Commands.Login;
 using Debales.Application.Documents;
 using Debales.Application.Sales.Queries.GetSalesInvoiceById;
 using Debales.Application.Purchasing.Queries.GetPurchaseInvoiceById;
+using Debales.Application.CRM.Customers.Queries.ExportCustomers;
+using Debales.Application.Suppliers.Queries.ExportSuppliers;
+using Debales.Application.Catalog.Queries.ExportItems;
 using Debales.Infrastructure;
 using Debales.Infrastructure.Persistence;
 using Debales.Infrastructure.Persistence.Seeders;
@@ -133,6 +136,28 @@ app.MapGet("/descargar/factura-compra/{id:guid}", async (
     if (invoice is null) return Results.NotFound();
     var bytes = pdfGen.GeneratePurchaseInvoice(invoice);
     return Results.File(bytes, "application/pdf", $"Factura-compra-{invoice.Number}.pdf");
+}).RequireAuthorization();
+
+// Endpoints de exportación Excel
+app.MapGet("/descargar/clientes-excel", async (
+    ExportCustomersHandler handler, CancellationToken ct) =>
+{
+    var bytes = await handler.Handle(ct);
+    return Results.File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Clientes.xlsx");
+}).RequireAuthorization();
+
+app.MapGet("/descargar/proveedores-excel", async (
+    ExportSuppliersHandler handler, CancellationToken ct) =>
+{
+    var bytes = await handler.Handle(ct);
+    return Results.File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Proveedores.xlsx");
+}).RequireAuthorization();
+
+app.MapGet("/descargar/articulos-excel", async (
+    ExportItemsHandler handler, CancellationToken ct) =>
+{
+    var bytes = await handler.Handle(ct);
+    return Results.File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Articulos.xlsx");
 }).RequireAuthorization();
 
 app.MapRazorComponents<App>()

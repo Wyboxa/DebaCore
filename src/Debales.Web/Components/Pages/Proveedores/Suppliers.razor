@@ -10,7 +10,10 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Proveedores</h1>
-    <button class="btn btn-primary" @onclick="OpenCreate">+ Nuevo proveedor</button>
+    <div class="d-flex gap-2">
+        <a href="/descargar/proveedores-excel" class="btn btn-outline-success btn-sm" title="Exportar a Excel">⬇ Excel</a>
+        <button class="btn btn-primary" @onclick="OpenCreate">+ Nuevo proveedor</button>
+    </div>
 </div>
 
 <div class="mb-3">
